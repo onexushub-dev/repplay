@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Clip } from '../data/schema';
@@ -31,13 +32,32 @@ export function ClipCard({ clip, number, onPress, onLongPress, selecting = false
   });
   const sent = clip.savedAt ? t('summary.savedA11y', { label: base }) : clip.sharedAt ? t('summary.sharedA11y', { label: base }) : base;
   const label = selecting ? t(selected ? 'summary.selectedA11y' : 'summary.notSelectedA11y', { label: sent }) : sent;
+  // A hold that starts the selection ends with the finger lifting, and by then this card already counts as picked:
+  // that release must not count as a tap, which would unpick it at once.
+  const held = useRef(false);
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={selecting ? { checked: selected } : undefined}
-      onPress={onPress}
-      onLongPress={onLongPress}
+      onPressIn={() => {
+        held.current = false;
+      }}
+      onPress={() => {
+        if (held.current) {
+          held.current = false;
+          return;
+        }
+        onPress();
+      }}
+      onLongPress={
+        onLongPress
+          ? () => {
+              held.current = true;
+              onLongPress();
+            }
+          : undefined
+      }
       style={[styles.card, selecting && !selected && styles.unpicked]}>
       <View style={styles.thumb}>
         {thumb ? <Image source={{ uri: thumb }} style={StyleSheet.absoluteFill} contentFit="cover" /> : null}

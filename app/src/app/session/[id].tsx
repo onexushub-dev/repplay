@@ -3,9 +3,12 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'reac
 import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BatchResultCard } from '../../components/BatchResultCard';
 import { Button } from '../../components/Button';
 import { ClipCard } from '../../components/ClipCard';
 import { EmptyState } from '../../components/EmptyState';
+import { ExportProgress } from '../../components/ExportProgress';
+import { SelectionBar } from '../../components/SelectionBar';
 import { UpgradeCard } from '../../components/UpgradeCard';
 import { ClipIcon } from '../../components/icons';
 import { clipNumber, dayAndTime, megabytes, modeLabel, recordedLabel, sessionLabel } from '../../components/format';
@@ -13,6 +16,7 @@ import { removeFile, repo } from '../../data/mmkv';
 import { MAX_GAME_NAME } from '../../data/schema';
 import { unlockRecording } from '../../payments/unlock';
 import { useViewPlan } from '../../share/entitlement';
+import { useBatchActions } from '../../share/useBatchActions';
 import { useT } from '../../i18n/useT';
 import { useSession } from '../../session/SessionContext';
 import { colors, fonts } from '../../theme/tokens';
@@ -40,24 +44,30 @@ export default function SessionSummary() {
   // Picking clips to delete.
   const [selecting, setSelecting] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
+  // A picked clip deleted elsewhere (the clip screen) is no longer in the list: only what is still there counts.
+  const pickedClips = useMemo(() => clips.filter((c) => picked.includes(c.id)), [clips, picked]);
+  const batch = useBatchActions({
+    plan,
+    labelOf: (c) => (c.name ? c.name : t('batch.clipNumber', { number: clipNumber(c, clips.indexOf(c)) })),
+  });
+  const working = batch.job !== undefined;
   const stopSelecting = () => {
     setSelecting(false);
     setPicked([]);
   };
   const toggle = (clipId: string) =>
     setPicked((current) => (current.includes(clipId) ? current.filter((c) => c !== clipId) : [...current, clipId]));
-  const pickAll = () => setPicked(picked.length === clips.length ? [] : clips.map((c) => c.id));
+  const pickAll = () => setPicked(pickedClips.length === clips.length ? [] : clips.map((c) => c.id));
 
   function confirmDeleteClips() {
-    const count = picked.length;
+    const count = pickedClips.length;
     Alert.alert(t('summary.deleteClipsTitle', { count }), t('common.cantUndo'), [
       { text: t('common.cancel'), style: 'cancel' },
       {
         text: t('common.delete'),
         style: 'destructive',
         onPress: () => {
-          for (const clip of clips) {
-            if (!picked.includes(clip.id)) continue;
+          for (const clip of pickedClips) {
             removeFile(clip.path);
             repo.deleteClip(clip.id);
           }
@@ -162,14 +172,14 @@ export default function SessionSummary() {
                 <Text style={styles.pickLink}>{t('common.cancel')}</Text>
               </Pressable>
               <Text style={styles.pickCount}>
-                {picked.length === 0 ? t('summary.tapClips') : t('summary.selected', { count: picked.length })}
+                {pickedClips.length === 0 ? t('summary.tapClips') : t('summary.selected', { count: pickedClips.length })}
               </Text>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={picked.length === clips.length ? t('summary.clearSelection') : t('summary.selectAll')}
+                accessibilityLabel={pickedClips.length === clips.length ? t('summary.clearSelection') : t('summary.selectAll')}
                 hitSlop={8}
                 onPress={pickAll}>
-                <Text style={styles.pickLink}>{picked.length === clips.length ? t('summary.clear') : t('summary.all')}</Text>
+                <Text style={styles.pickLink}>{pickedClips.length === clips.length ? t('summary.clear') : t('summary.all')}</Text>
               </Pressable>
             </>
           ) : (
@@ -233,11 +243,14 @@ export default function SessionSummary() {
 
       <View style={styles.footer}>
         {selecting ? (
-          <Button
-            label={picked.length === 0 ? t('common.delete') : t('summary.deleteClips', { count: picked.length })}
-            variant="danger"
-            disabled={picked.length === 0}
-            onPress={confirmDeleteClips}
+          <SelectionBar
+            count={pickedClips.length}
+            paid={plan === 'paid'}
+            busy={working}
+            onShare={() => void batch.share(pickedClips)}
+            onSave={() => void batch.save(pickedClips)}
+            onCompile={() => void batch.compile(pickedClips)}
+            onDelete={confirmDeleteClips}
           />
         ) : (
           <>
@@ -255,6 +268,11 @@ export default function SessionSummary() {
           </>
         )}
       </View>
+      {batch.overlay}
+      {batch.job ? <ExportProgress job={batch.job} onCancel={batch.job.stage === 'preparing' ? batch.cancel : undefined} /> : null}
+      {batch.card ? (
+        <BatchResultCard card={batch.card} onClose={batch.closeCard} />
+      ) : null}
     </SafeAreaView>
   );
 }

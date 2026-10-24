@@ -68,6 +68,15 @@ export function TrashIcon({ color = colors.text, size = 22 }: IconProps) {
   );
 }
 
+export function FilmIcon({ color = colors.text, size = 22 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityElementsHidden>
+      <Rect x="3" y="5" width="18" height="14" rx="2" {...stroke(color)} />
+      <Path d="M10 9l5 3-5 3z" {...stroke(color)} />
+    </Svg>
+  );
+}
+
 export function PlayIcon({ color = colors.text, size = 22 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityElementsHidden>
