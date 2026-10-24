@@ -5,11 +5,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '../components/Button';
 import { GameCard } from '../components/GameCard';
-import { BackIcon } from '../components/icons';
+import { EmptyState } from '../components/EmptyState';
+import { UpgradeCard } from '../components/UpgradeCard';
+import { openPaywall } from '../payments/feedback';
+import { sessionPlan } from '../payments/rules';
+import { useProActive } from '../share/entitlement';
+import { BackIcon, ReplayIcon } from '../components/icons';
 import { sessionLabel } from '../components/format';
 import { removeFile, repo } from '../data/mmkv';
 import { useT } from '../i18n/useT';
-import { restorePurchases } from '../payments/feedback';
 import { useSession } from '../session/SessionContext';
 import { colors, fonts } from '../theme/tokens';
 
@@ -27,6 +31,10 @@ export default function Games() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- version is the change signal
     [version],
   );
+
+  // Pro unlocks every recording while it lasts: the gallery says so while some recordings are still on the free plan.
+  const pro = useProActive();
+  const hasFreeRecordings = games.some((g) => g.clips > 0 && sessionPlan(g.session) === 'free');
 
   // A game still being recorded has no end yet: it is never offered for deleting.
   const confirmDelete = (id: string, label: string, clips: number) => {
@@ -66,9 +74,22 @@ export default function Games() {
       </Text>
       <FlatList
         data={games}
+        ListHeaderComponent={
+          !pro && hasFreeRecordings ? (
+            <UpgradeCard
+              title={t('games.proTitle')}
+              message={t('games.proMessage')}
+              action={t('games.proAction')}
+              badge={t('setup.proBadge')}
+              onPress={() => void openPaywall(t)}
+            />
+          ) : undefined
+        }
         keyExtractor={(g) => g.session.id}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={<Text style={styles.empty}>{t('games.empty')}</Text>}
+        ListEmptyComponent={
+          <EmptyState icon={<ReplayIcon color={colors.accent} size={40} />} title={t('games.emptyTitle')} message={t('games.emptyMessage')} />
+        }
         renderItem={({ item }) => {
           const ended = item.session.endedAt !== undefined;
           const ask = () => confirmDelete(item.session.id, sessionLabel(item.session, undefined, locale), item.clips);
@@ -87,7 +108,6 @@ export default function Games() {
       />
       <View style={styles.footer}>
         <Button label={t('summary.newRecording')} onPress={newGame} />
-        <Button label={t('games.restore')} variant="secondary" onPress={() => void restorePurchases(t)} />
       </View>
     </SafeAreaView>
   );
@@ -104,8 +124,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: { fontFamily: fonts.displayBold, fontSize: 44, color: colors.text },
+  title: { fontFamily: fonts.displayBold, fontSize: 44, lineHeight: 46, color: colors.text },
   list: { gap: 10, paddingBottom: 24 },
   footer: { paddingBottom: 12, gap: 10 },
-  empty: { fontFamily: fonts.body, fontSize: 15, color: colors.soft, textAlign: 'center', marginTop: 40 },
 });

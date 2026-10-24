@@ -90,7 +90,7 @@ Fluxo: **Boas-vindas → Posicionar câmera → Gravando → Lance salvo (repete
 - Funciona para qualquer pessoa enquadrada.
 
 ### 3.11 Identidade visual (proposta dos mockups)
-- Fundo escuro (#0F100D), texto areia-claro (#F3EFE4).
+- Fundo escuro (Ink #0B0B09), texto Paper (#F3EDE1).
 - Destaque lima "bola de tênis" (#D6F23F); vermelho/laranja para REC e alertas.
 - Títulos em Barlow Condensed (estilo placar), texto em Manrope.
 - Alvos de toque ≥44px e alto contraste para uso sob sol forte.

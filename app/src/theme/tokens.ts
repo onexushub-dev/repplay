@@ -1,15 +1,15 @@
-// Design tokens taken from the mockups (https://claude.ai/artifact/2Cj7DeSydAkeWGADELpFKw). The UI is always dark.
+// Design tokens from the Repplay brand kit (docs/brand/repplay): ground is Ink, text is Paper, accent is Lima. surface, border, muted and rec are the app interface colors of the kit. recordingGround, soft and the warning pair are app-only. The UI is always dark.
 
 export const colors = {
-  ground: '#0F100D',
+  ground: '#0B0B09',
   recordingGround: '#070806',
   surface: '#1B1D18',
   border: '#3A3D34',
-  text: '#F3EFE4',
+  text: '#F3EDE1',
   muted: '#A9A79C',
   soft: '#CFCBBF',
   accent: '#D6F23F',
-  onAccent: '#0F100D',
+  onAccent: '#0B0B09',
   rec: '#FF5A36',
   warning: '#FF8A3D',
   warningGround: '#3A1D10',

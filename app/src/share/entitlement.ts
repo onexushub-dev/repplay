@@ -20,3 +20,20 @@ export function usePlan(sessionId?: string): Plan {
     return 'free';
   }
 }
+
+/** True while Pro is active. Re-renders when it changes. */
+export function useProActive(): boolean {
+  useSyncExternalStore(payments.subscribe, payments.version);
+  return payments.unlockOption().kind === 'pro';
+}
+
+/**
+ * The plan to watch and export a recording that is already made: Pro unlocks every recording while it lasts, otherwise
+ * the plan the recording was made with (a Single Pass spent on it later makes it paid). A recording being made keeps
+ * `usePlan`, which is fixed at its start.
+ */
+export function useViewPlan(sessionId: string | undefined): Plan {
+  const pro = useProActive();
+  const own = usePlan(sessionId);
+  return pro ? 'paid' : own;
+}

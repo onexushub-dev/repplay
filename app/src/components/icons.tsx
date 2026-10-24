@@ -244,3 +244,33 @@ export function EditIcon({ color = colors.text, size = 20 }: IconProps) {
     </Svg>
   );
 }
+
+/** Rewind and play: the replay itself. It stands for a recording with nothing saved to watch again yet. */
+export function ReplayIcon({ color = colors.text, size = 22 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityElementsHidden>
+      <Path d="M10 7.5L3.5 12l6.5 4.5z" {...stroke(color)} />
+      <Path d="M13 6.5v11L21 12z" {...stroke(color)} />
+    </Svg>
+  );
+}
+
+/** A clip frame with a play triangle: a saved lance. */
+export function ClipIcon({ color = colors.text, size = 22 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityElementsHidden>
+      <Rect x={3} y={5} width={18} height={14} rx={3} {...stroke(color)} />
+      <Path d="M10.2 9.5v5l4.2-2.5z" {...stroke(color)} />
+    </Svg>
+  );
+}
+
+/** A crown: the mark of the Pro plan. */
+export function CrownIcon({ color = colors.text, size = 22 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityElementsHidden>
+      <Path d="M3.5 8.5l4.5 4 4-7 4 7 4.5-4L19 17H5z" {...stroke(color)} />
+      <Path d="M5.5 20.5h13" {...stroke(color)} />
+    </Svg>
+  );
+}

@@ -683,11 +683,11 @@ describe('start decision', () => {
     expect(f.camera.setGestureEnabled).not.toHaveBeenCalledWith(true);
   });
 
-  test('free: HD without sound, 15 s clips, an unpaid session and one free recording counted', async () => {
+  test('free: the chosen quality with sound, 15 s clips, an unpaid session and one free recording counted', async () => {
     const f = await setup();
     expect(await startResult(f)).toBe('started');
     expect(f.camera.startSession).toHaveBeenLastCalledWith(
-      expect.objectContaining({ maxQuality: '720p60', bufferSeconds: 15, audio: false }),
+      expect.objectContaining({ maxQuality: '1080p60', bufferSeconds: 15, audio: true }),
     );
     const id = f.view.result.current.state.sessionId!;
     await saveClips(f, f.view, 12);
@@ -741,7 +741,7 @@ describe('start decision', () => {
   test('a plan that changed since the preview reopens the camera before the session exists', async () => {
     const f = await setup();
     await act(() => f.view.result.current.prepare('quadra', 'free'));
-    expect(f.camera.startSession).toHaveBeenLastCalledWith(expect.objectContaining({ maxQuality: '720p60', audio: false }));
+    expect(f.camera.startSession).toHaveBeenLastCalledWith(expect.objectContaining({ maxQuality: '1080p60', audio: true }));
     f.startDecision.mockResolvedValue({ kind: 'pro' });
     const order: string[] = [];
     f.camera.stopSession.mockImplementation(async () => void order.push('stop'));
@@ -755,14 +755,14 @@ describe('start decision', () => {
     expect(order).toEqual(['stop', 'open', 'session']);
   });
 
-  test('Pro lapsing between the two decisions reopens in HD without sound and counts a free recording', async () => {
+  test('Pro lapsing between the two decisions reopens with the 15 s ceiling and counts a free recording', async () => {
     const f = await setup();
     f.startDecision.mockResolvedValueOnce({ kind: 'pro' }).mockResolvedValueOnce({ kind: 'free' });
     expect(await startResult(f)).toBe('started');
     expect(f.camera.startSession).toHaveBeenCalledTimes(2);
     expect(f.camera.startSession).toHaveBeenNthCalledWith(1, expect.objectContaining({ maxQuality: '1080p60', audio: true }));
     expect(f.camera.startSession).toHaveBeenLastCalledWith(
-      expect.objectContaining({ maxQuality: '720p60', bufferSeconds: 15, audio: false }),
+      expect.objectContaining({ maxQuality: '1080p60', bufferSeconds: 15, audio: true }),
     );
     expect(f.deps.repo.getSession(f.view.result.current.state.sessionId!)).toMatchObject({ paid: false });
     expect(freeCount(f)).toBe(1);
@@ -850,7 +850,7 @@ describe('start decision', () => {
     f.startDecision.mockResolvedValueOnce({ kind: 'pro' }).mockRejectedValueOnce(new Error('x'));
     expect(await startResult(f)).toBe('started');
     expect(f.deps.repo.getSession(f.view.result.current.state.sessionId!)).toMatchObject({ paid: false });
-    expect(f.camera.startSession).toHaveBeenLastCalledWith(expect.objectContaining({ maxQuality: '720p60', audio: false }));
+    expect(f.camera.startSession).toHaveBeenLastCalledWith(expect.objectContaining({ maxQuality: '1080p60', audio: true }));
   });
 
   test.each([
@@ -908,13 +908,13 @@ describe('start decision', () => {
     expect(clip.trim).toEqual({ startMs: 45000, endMs: 60000 });
   });
 
-  test('a credit gone between the two decisions: reopens in HD without sound, spends nothing, counts a free recording', async () => {
+  test('a credit gone between the two decisions: reopens with the 15 s ceiling, spends nothing, counts a free recording', async () => {
     const f = await setup();
     f.startDecision.mockResolvedValueOnce({ kind: 'credit', passTransactionId: 'tx-1' }).mockResolvedValueOnce({ kind: 'free' });
     expect(await startResult(f)).toBe('started');
     expect(f.camera.startSession).toHaveBeenNthCalledWith(1, expect.objectContaining({ maxQuality: '1080p60', audio: true }));
     expect(f.camera.startSession).toHaveBeenLastCalledWith(
-      expect.objectContaining({ maxQuality: '720p60', bufferSeconds: 15, audio: false }),
+      expect.objectContaining({ maxQuality: '1080p60', bufferSeconds: 15, audio: true }),
     );
     const session = f.deps.repo.getSession(f.view.result.current.state.sessionId!)!;
     expect(session.paid).toBe(false);
@@ -927,7 +927,7 @@ describe('start decision', () => {
     const f = await setup();
     f.startDecision.mockResolvedValueOnce({ kind: 'free' }).mockResolvedValueOnce({ kind: 'credit', passTransactionId: 'tx-1' });
     expect(await startResult(f)).toBe('started');
-    expect(f.camera.startSession).toHaveBeenNthCalledWith(1, expect.objectContaining({ maxQuality: '720p60', audio: false }));
+    expect(f.camera.startSession).toHaveBeenNthCalledWith(1, expect.objectContaining({ maxQuality: '1080p60', audio: true }));
     expect(f.camera.startSession).toHaveBeenLastCalledWith(
       expect.objectContaining({ maxQuality: '1080p60', bufferSeconds: 60, audio: true }),
     );

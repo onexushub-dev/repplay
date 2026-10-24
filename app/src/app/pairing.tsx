@@ -371,7 +371,7 @@ export default function Pairing() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
   body: { padding: 20, gap: 16 },
-  title: { fontFamily: fonts.display, fontSize: 32, color: colors.text },
+  title: { fontFamily: fonts.display, fontSize: 32, lineHeight: 34, color: colors.text },
   role: { fontFamily: fonts.bodyBold, fontSize: 12, letterSpacing: 1.2, color: colors.muted },
   steps: { gap: 10 },
   step: { flexDirection: 'row', alignItems: 'center', gap: 12 },

@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, fonts } from '../theme/tokens';
-import { LockIcon } from './icons';
 
 type Props = {
   icon: ReactNode;
@@ -11,14 +10,13 @@ type Props = {
   status?: string;
   active?: boolean;
   disabled?: boolean;
-  /** A paid trigger the player does not have: a lock and this badge ("Pro"), and `lockedHint` read out after the status. */
-  lockedBadge?: string;
+  /** A paid trigger the player does not have: `lockedHint` is read out after the status (the group around it shows the "Pro" badge). */
   lockedHint?: string;
   onPress?: () => void;
 };
 
 /** One way of saving a lance, with its live status (setup screen). */
-export function TriggerTile({ icon, title, status, active = false, disabled = false, lockedBadge, lockedHint, onPress }: Props) {
+export function TriggerTile({ icon, title, status, active = false, disabled = false, lockedHint, onPress }: Props) {
   const body = (
     <>
       {icon}
@@ -28,12 +26,6 @@ export function TriggerTile({ icon, title, status, active = false, disabled = fa
           <Text style={[styles.status, active && { color: colors.accent }]}>{status}</Text>
         )}
       </View>
-      {lockedBadge === undefined ? null : (
-        <View style={styles.badge}>
-          <LockIcon color={colors.onAccent} />
-          <Text style={styles.badgeText}>{lockedBadge}</Text>
-        </View>
-      )}
     </>
   );
   const label = [title, status, lockedHint].filter((part) => part !== undefined).join(', ');
@@ -60,6 +52,7 @@ export function TriggerTile({ icon, title, status, active = false, disabled = fa
 const styles = StyleSheet.create({
   tile: {
     flex: 1,
+    minWidth: 0,
     minHeight: 56,
     flexDirection: 'row',
     alignItems: 'center',
@@ -70,17 +63,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   disabled: { opacity: 0.5 },
-  text: { flex: 1 },
+  // minWidth 0: a long title wraps inside the tile instead of running past its edge.
+  text: { flex: 1, flexShrink: 1, minWidth: 0 },
   title: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.text },
   status: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: colors.accent,
-    borderRadius: 999,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-  },
-  badgeText: { fontFamily: fonts.bodyBold, fontSize: 11, color: colors.onAccent },
 });

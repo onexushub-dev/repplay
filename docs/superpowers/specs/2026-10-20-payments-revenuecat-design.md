@@ -4,7 +4,7 @@
 
 ## Objetivo
 Ligar a cobrança do spec principal (`2026-10-17-lance-design.md`, seção 6) ao app:
-- **Plano grátis:** **5 gravações por mês calendário** neste aparelho. Uma gravação é uma sessão, do "Começar gravação" ao "Encerrar", com quantos clipes o jogador quiser. Cada gravação grátis tem limites: clipe de no máximo **15 s**, **sem som** (o clipe não tem trilha de áudio), **HD (720p)** na captura e na exportação, e só três gatilhos: **toque na tela, gesto e voz**.
+- **Plano grátis:** **5 gravações por mês calendário** neste aparelho. Uma gravação é uma sessão, do "Começar gravação" ao "Encerrar", com quantos clipes o jogador quiser. Cada gravação grátis tem limites: clipe de no máximo **15 s** (buffer de 15 s na captura), **exportação em HD (720p) e sem som**, e só três gatilhos. (Revisão de 2026-10-24: a câmera grava na qualidade e com o áudio que o jogador escolheu, e o Full HD e o som ficam travados na **exportação**, para o Passe poder liberar uma gravação já feita. Só os 15 s não voltam depois, porque dependem do buffer.): **toque na tela, gesto e voz**.
 - **Plano pago** (Pro ativo, mensal ou anual, ou um Passe Avulso consumido no início): **gravações ilimitadas** e tudo o que o grátis limita liberado — duração do clipe acima de 15 s (as opções de corte/buffer de cada modo), som, **Full HD (1080p)** na captura e na exportação, e os gatilhos **Apple Watch, controle Bluetooth e celular controle**. Gravações pagas **não contam** nas 5.
 - Todo o resto vale para os dois planos: câmera lenta, edição (corte, velocidade, zoom, giro), exportação, compartilhamento, todas as lentes.
 
@@ -22,11 +22,23 @@ Princípio: **a experiência do usuário vem primeiro. Uma gravação em andamen
 **Marcus, 2026-10-23 (continuam valendo):**
 - **Uma oferta só:** `default` atende todos os pontos de entrada. Sem `pro_only`/`showProPaywall`.
 - **`Session.paid: boolean`**, decidido no **início** da sessão (Pro ativo, ou um crédito consumido) e nunca recalculado. O plano de uma sessão é `session.paid ? 'paid' : 'free'`. Se o Pro acabar depois, as sessões gravadas no Pro continuam pagas (os clipes já nasceram em Full HD com som). `passTransactionId` continua na sessão como registro do crédito gasto.
-- **O Passe é um crédito comprado antes de gravar** e consumido automaticamente no próximo início sem Pro. Os clipes nascem com o plano da gravação, então um Passe não melhora uma gravação já feita.
+- **O Passe é um crédito** consumido automaticamente no próximo início sem Pro. (Revisão de 2026-10-24: também pode ser gasto numa gravação grátis já feita, ver "Liberar uma gravação já feita".)
 - **Invariantes da store mantidos** (custaram caro): o crédito (`availableCredit`), o livro-razão `lance:v1:spentPasses` (só cresce; apagar a gravação não devolve o Passe), a compra pendente única (uma compra não explicada pelo snapshot ocupa o único lugar de pendência e nenhum outro paywall vende enquanto ela não se explica), a restauração que nunca cria crédito e a leitura antes da restauração.
 - **Opções pagas na preparação** (som, Full HD, duração acima de 15 s, relógio, controle Bluetooth, celular controle) têm cadeado e selo "Premium" no grátis e abrem o paywall `default`. Depois de comprar, a opção fica disponível; nada começa sozinho por causa de um cadeado.
 - **Trava o ligar de um gatilho pago, nunca um toque:** um toque de gatilho pago que chega durante a gravação vira lance.
-- **Sem cartão de plano no resumo e sem trava de 0.5x** (câmera lenta é grátis).
+- **Cartão no resumo de uma gravação grátis** (revisão de 2026-10-24), com contorno lima, selo "Pro" e a ação "Liberar": ver "Liberar uma gravação já feita". Sem trava de 0.5x (câmera lenta é grátis).
+
+### Liberar uma gravação já feita (revisão de 2026-10-24)
+O jogador com muitos lances bons numa gravação grátis pode liberar **Full HD e som** dessa gravação.
+- **Pontos de entrada:** o cartão "Gravada no plano grátis" no resumo e o botão de som do editor (travado numa gravação grátis). Os dois chamam `unlockRecording(sessionId)`.
+- **Pro ativo:** todas as gravações já feitas ganham Full HD e som enquanto o Pro durar (`useViewPlan`), sem gastar nada nem perguntar; se o Pro acabar, as gravações grátis voltam a ficar travadas.
+- **Galeria "Minhas gravações":** enquanto houver gravação grátis com clipes e o Pro não estiver ativo, um cartão no topo diz que o Pro, mensal ou anual, dá Full HD, som e Modo Foco em todas as gravações, as já feitas e as próximas, e abre o paywall.
+- **Passe disponível:** pergunta "Usar o passe nesta gravação?" ("Guardar para a próxima" ou "Usar nesta gravação"). Ao usar, `repo.upgradeSession` marca a gravação como paga, grava o `passTransactionId` e gasta o Passe no livro-razão.
+- **Nada disponível:** abre o paywall; o que for comprado nele é oferecido do mesmo jeito (Pro libera sem perguntar).
+- **O que muda:** o plano da gravação passa a `paid`; a exportação sai em 1080p, com o som e com o Modo Foco; o clipe passa a tocar com som.
+- **Modo Foco:** funciona no app em todos os planos (preview e edição), para despertar interesse. Só a exportação grátis (salvar e compartilhar) o deixa de fora; antes de exportar com o Foco ligado, uma pergunta avisa e oferece "Continuar sem o Foco", "Liberar" ou "Cancelar". O contador de gravações grátis do mês não volta.
+- **O que não muda:** o corte e o buffer de 15 s, porque foram gravados assim.
+- **Preço desse custo:** o plano grátis grava em 1080p e com áudio, com mais calor, bateria e armazenamento.
 - **A marca "feito com LANCE" fica em todo vídeo exportado, nos dois planos**, desenhada num só componente (`MadeWithMark.tsx`); o Marcus vai redesenhá-la depois.
 - **Story sai do app.** Ver "Fim do Story".
 
@@ -46,7 +58,7 @@ Princípio: **a experiência do usuário vem primeiro. Uma gravação em andamen
 **Histórico:** 2026-10-20 — 10 lances liberados por jogo, do 11º em diante bloqueados. 2026-10-22 — primeira gravação grátis e sem limite, pagamento antes da segunda. 2026-10-23 (primeira versão) — gravações grátis ilimitadas com limites de clipe, nenhum bloqueio no início, só Pro mensal. 2026-10-23 (revisão final, este spec) — 5 gravações grátis por mês com limites de clipe, bloqueio no início com paywall, Pro Anual. Nenhuma versão foi publicada; dados antigos só existem em aparelhos de desenvolvimento.
 
 ## Fora do escopo
-Login e contas, backend e webhooks, contador grátis no servidor ou por conta, pagamento web (Stripe), link externo, paywall próprio, Customer Center, testes A/B, promoções e cupons, pacotes de Passes, melhorar uma gravação já feita, redesenho da marca d'água, mudança do quadro 9:16 da exportação, Wear OS.
+Login e contas, backend e webhooks, contador grátis no servidor ou por conta, pagamento web (Stripe), link externo, paywall próprio, Customer Center, testes A/B, promoções e cupons, pacotes de Passes, redesenho da marca d'água, mudança do quadro 9:16 da exportação, Wear OS.
 
 ## Regras de plano
 
@@ -120,12 +132,12 @@ No "Começar gravação" (e no início remoto), nesta ordem:
   - **Qualidade:** "HD" e "Full HD";
   - **Som do clipe:** "Sem som" e "Com som".
   No grátis o valor grátis aparece selecionado e o valor pago tem cadeado e o selo "Premium"; tocar nele abre o paywall `default`. No pago as duas opções de cada linha são escolhas do jogador, salvas por modo (`cutSeconds`, `quality`, `audio`).
-- Blocos de gatilho **Controle Bluetooth, Relógio e Conectar um celular controle**: no grátis, cadeado + selo "Premium" + "Disponível no Premium"; tocar abre o paywall `default`. "Usar este celular como controle" fica livre (o plano que conta é o do celular da câmera).
+- Blocos de gatilho **Controle Bluetooth, Relógio, Conectar um celular controle e Usar este celular como controle** (revisão de 2026-10-24): no grátis ficam dentro de um grupo com contorno e um só selo "Pro", dizem "Disponível no Pro" ao leitor de tela, e tocar em qualquer um abre o paywall `default` em vez da tela do gatilho. (Antes, "Usar este celular como controle" ficava livre, porque o plano que vale é o do celular da câmera.)
 - Depois de comprar por um cadeado, a opção fica disponível e nada começa sozinho. A câmera reabre com a configuração paga quando o plano do próximo início muda (e volta para a grátis se o Pro acabar antes de começar).
 
 **Durante a gravação:** nada de pagamento, sem notas de plano, sem contador. A barra "Últimos Ns prontos" mostra o buffer da sessão (15 no grátis). Um Pro que vence no meio não muda nada nessa sessão. A câmera nunca é reaberta durante a gravação por mudança de plano.
 
-**Depois da gravação:** resumo sem cartão de plano. Editor igual para os dois planos (corte, 0.5x/1.5x/2x, zoom, giro, salvar na galeria, compartilhar). Numa sessão grátis o botão de som fica desligado em "Sem som" (o clipe não tem áudio) e a janela de corte é de 15 s. "Restaurar compras" continua em "Minhas gravações".
+**Depois da gravação:** resumo com o cartão de plano numa gravação grátis. Editor igual para os dois planos (corte, 0.5x/1.5x/2x, zoom, giro, salvar na galeria, compartilhar). Numa sessão grátis o botão de som fica travado em "Sem som" (o clipe tem áudio, mas ele não toca nem sai na exportação) e, ao tocar, libera a gravação; a janela de corte é de 15 s. "Restaurar compras" continua em "Minhas gravações".
 
 ## Fim do Story
 O Story (templates Placar/Minimal/Arena/Treino/Recorde pessoal, o fluxo "Postar no Story" e suas telas) sai do produto. No código de hoje sobra:

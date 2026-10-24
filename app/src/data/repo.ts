@@ -140,6 +140,21 @@ export function createRepo(kv: KV, files: FileProbe, newId: () => string) {
       return session;
     },
 
+    /**
+     * Makes a finished free recording a paid one: Full HD and sound open for its clips. With a Single Pass the pass is
+     * spent on this recording; with Pro nothing is spent. Does not touch the free counter.
+     */
+    upgradeSession(id: string, plan: { passTransactionId?: string }): Session | undefined {
+      const session = getSession(id);
+      if (!session) return undefined;
+      const { passTransactionId } = plan;
+      const next: Session = { ...session, paid: true, ...(passTransactionId ? { passTransactionId } : {}) };
+      write(key.session(id), next);
+      if (passTransactionId) addSpent([passTransactionId]);
+      changed();
+      return next;
+    },
+
     endSession(id: string, now: number): Session {
       const session = { ...getSession(id)!, endedAt: now };
       write(key.session(id), session);

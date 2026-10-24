@@ -27,6 +27,7 @@ import { modeTip } from '../components/format';
 import { sourceLabel } from '../components/sourceLabel';
 import { PositionGuide } from '../components/PositionGuide';
 import { RecordingPanel } from '../components/RecordingPanel';
+import { ProBadge } from '../components/ProBadge';
 import { ArmsUpIcon, MicIcon, QrIcon, RemoteIcon, TapIcon, WatchIcon } from '../components/icons';
 import { TriggerTile } from '../components/TriggerTile';
 import { ZoomBubble } from '../components/ZoomBubble';
@@ -45,7 +46,7 @@ import { CLIP_SECONDS_OPTIONS, type ModeSettings, type Prefs } from '../data/sch
 import { effectiveSettings, modeById, offeredMode, withModeOverride } from '../modes/registry';
 import { clampZoom, lensFor, nextZoomStep } from '../modes/zoom';
 import { useSession } from '../session/SessionContext';
-import { colors, fonts } from '../theme/tokens';
+import { colors, fonts, radius } from '../theme/tokens';
 import { useVolumeRemote } from '../triggers/useVolumeRemote';
 
 /** How long the zoom value stays over the preview after the last pinch move. */
@@ -159,11 +160,14 @@ export default function Setup() {
   const watchSupported = Platform.OS === 'ios';
   const watchAllowed = triggerAllowed('watch', plan);
   const watchOn = watchSupported && watchAllowed && watch === 'ready';
-  // The Bluetooth remote and the phone remote are paid too. Pairing and testing them stays open to everyone; the lock
-  // is on turning them on for a game.
+  // The Bluetooth remote and the phone remote are paid too: on the free plan their tiles open the paywall instead of
+  // their screens.
   const bluetoothAllowed = triggerAllowed('remote', plan);
   const phoneAllowed = triggerAllowed('phone', plan);
+  const triggersLocked = !bluetoothAllowed || !phoneAllowed || (watchSupported && !watchAllowed);
   // The free plan cuts clips at 15 s: a longer pick is paid, and what the screen shows is what the game will get.
+  const isAllowed = (seconds: number) => plan === 'paid' || seconds <= FREE_MAX_SECONDS;
+  const lockedSeconds = CLIP_SECONDS_OPTIONS.filter((seconds) => !isAllowed(seconds));
   const clipSeconds = plan === 'paid' ? settings.cutSeconds : Math.min(settings.cutSeconds, FREE_MAX_SECONDS);
   // The phone remote (a second iPhone that taps Salvar for this one). The camera phone waits for its paired remotes for
   // as long as the app is open (see the root layout); pairing happens on its own sheet (/pairing).
@@ -385,7 +389,6 @@ export default function Setup() {
           <WatchIcon color={iconColor(watchOn)} size={32} />
           {remoteSupported ? <QrIcon color={iconColor(remoteLinked > 0)} size={32} /> : null}
         </View>
-        <Text style={styles.summaryClip}>{t('setup.clipUpTo', { seconds: clipSeconds })}</Text>
       </Pressable>
     );
   }
@@ -396,19 +399,29 @@ export default function Setup() {
         <View style={styles.clipLength}>
           <Text style={styles.section}>{t('setup.clipLength')}</Text>
           <View style={styles.chips}>
-            {CLIP_SECONDS_OPTIONS.map((seconds) => {
-              const allowed = plan === 'paid' || seconds <= FREE_MAX_SECONDS;
-              return (
-                <Chip
-                  key={seconds}
-                  label={`${seconds}s`}
-                  selected={clipSeconds === seconds}
-                  lockedBadge={allowed ? undefined : t('setup.proBadge')}
-                  lockedHint={allowed ? undefined : t('setup.proOnly')}
-                  onPress={allowed ? () => updateMode({ cutSeconds: seconds }) : () => void openPaywall(t)}
-                />
-              );
-            })}
+            {CLIP_SECONDS_OPTIONS.filter(isAllowed).map((seconds) => (
+              <Chip
+                key={seconds}
+                label={`${seconds}s`}
+                selected={clipSeconds === seconds}
+                onPress={() => updateMode({ cutSeconds: seconds })}
+              />
+            ))}
+            {lockedSeconds.length === 0 ? null : (
+              // The paid lengths share one outline and one "Pro" badge instead of one each.
+              <View style={styles.proGroup}>
+                {lockedSeconds.map((seconds) => (
+                  <Chip
+                    key={seconds}
+                    label={`${seconds}s`}
+                    grouped
+                    lockedHint={t('setup.proOnly')}
+                    onPress={() => void openPaywall(t)}
+                  />
+                ))}
+                <ProBadge label={t('setup.proBadge')} right={6} />
+              </View>
+            )}
           </View>
         </View>
 
@@ -431,15 +444,20 @@ export default function Setup() {
               onPress={() => updateMode({ gestureEnabled: !settings.gestureEnabled })}
             />
           </View>
+        </View>
+
+        <View style={triggersLocked ? styles.triggerGroup : styles.triggerPlain}>
+          {triggersLocked ? <View pointerEvents="none" style={styles.triggerOutline} /> : null}
           <View style={styles.gridRow}>
             <TriggerTile
               icon={<RemoteIcon />}
               title={t('setup.bluetoothRemote')}
               status={remoteView.statusText}
               active={remoteWorks}
-              lockedBadge={bluetoothAllowed ? undefined : t('setup.proBadge')}
               lockedHint={bluetoothAllowed ? undefined : t('setup.proOnly')}
-              onPress={() => router.push({ pathname: '/devices', params: { kind: 'remote' } })}
+              onPress={
+                bluetoothAllowed ? () => router.push({ pathname: '/devices', params: { kind: 'remote' } }) : () => void openPaywall(t)
+              }
             />
             <TriggerTile
               icon={<WatchIcon />}
@@ -447,48 +465,44 @@ export default function Setup() {
               status={watchSupported ? watchStatus : t('setup.watchIosOnly')}
               active={watchOn}
               disabled={!watchSupported || (watchAllowed && watch === 'unsupported')}
-              lockedBadge={watchSupported && !watchAllowed ? t('setup.watchProBadge') : undefined}
               lockedHint={watchSupported && !watchAllowed ? t('setup.watchProOnly') : undefined}
               onPress={watchSupported && !watchAllowed ? () => void openPaywall(t) : undefined}
             />
           </View>
+          {remoteSupported ? (
+            <>
+              <View style={styles.gridRow}>
+                <TriggerTile
+                  icon={<QrIcon />}
+                  title={t('setup.connectPhoneRemote')}
+                  status={controllersStatus(t, remoteLinked)}
+                  active={remoteLinked > 0}
+                  lockedHint={phoneAllowed ? undefined : t('setup.proOnly')}
+                  onPress={phoneAllowed ? () => router.push('/pairing') : () => void openPaywall(t)}
+                />
+                <TriggerTile
+                  icon={<TapIcon />}
+                  title={t('setup.useAsRemote')}
+                  status={cameraStatus(t, controlHost)}
+                  active={controlHost !== null}
+                  lockedHint={phoneAllowed ? undefined : t('setup.proOnly')}
+                  onPress={phoneAllowed ? () => router.push('/remote') : () => void openPaywall(t)}
+                />
+              </View>
+              {controlHost !== null ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('setup.disconnectThisPhone')}
+                  hitSlop={8}
+                  onPress={disconnectControl}
+                  style={styles.remoteLinkBox}>
+                  <Text style={styles.remoteLink}>{t('setup.disconnectThisPhone')}</Text>
+                </Pressable>
+              ) : null}
+            </>
+          ) : null}
+          {triggersLocked ? <ProBadge label={t('setup.proBadge')} top={-15} right={-1} /> : null}
         </View>
-
-        {remoteSupported ? (
-          <>
-            <View style={styles.divider} />
-            <View style={styles.gridRow}>
-              <TriggerTile
-                icon={<QrIcon />}
-                title={t('setup.connectPhoneRemote')}
-                status={controllersStatus(t, remoteLinked)}
-                active={remoteLinked > 0}
-                lockedBadge={phoneAllowed ? undefined : t('setup.proBadge')}
-                lockedHint={phoneAllowed ? undefined : t('setup.proOnly')}
-                onPress={() => router.push('/pairing')}
-              />
-              <TriggerTile
-                icon={<TapIcon />}
-                title={t('setup.useAsRemote')}
-                status={cameraStatus(t, controlHost)}
-                active={controlHost !== null}
-                lockedBadge={phoneAllowed ? undefined : t('setup.proBadge')}
-                lockedHint={phoneAllowed ? undefined : t('setup.proOnly')}
-                onPress={() => router.push('/remote')}
-              />
-            </View>
-            {controlHost !== null ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('setup.disconnectThisPhone')}
-                hitSlop={8}
-                onPress={disconnectControl}
-                style={styles.remoteLinkBox}>
-                <Text style={styles.remoteLink}>{t('setup.disconnectThisPhone')}</Text>
-              </Pressable>
-            ) : null}
-          </>
-        ) : null}
 
         {speechDenied ? <Text style={styles.error}>{t('setup.speechDenied')}</Text> : null}
 
@@ -574,7 +588,6 @@ const styles = StyleSheet.create({
   summaryHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   summaryChevron: { fontSize: 12, color: colors.muted },
   summaryIcons: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-evenly', minHeight: 48 },
-  summaryClip: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.soft, textAlign: 'center' },
   clipLength: { gap: 8 },
   clipLengthHint: { fontFamily: fonts.body, fontSize: 12, color: colors.soft },
   section: {
@@ -583,6 +596,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     color: colors.muted,
   },
+  proGroup: { flexDirection: 'row', borderWidth: 1, borderColor: colors.accent, borderRadius: radius.chip },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   remoteLinkBox: { minHeight: 48, justifyContent: 'center' },
   remoteLink: {
@@ -591,7 +605,10 @@ const styles = StyleSheet.create({
     color: colors.soft,
     textDecorationLine: 'underline',
   },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginVertical: 4 },
+  // The outline is drawn around the tiles, out in the sheet's side padding, so the tiles keep the width of the free ones.
+  triggerGroup: { gap: 8, marginTop: 2 },
+  triggerOutline: { position: 'absolute', top: -7, left: -7, right: -7, bottom: -7, borderWidth: 1, borderColor: colors.accent, borderRadius: radius.card },
+  triggerPlain: { gap: 8 },
   grid: { gap: 8 },
   gridRow: { flexDirection: 'row', gap: 8 },
   error: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.warning },

@@ -520,7 +520,7 @@ const styles = StyleSheet.create({
   scrollBody: { flexGrow: 1, padding: 20, gap: 16 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
   role: { fontFamily: fonts.bodyBold, fontSize: 12, letterSpacing: 1.2, color: colors.muted },
-  title: { fontFamily: fonts.display, fontSize: 32, color: colors.text },
+  title: { fontFamily: fonts.display, fontSize: 32, lineHeight: 34, color: colors.text },
   text: { fontFamily: fonts.bodySemi, fontSize: 16, lineHeight: 23, color: colors.text },
   status: { fontFamily: fonts.bodySemi, fontSize: 22, lineHeight: 30, color: colors.text, textAlign: 'center' },
   sub: { fontFamily: fonts.bodySemi, fontSize: 16, color: colors.warning, textAlign: 'center' },

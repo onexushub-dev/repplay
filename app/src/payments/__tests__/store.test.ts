@@ -989,3 +989,17 @@ describe('payments store', () => {
     });
   });
 });
+
+describe('unlockOption', () => {
+  it('is Pro with Pro, else the oldest unused Pass, else nothing', async () => {
+    expect((await setup(snap({ proActive: true }))).store.unlockOption()).toEqual({ kind: 'pro' });
+    const { store } = await setup(snap({ passTransactions: [tx('b', 2), tx('a', 1)] }));
+    expect(store.unlockOption()).toEqual({ kind: 'credit', passTransactionId: 'a' });
+    expect((await setup(snap())).store.unlockOption()).toEqual({ kind: 'none' });
+  });
+
+  it('does not offer a Pass that is already spent', async () => {
+    const { store } = await setup(snap({ passTransactions: [tx('a')] }), { spent: ['a'] });
+    expect(store.unlockOption()).toEqual({ kind: 'none' });
+  });
+});

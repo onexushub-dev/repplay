@@ -22,10 +22,11 @@ export type ExportOptions = {
 type Tier = Plan | 'pass' | 'pro';
 
 /**
- * Free: 720x1280 (spec 6), paid (a paid plan, pass, pro): 1080x1920. A landscape clip gets the same frame turned on
+ * Free: 720x1280 and no sound (the clip may have both: they are locked here, so a recording already made can be
+ * unlocked later), paid (a paid plan, pass, pro): 1080x1920 with its sound. A landscape clip gets the same frame turned on
  * its side, so it fills the screen when the phone is held sideways, like any video in Photos. Every export carries the
  * app mark, in both plans. Any speed other than 1x plays without sound. Modo Foco applies when on, ready, not turned
- * and not zoomed by hand.
+ * and not zoomed by hand. It is a paid edit: a free export never follows.
  */
 export function exportOptions(
   tier: Tier,
@@ -39,14 +40,14 @@ export function exportOptions(
   const long = paid ? 1920 : 1280;
   const { speed, muted, zoom, rotation, focus: focusOn } = readEdit(edit);
   const manualZoom = zoom !== undefined && zoom.scale > 1;
-  const follow = focus !== undefined && focus.ready && focusOn && rotation === 0 && !manualZoom;
+  const follow = paid && focus !== undefined && focus.ready && focusOn && rotation === 0 && !manualZoom;
   return {
     width: landscape ? long : short,
     height: landscape ? short : long,
     startMs: trim.startMs,
     endMs: trim.endMs,
     speed,
-    muted: muted || speed !== 1,
+    muted: muted || speed !== 1 || !paid,
     crop: zoom && zoom.scale > 1 ? cropRect(zoom) : undefined,
     rotation,
     watermark: true,

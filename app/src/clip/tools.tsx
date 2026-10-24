@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { FocusIcon, RotateIcon, SoundIcon, SpeedIcon, ZoomIcon } from '../components/icons';
 import type { MessageKey } from '../i18n';
+import type { Plan } from '../payments/types';
 import type { Edit } from '../share/editing';
 import type { ToolId } from './editSession';
 import { FocusPanel } from './panels/FocusPanel';
@@ -16,6 +17,10 @@ export type FocusUi = 'on' | 'off' | 'preparing' | 'unavailable';
 /** Everything a tool panel reads and does; the clip screen builds it. */
 export type ToolContext = {
   edit: Edit;
+  /** The recording's plan: a free one has its sound locked. */
+  plan: Plan;
+  /** Unlocks this recording (Pro, a Pass or the paywall). */
+  unlock(): void;
   setEdit(patch: Partial<Edit>): void;
   focus: FocusUi;
   toggleFocus(): void;

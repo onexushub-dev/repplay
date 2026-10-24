@@ -7,6 +7,8 @@ import { EDIT_TOOLS, type ToolContext } from '../tools';
 function ctx(over: Partial<ToolContext> = {}): ToolContext {
   return {
     edit: readEdit(undefined),
+    plan: 'paid',
+    unlock: jest.fn(),
     setEdit: jest.fn(),
     focus: 'on',
     toggleFocus: jest.fn(),
@@ -94,4 +96,24 @@ test('Foco: a switch when ready, a wait while preparing, a message when it canno
   await view.rerender(<Panel ctx={ctx({ focus: 'unavailable' })} />);
   expect(screen.getByText('Modo Foco indisponível para esse clipe.')).toBeTruthy();
   expect(screen.queryByRole('switch', { name: 'Modo Foco' })).toBeNull();
+});
+
+test('on a free recording the sound is locked and tapping it unlocks the recording', async () => {
+  const c = ctx({ plan: 'free' });
+  const Panel = panel('sound');
+  await render(<Panel ctx={c} />);
+  expect(screen.getByText('Sem som')).toBeTruthy();
+  await fireEvent.press(screen.getByRole('button', { name: 'Som, Disponível no Pro' }));
+  expect(c.unlock).toHaveBeenCalledTimes(1);
+  expect(c.setEdit).not.toHaveBeenCalled();
+});
+
+test('on a free recording Modo Foco works, and the hint says it does not leave the app', async () => {
+  const c = ctx({ focus: 'on', plan: 'free' });
+  const Panel = panel('focus');
+  await render(<Panel ctx={c} />);
+  expect(screen.getByText('No plano grátis o Foco funciona aqui, mas não vai no clipe salvo ou enviado.')).toBeTruthy();
+  await fireEvent.press(screen.getByRole('switch', { name: 'Modo Foco' }));
+  expect(c.toggleFocus).toHaveBeenCalledTimes(1);
+  expect(c.unlock).not.toHaveBeenCalled();
 });

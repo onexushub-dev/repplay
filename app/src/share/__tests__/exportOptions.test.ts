@@ -43,6 +43,11 @@ test('muted keeps normal speed', () => {
   expect(exportOptions('pro', { slowmo: false, muted: true }, trim)).toMatchObject({ speed: 1, muted: true });
 });
 
+test('free exports carry no sound, whatever the clip has', () => {
+  expect(exportOptions('free', { speed: 1, muted: false }, trim).muted).toBe(true);
+  expect(exportOptions('pro', { speed: 1, muted: false }, trim).muted).toBe(false);
+});
+
 test('free exports 720x1280', () => {
   expect(exportOptions('free', undefined, trim)).toMatchObject({ width: 720, height: 1280 });
 });
@@ -73,4 +78,10 @@ describe('Modo Foco', () => {
     expect(exportOptions('pro', { muted: false, rotation: 90 }, trim, true, ready).focus).toBeUndefined();
     expect(exportOptions('pro', { muted: false, zoom: { scale: 2, cx: 0.5, cy: 0.5 } }, trim, true, ready).focus).toBeUndefined();
   });
+});
+
+test('Modo Foco is a paid edit: a free export never follows, a paid one does', () => {
+  const ready = { path: '/c/1.focus.json', ready: true };
+  expect(exportOptions('free', { muted: false }, trim, false, ready).focus).toBeUndefined();
+  expect(exportOptions('pro', { muted: false }, trim, false, ready).focus).toEqual({ path: '/c/1.focus.json', aspect: 'portrait' });
 });

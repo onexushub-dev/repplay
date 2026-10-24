@@ -6,13 +6,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BatchResultCard } from '../../components/BatchResultCard';
 import { Button } from '../../components/Button';
 import { ClipCard } from '../../components/ClipCard';
+import { EmptyState } from '../../components/EmptyState';
 import { ExportProgress } from '../../components/ExportProgress';
 import { SelectionBar } from '../../components/SelectionBar';
+import { UpgradeCard } from '../../components/UpgradeCard';
+import { ClipIcon } from '../../components/icons';
 import { clipNumber, dayAndTime, megabytes, modeLabel, recordedLabel, sessionLabel } from '../../components/format';
 import { removeFile, repo } from '../../data/mmkv';
 import { MAX_GAME_NAME } from '../../data/schema';
-import { openPaywall } from '../../payments/feedback';
-import { usePlan } from '../../share/entitlement';
+import { unlockRecording } from '../../payments/unlock';
+import { useViewPlan } from '../../share/entitlement';
 import { useBatchActions } from '../../share/useBatchActions';
 import { useT } from '../../i18n/useT';
 import { useSession } from '../../session/SessionContext';
@@ -31,7 +34,7 @@ export default function SessionSummary() {
     [id, version],
   );
 
-  const plan = usePlan(id);
+  const plan = useViewPlan(id);
 
   const [name, setName] = useState(() => session?.name ?? '');
   const saveName = () => {
@@ -200,11 +203,13 @@ export default function SessionSummary() {
 
       {/* The summary only exists after the recording ends, so this card never shows mid-recording. */}
       {plan === 'free' ? (
-        <View style={styles.freeCard}>
-          <Text style={styles.freeTitle}>{t('summary.freeTitle')}</Text>
-          <Text style={styles.freeNote}>{t('summary.freeNote')}</Text>
-          <Button label={t('summary.upgrade')} variant="secondary" onPress={() => void openPaywall(t)} />
-        </View>
+        <UpgradeCard
+          title={t('summary.freeTitle')}
+          message={t('summary.freeNote')}
+          action={t('summary.upgrade')}
+          badge={t('setup.proBadge')}
+          onPress={() => void unlockRecording(id, t)}
+        />
       ) : null}
 
       <FlatList
@@ -213,7 +218,9 @@ export default function SessionSummary() {
         numColumns={2}
         columnWrapperStyle={styles.gridRow}
         contentContainerStyle={styles.grid}
-        ListEmptyComponent={<Text style={styles.empty}>{t('summary.empty')}</Text>}
+        ListEmptyComponent={
+          <EmptyState icon={<ClipIcon color={colors.accent} size={40} />} title={t('summary.emptyTitle')} message={t('summary.emptyMessage')} />
+        }
         extraData={[selecting, picked, plan]}
         renderItem={({ item, index }) => (
           <ClipCard
@@ -283,7 +290,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground, paddingHorizontal: 20, gap: 16 },
   header: { gap: 4, marginTop: 16 },
   subtitle: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
-  title: { fontFamily: fonts.displayBold, fontSize: 44, color: colors.text },
+  title: { fontFamily: fonts.displayBold, fontSize: 44, lineHeight: 46, color: colors.text },
   nameBox: { gap: 4, marginTop: 4 },
   nameInput: {
     minHeight: 48,
@@ -302,12 +309,9 @@ const styles = StyleSheet.create({
   statValue: { fontFamily: fonts.displayBold, fontSize: 28, color: colors.text },
   statLabel: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
   note: { fontFamily: fonts.body, fontSize: 12, color: colors.muted, marginTop: -8 },
-  freeCard: { backgroundColor: colors.surface, borderRadius: 14, padding: 12, gap: 8 },
-  freeTitle: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.text },
-  freeNote: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
+  // The same pattern as the paid groups on the setup screen: lime outline and one small "Pro" pill on the border.
   grid: { gap: 10, paddingBottom: 12 },
   gridRow: { gap: 10 },
-  empty: { fontFamily: fonts.body, fontSize: 15, color: colors.soft, textAlign: 'center', marginTop: 40 },
   footer: { gap: 8, paddingBottom: 12 },
   caption: { fontFamily: fonts.body, fontSize: 12, color: colors.muted, textAlign: 'center' },
   pickBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 32 },

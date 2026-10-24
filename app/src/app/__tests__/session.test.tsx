@@ -40,7 +40,7 @@ jest.mock('expo-file-system', () => ({
   Paths: { cache: '/cache' },
 }));
 jest.mock('../../payments', () => ({
-  payments: { subscribe: () => () => {}, version: () => 0, nextPlan: jest.fn(() => 'free'), showPaywall: jest.fn() },
+  payments: { subscribe: () => () => {}, version: () => 0, nextPlan: jest.fn(() => 'free'), showPaywall: jest.fn(), unlockOption: jest.fn(() => ({ kind: 'none' })) },
 }));
 jest.mock('../../session/SessionContext', () => ({ useSession: jest.fn() }));
 jest.mock('../../data/mmkv', () => {
@@ -128,7 +128,8 @@ test('a game with no clipes says so', async () => {
   repo.listClips.mockReturnValue([]);
   repo.sessionStats.mockReturnValue({ clips: 0, bytes: 0, recordedMs: 60_000 });
   await render(<SessionSummary />);
-  expect(screen.getByText('Nenhum clipe salvo nesta gravação.')).toBeTruthy();
+  expect(screen.getByText('Nenhum lance salvo')).toBeTruthy();
+  expect(screen.getByText('Salve um lance durante a gravação e ele aparece aqui.')).toBeTruthy();
 });
 
 test('Nova gravação resets the session and goes back to setup', async () => {
@@ -199,20 +200,28 @@ describe('free recording', () => {
     repo.sessionStats.mockReturnValue({ clips: 2, bytes: 1, recordedMs: 1 });
   };
 
-  test('the free plan shows the card and the unlock button that opens the paywall for this recording', async () => {
+  test('the free plan shows the card, and tapping it opens the paywall', async () => {
     setup('free');
     await render(<SessionSummary />);
-    expect(screen.getByText('Gravação no plano grátis')).toBeTruthy();
-    expect(screen.getByText('720p com a marca e sem câmera lenta. O Passe Avulso libera tudo nesta gravação.')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Liberar HD e recursos' }));
+    expect(screen.getByText('Gravada no plano grátis')).toBeTruthy();
+    expect(screen.getByText('Seus clipes saem em 720p, sem som e sem Modo Foco. Libere tudo com o Pro ou um Passe Avulso.')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: /^Gravada no plano grátis/ }));
     expect(payments.showPaywall).toHaveBeenCalledWith();
+  });
+
+  test('with Pro active a recording made on the free plan has no card: Pro unlocks it', async () => {
+    setup('free');
+    payments.unlockOption.mockReturnValue({ kind: 'pro' });
+    await render(<SessionSummary />);
+    expect(screen.queryByText('Gravada no plano grátis')).toBeNull();
+    payments.unlockOption.mockReturnValue({ kind: 'none' });
   });
 
   test.each(['pass', 'pro'])('on the %s plan there is no card', async (tier) => {
     setup(tier);
     await render(<SessionSummary />);
-    expect(screen.queryByText('Gravação no plano grátis')).toBeNull();
-    expect(screen.queryByText('Liberar HD e recursos')).toBeNull();
+    expect(screen.queryByText('Gravada no plano grátis')).toBeNull();
+    expect(screen.queryByText('Liberar')).toBeNull();
   });
 
   test.each(['free', 'pass', 'pro'])('on the %s plan any clipe opens, even an old one stored with locked: true', async (tier) => {
@@ -331,7 +340,7 @@ test('an English phone sees the selection and delete texts in English', async ()
     expect(alert).toHaveBeenLastCalledWith('Delete 1 clip?', "This can't be undone.", expect.any(Array));
     alert.mockRestore();
   } finally {
-    setLocale('pt-BR');
+    await act(async () => setLocale('pt-BR'));
   }
 });
 

@@ -3,7 +3,7 @@ import SwiftUI
 // Every text is an English key looked up in Localizable.xcstrings (English and Brazilian Portuguese); the watch
 // shows the watch's own language.
 
-private let ground = Color(red: 0.059, green: 0.063, blue: 0.051) // #0F100D
+private let ground = Color(red: 0.043, green: 0.043, blue: 0.035) // #0B0B09
 private let accent = Color(red: 0.839, green: 0.949, blue: 0.247) // #D6F23F
 
 struct ContentView: View {

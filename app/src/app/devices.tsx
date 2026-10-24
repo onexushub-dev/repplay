@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
   body: { padding: 20, gap: 16 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  title: { fontFamily: fonts.display, fontSize: 32, color: colors.text },
+  title: { fontFamily: fonts.display, fontSize: 32, lineHeight: 34, color: colors.text },
   waiting: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   waitingText: { fontFamily: fonts.bodySemi, fontSize: 16, color: colors.accent },
   note: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.soft },

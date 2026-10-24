@@ -214,5 +214,5 @@ const styles = StyleSheet.create({
   hintSub: { fontFamily: fonts.body, fontSize: 12, color: colors.soft },
   icons: { flexDirection: 'column', gap: 6 },
   stopped: { flex: 1, backgroundColor: colors.recordingGround, justifyContent: 'center', padding: 24, gap: 20 },
-  stoppedText: { fontFamily: fonts.displayBold, fontSize: 36, color: colors.text, textAlign: 'center' },
+  stoppedText: { fontFamily: fonts.displayBold, fontSize: 36, lineHeight: 38, color: colors.text, textAlign: 'center' },
 });

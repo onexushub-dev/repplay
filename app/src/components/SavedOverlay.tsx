@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   text: { flex: 1 },
-  title: { fontFamily: fonts.displayBold, fontSize: 30, color: colors.text },
+  title: { fontFamily: fonts.displayBold, fontSize: 30, lineHeight: 32, color: colors.text },
   via: { fontFamily: fonts.body, fontSize: 14, color: colors.soft },
   hint: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, lineHeight: 18 },
 });

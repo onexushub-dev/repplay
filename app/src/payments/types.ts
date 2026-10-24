@@ -14,3 +14,6 @@ export type StartDecision =
   | { kind: 'credit'; passTransactionId: string }
   | { kind: 'free' }
   | { kind: 'blocked' };
+
+/** What could unlock a recording already made: Pro (free of charge), the oldest unused Pass, or nothing yet. */
+export type UnlockOption = { kind: 'pro' } | { kind: 'credit'; passTransactionId: string } | { kind: 'none' };

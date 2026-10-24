@@ -146,7 +146,7 @@ exportClip(opts: ExportOptions): Promise<{ path: string; durationMs: number }>
 - Create: `app/src/story/StoryOverlay.tsx`, `app/src/story/captureOverlay.ts`, `app/src/story/__tests__/StoryOverlay.test.tsx`
 
 **Interfaces (produced):**
-- `<StoryOverlay template texts layout watermark scale />` — draws the two bands (ground `#0F100D`, accent details) and leaves the video rect transparent; `scale` lets the same component draw the preview (screen size) and the capture (1080×1920 logical).
+- `<StoryOverlay template texts layout watermark scale />` — draws the two bands (ground `#0B0B09`, accent details) and leaves the video rect transparent; `scale` lets the same component draw the preview (screen size) and the capture (1080×1920 logical).
 - `captureOverlay(ref, size): Promise<string>` — `react-native-view-shot` `captureRef(ref, { format: 'png', result: 'tmpfile', width, height })`, returns a path without `file://`.
 
 - [ ] **Step 1:** `npx expo install react-native-view-shot`; read its README for `captureRef` options with transparent backgrounds. Ledger the API.

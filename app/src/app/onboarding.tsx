@@ -72,7 +72,7 @@ export default function Onboarding() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground, paddingHorizontal: 24, paddingTop: 24, gap: 28 },
   logo: { height: 30, aspectRatio: logoAspect(), alignSelf: 'flex-start' },
-  title: { fontFamily: fonts.displayBold, fontSize: 46, lineHeight: 46, color: colors.text },
+  title: { fontFamily: fonts.displayBold, fontSize: 46, lineHeight: 48, color: colors.text },
   steps: { gap: 14 },
   step: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   stepText: { flex: 1, fontFamily: fonts.body, fontSize: 15, lineHeight: 20, color: colors.text },

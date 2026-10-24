@@ -62,7 +62,7 @@ struct ExportClipOptions: Record {
   @Field var width: Int = 1080
   @Field var height: Int = 1920
   @Field var overlayPngPath: String?
-  @Field var background: String = "#0F100D"
+  @Field var background: String = "#0B0B09"
 }
 
 struct AnalyzeFocusOptions: Record {

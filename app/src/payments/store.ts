@@ -10,7 +10,7 @@ import {
   planOf,
   startPlan,
 } from './rules';
-import { EMPTY_SNAPSHOT, type Plan, type Snapshot, type StartDecision } from './types';
+import { EMPTY_SNAPSHOT, type Plan, type Snapshot, type StartDecision, type UnlockOption } from './types';
 
 /**
  * A paywall purchase not seen yet (SDK lag). Its Pass is a credit like any other; the marker only keeps it from being
@@ -284,6 +284,21 @@ export function createPaymentsStore(
         return decide();
       } catch {
         return { kind: 'free' };
+      }
+    },
+
+    /**
+     * What could unlock a recording already made, with what is known now: Pro (nothing is spent), the oldest unused
+     * Pass (spent on that recording), or nothing.
+     */
+    unlockOption(): UnlockOption {
+      try {
+        const snap = current ?? EMPTY_SNAPSHOT;
+        if (snap.proActive) return { kind: 'pro' };
+        const credit = availableCredit(snap, spent());
+        return credit ? { kind: 'credit', passTransactionId: credit.id } : { kind: 'none' };
+      } catch {
+        return { kind: 'none' };
       }
     },
 

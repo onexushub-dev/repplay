@@ -16,11 +16,13 @@ export function FocusPanel({ ctx }: { ctx: ToolContext }) {
   }
   const on = ctx.focus === 'on';
   const preparing = ctx.focus === 'preparing';
+  // On a free recording the framing works here, but it does not leave the app: the hint says so.
+  const free = ctx.plan === 'free';
   return (
     <View style={{ gap: 10 }}>
       <PanelHead
         title={t('clip.focusMode')}
-        hint={t('clip.focusHint')}
+        hint={free ? t('clip.focusPro') : t('clip.focusHint')}
         right={
           <Pressable
             accessibilityRole="switch"

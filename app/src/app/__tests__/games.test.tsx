@@ -7,7 +7,7 @@ jest.mock('expo-router', () => ({ router: { push: jest.fn(), back: jest.fn(), di
 jest.mock('../../session/SessionContext', () => ({ useSession: jest.fn() }));
 jest.mock('../../components/useClipThumbnail', () => ({ useClipThumbnail: () => undefined }));
 jest.mock('../../payments', () => ({
-  payments: { subscribe: () => () => {}, version: () => 0, restore: jest.fn() },
+  payments: { subscribe: () => () => {}, version: () => 0, restore: jest.fn(), showPaywall: jest.fn(), unlockOption: jest.fn(() => ({ kind: 'none' })) },
 }));
 jest.mock('../../data/mmkv', () => ({
   repo: {
@@ -53,7 +53,8 @@ test('tapping a game opens its summary', async () => {
 test('empty state', async () => {
   repo.listSessions.mockReturnValue([]);
   await render(<Games />);
-  expect(screen.getByText('Nenhuma gravação com clipes ainda.')).toBeTruthy();
+  expect(screen.getByText('Nenhuma gravação ainda')).toBeTruthy();
+  expect(screen.getByText('Comece uma gravação e os lances que você salvar aparecem aqui.')).toBeTruthy();
 });
 
 test('an English phone sees the list in English', async () => {
@@ -85,13 +86,6 @@ test.each([
   oneGame(plan);
   await render(<Games />);
   expect(screen.queryByText(/bloqueado/)).toBeNull();
-});
-
-test('Restaurar compras restores purchases', async () => {
-  repo.listSessions.mockReturnValue([]);
-  await render(<Games />);
-  await fireEvent.press(screen.getByRole('button', { name: 'Restaurar compras' }));
-  expect(payments.restore).toHaveBeenCalled();
 });
 
 test('holding a finished game offers to delete it, and deleting removes its files', async () => {
@@ -145,4 +139,34 @@ test('Nova gravação clears a game that has just ended before starting over', a
   await render(<Games />);
   await fireEvent.press(screen.getByRole('button', { name: 'Nova gravação' }));
   expect(reset).toHaveBeenCalled();
+});
+
+describe('the Pro invitation in the gallery', () => {
+  const freeGame = { session: { id: 's1', sport: 'outro', startedAt: 0, endedAt: 5, paid: false }, clips: 2, firstClip: clip };
+  const paidGame = { session: { id: 's2', sport: 'outro', startedAt: 0, endedAt: 5, paid: true }, clips: 2, firstClip: clip };
+
+  test('shows while some recording with clips is on the free plan, and opens the paywall', async () => {
+    repo.listSessions.mockReturnValue([freeGame]);
+    repo.sessionStats.mockReturnValue({ clips: 2, bytes: 1, recordedMs: 60_000 });
+    await render(<Games />);
+    expect(screen.getByText('Desbloqueie todos os recursos com o PRO')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: /^Desbloqueie todos os recursos com o PRO/ }));
+    expect(payments.showPaywall).toHaveBeenCalledTimes(1);
+  });
+
+  test('is not there when every recording is paid, or when there is nothing yet', async () => {
+    repo.listSessions.mockReturnValue([paidGame]);
+    repo.sessionStats.mockReturnValue({ clips: 2, bytes: 1, recordedMs: 60_000 });
+    await render(<Games />);
+    expect(screen.queryByText('Desbloqueie todos os recursos com o PRO')).toBeNull();
+  });
+
+  test('is not there for a Pro subscriber, who already has everything unlocked', async () => {
+    payments.unlockOption.mockReturnValue({ kind: 'pro' });
+    repo.listSessions.mockReturnValue([freeGame]);
+    repo.sessionStats.mockReturnValue({ clips: 2, bytes: 1, recordedMs: 60_000 });
+    await render(<Games />);
+    expect(screen.queryByText('Desbloqueie todos os recursos com o PRO')).toBeNull();
+    payments.unlockOption.mockReturnValue({ kind: 'none' });
+  });
 });

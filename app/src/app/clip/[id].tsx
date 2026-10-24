@@ -47,8 +47,9 @@ import { effectiveSettings } from '../../modes/registry';
 import { captureOverlay } from '../../share/captureOverlay';
 import { contentFloor, nextRotation, outputMs, raiseToFloor, readEdit, turnedSize } from '../../share/editing';
 import { clipWindow } from '../../share/trim';
-import { usePlan } from '../../share/entitlement';
+import { unlockRecording } from '../../payments/unlock';
 import { clipExportJob } from '../../share/clipExport';
+import { useViewPlan } from '../../share/entitlement';
 import { cachedExport, rememberExport } from '../../share/exportCache';
 import { frameLayout } from '../../share/layout';
 import { ShareOverlay } from '../../share/ShareOverlay';
@@ -158,10 +159,12 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
   );
   const session = clip ? repo.getSession(clip.sessionId) : undefined;
   const maxMs = session ? effectiveSettings(session.sport, repo.getPrefs()).bufferSeconds * 1000 : undefined;
-  const plan = usePlan(clip?.sessionId);
+  const plan = useViewPlan(clip?.sessionId);
 
   const [trim, setTrim] = useState(() => (clip ? clip.trim : { startMs: 0, endMs: 0 }));
   const edit = readEdit(clip?.edit);
+  // A free recording has its sound locked: the clip may carry it, but it is neither heard nor exported until unlocked.
+  const soundOff = edit.muted || plan === 'free';
   const floor = clip?.contentStartMs ?? 0;
   // The track covers only what the clip was first saved with, so the cut can be shortened but never reach moments
   // that already belong to the previous clip.
@@ -237,6 +240,7 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
     [focusFile, focusAspect, sizeKnown],
   );
   const handZoom = edit.zoom !== undefined && edit.zoom.scale > 1;
+  // Modo Foco works in the app for every plan, to be tried and wanted; only a paid recording takes it out when it saves or shares.
   const focusActive = track !== undefined && edit.focus && edit.rotation === 0 && !handZoom;
   let focusChip: 'preparing' | 'on' | 'off' | undefined;
   if (edit.rotation === 0) {
@@ -336,7 +340,7 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
   // Loop the cut; follow speed and sound live. Time updates come every 0.1 s, so the last one before the end of the file
   // can miss it: the player then stops at the end by itself, and its own "reached the end" restarts the cut.
   useEffect(() => {
-    applyPlayback(player, edit.speed, edit.muted);
+    applyPlayback(player, edit.speed, soundOff);
     const sub = player.addListener('timeUpdate', ({ currentTime }) => {
       if (scrubbing.current) return;
       if (currentTime >= trim.endMs / 1000 - LOOP_EARLY_S || currentTime < trim.startMs / 1000 - 0.5) seek(player, trim.startMs);
@@ -349,7 +353,7 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
       sub.remove();
       end.remove();
     };
-  }, [player, trim, edit.speed, edit.muted]);
+  }, [player, trim, edit.speed, soundOff]);
 
   // Android back while editing works as Cancelar, asking first when something changed (iOS has no back gesture here).
   useEffect(() => {
@@ -469,7 +473,7 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
   function holdFast(down: boolean) {
     setFast(down);
     if (down) applyPlayback(player, 2, true);
-    else applyPlayback(player, edit.speed, edit.muted);
+    else applyPlayback(player, edit.speed, soundOff);
   }
 
   function togglePlay() {
@@ -548,8 +552,29 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
     return result.path;
   }
 
+  /** A free recording leaves the app without the framing: say so, and offer to unlock it. False to stop. */
+  async function freeFocusOk(): Promise<boolean> {
+    if (plan !== 'free' || !focusActive) return true;
+    const choice = await new Promise<'go' | 'unlock' | 'cancel'>((resolve) =>
+      Alert.alert(
+        t('clip.focusExportTitle'),
+        t('clip.focusExportMessage'),
+        [
+          { text: t('common.cancel'), style: 'cancel', onPress: () => resolve('cancel') },
+          { text: t('clip.focusExportGo'), onPress: () => resolve('go') },
+          { text: t('clip.focusExportUnlock'), onPress: () => resolve('unlock') },
+        ],
+        { cancelable: true, onDismiss: () => resolve('cancel') },
+      ),
+    );
+    if (choice === 'unlock') void unlockRecording(clip!.sessionId, t);
+    return choice === 'go';
+  }
+
   async function run(kind: ExportJob['kind'], action: (path: string) => Promise<void>) {
     if (exporting.current || !sizeKnown) return;
+    if (!(await freeFocusOk())) return;
+    if (exporting.current) return;
     exporting.current = true;
     saveName(); // a name typed without closing the keyboard still counts
     setBusy(true);
@@ -607,6 +632,8 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
   const tools = focusSupported ? EDIT_TOOLS : EDIT_TOOLS.filter((t) => t.id !== 'focus');
   const ctx: ToolContext = {
     edit,
+    plan,
+    unlock: () => void (clip && unlockRecording(clip.sessionId, t)),
     setEdit,
     focus: focusUi,
     toggleFocus,

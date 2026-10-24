@@ -64,6 +64,7 @@ jest.mock('../../data/mmkv', () => {
   let clip: any;
   // Where the open clip sits in its recording: last of two (default) or first of two.
   let first = false;
+  let paid = true;
   let version = 0;
   const listeners = new Set<() => void>();
   let prefs: any = jest.requireActual('../../data/schema').DEFAULT_PREFS;
@@ -71,6 +72,7 @@ jest.mock('../../data/mmkv', () => {
     __setClip: (c: any) => (clip = c),
     __setPrefs: (p: any) => (prefs = p),
     __setFirst: (f: boolean) => (first = f),
+    __setPaid: (p: boolean) => (paid = p),
     removeFile: jest.fn(),
     repo: {
       getClip: () => clip,
@@ -81,7 +83,7 @@ jest.mock('../../data/mmkv', () => {
       },
       getPrefs: () => prefs,
       setPrefs: jest.fn((p: object) => (prefs = { ...prefs, ...p })),
-      getSession: () => ({ id: 's1', sport: clip?.durationMs > 60000 ? 'musculacao' : 'beachTennis', startedAt: 0, paid: true }),
+      getSession: () => ({ id: 's1', sport: clip?.durationMs > 60000 ? 'musculacao' : 'beachTennis', startedAt: 0, paid }),
       updateClip: jest.fn((id: string, patch: object) => {
         clip = { ...clip, ...patch };
         version += 1;
@@ -116,6 +118,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   __setClip({ ...base });
   jest.requireMock('../../data/mmkv').__setFirst(false);
+  jest.requireMock('../../data/mmkv').__setPaid(true);
   forgetShapes();
   forgetAllExportsForTests();
   mockParams.id = 'c1';
@@ -687,6 +690,53 @@ describe('Modo Foco', () => {
     expect(camera.exportClip).toHaveBeenCalledWith(
       expect.objectContaining({ focus: { path: '/c1.focus.json', aspect: 'landscape' } }),
     );
+  });
+
+  describe('on a free recording the framing works in the app and stays out of what leaves it', () => {
+    const { Alert } = jest.requireActual('react-native');
+    const answer = (label: string) => {
+      const buttons = (Alert.alert as jest.Mock).mock.calls.at(-1)[2] as { text: string; onPress?: () => void }[];
+      return act(async () => buttons.find((b) => b.text === label)!.onPress!());
+    };
+    beforeEach(() => {
+      jest.requireMock('../../data/mmkv').__setPaid(false);
+      jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    });
+
+    test('the clip is shown with the framing on, as for a paid recording', async () => {
+      __setClip({ ...base, focus: ready });
+      await open();
+      expect(screen.getByRole('button', { name: 'Modo Foco' })).toBeTruthy();
+    });
+
+    test('saving says the framing will not go along, and "Continuar sem o Foco" exports without it', async () => {
+      __setClip({ ...base, focus: ready });
+      await open();
+      await pressAction('Salvar na galeria');
+      expect(camera.exportClip).not.toHaveBeenCalled();
+      expect(Alert.alert).toHaveBeenCalledWith('O Modo Foco fica no app', expect.any(String), expect.any(Array), expect.anything());
+      await answer('Continuar sem o Foco');
+      await act(async () => {});
+      expect(camera.exportClip).toHaveBeenCalledTimes(1);
+      expect(camera.exportClip.mock.calls[0][0].focus).toBeUndefined();
+    });
+
+    test('"Cancelar" leaves without exporting', async () => {
+      __setClip({ ...base, focus: ready });
+      await open();
+      await pressAction('Salvar na galeria');
+      await answer('Cancelar');
+      await act(async () => {});
+      expect(camera.exportClip).not.toHaveBeenCalled();
+    });
+
+    test('with the framing switched off there is nothing to say', async () => {
+      __setClip({ ...base, focus: ready, edit: { muted: false, focus: false } });
+      await open();
+      await pressAction('Salvar na galeria');
+      expect(Alert.alert).not.toHaveBeenCalled();
+      expect(camera.exportClip).toHaveBeenCalledTimes(1);
+    });
   });
 
   test('the first framed clip introduces Modo Foco once', async () => {

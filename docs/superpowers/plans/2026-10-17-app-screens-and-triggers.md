@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - **Out of scope:** paywall and free limits (Plan 4), editor/export/Story/gallery (Plan 3), watch apps and pairing (Plan 5). Where a mockup shows those, render the placeholder named in the task, nothing more.
-- **Tokens (from the mockups):** ground `#0F100D`, recording ground `#070806`, surface `#1B1D18`, border `#3A3D34`, text `#F3EFE4`, muted `#A9A79C`, soft `#CFCBBF`, accent `#D6F23F`, on-accent `#0F100D`, rec `#FF5A36`, warning `#FF8A3D`, warning ground `#3A1D10`. Display font Barlow Condensed 700/800, body Manrope 400/600/700. The UI is always dark.
+- **Tokens (from the brand kit, docs/brand/repplay):** ground `#0B0B09`, recording ground `#070806`, surface `#1B1D18`, border `#3A3D34`, text `#F3EDE1`, muted `#A9A79C`, soft `#CFCBBF`, accent `#D6F23F`, on-accent `#0B0B09`, rec `#FF5A36`, warning `#FF8A3D`, warning ground `#3A1D10`. Display font Barlow Condensed 700/800, body Manrope 400/600/700. The UI is always dark.
 - Touch targets ≥ 44 pt; primary buttons 58 pt tall, radius 16.
 - All UI copy in pt-BR, **exactly as written in each task**.
 - Trigger debounce: **3000 ms** between accepted triggers, all sources together (spec 4.4).

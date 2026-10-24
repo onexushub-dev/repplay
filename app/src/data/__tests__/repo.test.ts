@@ -449,3 +449,30 @@ describe('clips after iOS moved the app folder', () => {
     expect(repo.relocateClips(newDocs)).toBe(0);
   });
 });
+
+describe('upgradeSession', () => {
+  it('makes a free recording paid without counting another free one', () => {
+    const repo = setup();
+    const t = new Date(2026, 9, 5).getTime();
+    const s = repo.startSession('quadra', t, { paid: false });
+    const fn = jest.fn();
+    repo.subscribe(fn);
+    const next = repo.upgradeSession(s.id, {});
+    expect(next?.paid).toBe(true);
+    expect(repo.getSession(s.id)?.paid).toBe(true);
+    expect(repo.freeCount(t)).toBe(1);
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('with a Pass it spends it on that recording', () => {
+    const repo = setup();
+    const s = repo.startSession('quadra', 1, { paid: false });
+    repo.upgradeSession(s.id, { passTransactionId: 'tx-7' });
+    expect(repo.getSession(s.id)?.passTransactionId).toBe('tx-7');
+    expect(repo.spentPasses().has('tx-7')).toBe(true);
+  });
+
+  it('does nothing for a recording that is gone', () => {
+    expect(setup().upgradeSession('nope', {})).toBeUndefined();
+  });
+});
