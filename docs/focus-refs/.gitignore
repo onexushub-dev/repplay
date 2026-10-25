@@ -1,0 +1,13 @@
+# Videos and dumps stay local (large); keep manifests, notes and tools.
+*.mp4
+*.mov
+*.webm
+*.png
+*.jpg
+raw-dump/
+bench-out/
+# Derived from the local clips (useless without them)
+*.focus.json
+*.probe.json
+# Scratch: contact sheets, exports, excluded clips
+misc/

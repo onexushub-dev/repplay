@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react-
 import { Alert, Image } from 'react-native';
 
 import { forgetShapes } from '../../components/clipShape';
+import { forgetAllExportsForTests } from '../../share/exportCache';
 import ClipEditor from '../clip/[id]';
 
 const mockParams = { id: 'c1' };
@@ -26,7 +27,12 @@ jest.mock('expo-video', () => {
   };
   return { __player: mockPlayer, useVideoPlayer: () => mockPlayer, VideoView: () => null };
 });
-jest.mock('expo-file-system', () => ({ File: class { delete() {} }, Directory: class { list() { return []; } }, Paths: { cache: '' } }));
+const mockListExports = jest.fn(() => []);
+jest.mock('expo-file-system', () => ({
+  File: class { exists = true; delete() {} },
+  Directory: class { list() { return mockListExports(); } },
+  Paths: { cache: '' },
+}));
 jest.mock('expo-image', () => {
   const shown: string[] = [];
   return { __shown: shown, Image: (p: any) => (shown.push(p.source.uri), null) };
@@ -114,6 +120,7 @@ beforeEach(() => {
   jest.requireMock('../../data/mmkv').__setFirst(false);
   jest.requireMock('../../data/mmkv').__setPaid(true);
   forgetShapes();
+  forgetAllExportsForTests();
   mockParams.id = 'c1';
   jest.requireMock('../../share/ZoomableVideo').__props.all.length = 0;
   // The intro is covered by its own tests; elsewhere it was already seen.
@@ -915,5 +922,22 @@ describe('swiping between clips follows the finger', () => {
     await open();
     await pressAction('Editar');
     expect(video.last.onDrag).toBeUndefined();
+  });
+});
+
+describe('exports are kept for the whole app session', () => {
+  test('opening and closing the clip screen leaves the exports folder alone', async () => {
+    await open();
+    await act(async () => cleanup());
+    expect(mockListExports).not.toHaveBeenCalled();
+  });
+
+  test('a look exported before, even from another screen, is not made again', async () => {
+    await open();
+    await pressAction('Salvar na galeria');
+    await act(async () => cleanup());
+    await open();
+    await pressAction('Compartilhar');
+    expect(camera.exportClip).toHaveBeenCalledTimes(1);
   });
 });

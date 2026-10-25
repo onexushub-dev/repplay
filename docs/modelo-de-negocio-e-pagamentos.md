@@ -18,7 +18,7 @@
 
 Só o **relógio** (Apple Watch) é um gatilho pago. Os demais estão liberados no grátis.
 
-Continuam livres nos dois planos: zoom, girar, cortar, salvar e enviar em lote.
+Continuam livres nos dois planos: zoom, girar, cortar, salvar e enviar (um clipe ou em lote). No grátis, salvar e enviar mostram antes o aviso do que o vídeo não terá.
 
 ## Como se paga
 
@@ -46,7 +46,7 @@ O plano da gravação fica **fixado no início** (`Session.paid`). Uma gravaçã
 | Gatilho pago (`PAID_TRIGGERS = ['watch']`) | `payments/limits.ts` (`triggerAllowed`), usado em `app/setup.tsx` e `session/SessionContext.tsx` |
 | Velocidade bloqueada no editor (`PAID_EDITS`) | `payments/limits.ts` (`editLocked`), `clip/ToolBar.tsx`, `clip/panels/SpeedPanel.tsx`; o clipe guarda a escolha, mas ela só vale no pago |
 | Aviso antes de exportar no grátis (salvar, enviar, compilar) | `components/FreeExportSheet.tsx` + `components/useFreeExportGate.tsx`; usado em `run()` de `app/clip/[id].tsx`. Lista o que o vídeo não terá (sem som, sem Foco se estiver ligado, com marca d'água) e oferece Liberar com o Pro / Continuar no plano grátis / Cancelar. A compilação deve chamar o mesmo `ask` |
-| Compilar pago (`canCompile`) | `payments/limits.ts`. A compilação ainda não foi implementada (spec em `docs/superpowers/specs/2026-10-24-batch-share-and-compilation-design.md`): ao construí-la, use `canCompile(plan)` e abra o paywall no grátis (o aviso de exportação do grátis também vale para ela) |
+| Compilar pago | `share/useBatchActions.ts` (`compile`: no grátis abre o paywall) e `canCompile` em `payments/limits.ts`. Salvar/enviar em lote no grátis passam pelo mesmo aviso de exportação em `app/session/[id].tsx` |
 | Resolução, som, velocidade, Foco e marca d'água na exportação | `share/exportOptions.ts` (`exportOptions`); a marca é desenhada por `share/ShareOverlay.tsx` |
 
 Quem decide o plano na tela: `usePlan` (antes de gravar e durante a gravação) e `useViewPlan` (clipe já gravado), em `share/entitlement.ts`.

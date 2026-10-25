@@ -149,6 +149,16 @@ export function shareToInstagramStory(videoPath: string, metaAppId: string): Pro
   return ReplayCameraModule.shareToInstagramStory(videoPath, metaAppId);
 }
 
+/** Opens one share sheet with all these videos (plain file paths). Resolves 'dismissed' when the person closed it without sharing. */
+export function shareFiles(paths: string[]): Promise<'shared' | 'dismissed'> {
+  return ReplayCameraModule.shareFiles(paths);
+}
+
+/** Joins exported videos of the same size and codec, in order, into `outPath` without re-encoding. */
+export function concatVideos(paths: string[], outPath: string): Promise<ExportedClip> {
+  return ReplayCameraModule.concatVideos(paths, outPath);
+}
+
 // ---- Second iPhone as a remote (iOS only). Without the native functions every call does nothing.
 
 /** Whether this phone can pair with another one as camera or as remote. False on Android for now. */

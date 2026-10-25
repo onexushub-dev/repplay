@@ -1,0 +1,5 @@
+# Modo Foco v2 bench (tested 2026-10-24 on Python 3.13).
+numpy
+opencv-python==5.0.0.93
+onnxruntime==1.29.0
+pytest

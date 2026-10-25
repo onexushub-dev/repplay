@@ -79,6 +79,22 @@ class ReplayCameraModule : Module() {
       if (runCatching { InstagramStory.share(activity, videoPath, metaAppId) }.getOrDefault(false)) "opened" else "unavailable"
     }.runOnQueue(expo.modules.kotlin.functions.Queues.MAIN)
 
+    AsyncFunction("shareFiles") { paths: List<String> ->
+      val activity = appContext.currentActivity ?: return@AsyncFunction "dismissed"
+      if (runCatching { MultiShare.share(activity, paths) }.getOrDefault(false)) "shared" else "dismissed"
+    }.runOnQueue(expo.modules.kotlin.functions.Queues.MAIN)
+
+    AsyncFunction("concatVideos") { paths: List<String>, outPath: String ->
+      try {
+        val (path, ms) = VideoConcat.concat(paths, outPath)
+        mapOf("path" to path, "durationMs" to ms)
+      } catch (e: VideoConcat.MismatchException) {
+        throw ReplayException("CONCAT_MISMATCH", "${e.message}")
+      } catch (e: Exception) {
+        throw ReplayException("ENCODER_FAILED", "$e")
+      }
+    }
+
     AsyncFunction("createThumbnail") { clipPath: String, atMs: Double -> ClipThumbnail.make(clipPath, atMs) }
 
     // Voice is iOS-only for now: Android's microphone is already taken by the recorder.

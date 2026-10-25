@@ -1,0 +1,31 @@
+# <sport> <url> [start-end]
+# sport: one word, no hyphens: basket, futsal, society, volei, beach, beachvolei, futvolei, tennis, tabletennis, padel
+# Already downloaded (kept here so the list is complete; the script skips it):
+beach https://www.youtube.com/shorts/cCX4RyCd1z8
+beach https://www.youtube.com/shorts/XUcS5jDB8b8
+beach https://www.youtube.com/shorts/JF2r7Ksn1kg
+beach https://www.youtube.com/shorts/t4oHOM2tNeg
+beach https://www.youtube.com/shorts/6gHK1cX7fLM
+basket https://www.youtube.com/shorts/luv6nofiPKQ
+basket https://www.youtube.com/shorts/b3z3tpjeh2U 
+basket https://www.youtube.com/shorts/kMVG_ioWRA8
+futvolei https://www.youtube.com/shorts/v736TfDzV4A
+futvolei https://www.youtube.com/shorts/H5btJcGYIEc 
+futvolei https://www.youtube.com/shorts/Pn69HHKfW3c
+futvolei https://www.youtube.com/shorts/-LoCYY6_ywU
+society https://www.youtube.com/shorts/g5wCqUET-0Y
+society https://www.youtube.com/shorts/AnvxQKM30AU
+society https://www.youtube.com/shorts/Xb4xSomXy3Y 
+beachvolei https://www.youtube.com/shorts/5ABEsraeqUE
+beachvolei https://www.youtube.com/shorts/Ti2JpY1nIzg
+beachvolei https://www.youtube.com/shorts/ZZtwKRirKQc
+beachvolei https://www.youtube.com/shorts/CdAh-fEYP38
+volei https://www.youtube.com/shorts/Wtbzg-X_ibk
+volei https://www.youtube.com/shorts/x9Xds3nr-eY
+tennis https://www.youtube.com/shorts/68kOfc7gdEQ
+tennis https://www.youtube.com/shorts/uldAzzROYFA
+tennis https://www.youtube.com/shorts/9W43ZOgS1Ds
+tennis https://www.youtube.com/shorts/rTOojA6t6Wc
+tennis https://www.youtube.com/shorts/jNafKIJv24k
+tabletennis https://www.youtube.com/shorts/VPqNhLXHpx4
+tabletennis https://www.youtube.com/shorts/i3fFgBOscOI

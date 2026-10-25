@@ -1,0 +1,452 @@
+[
+  {
+    "recording": "09h23 b91dd9b0",
+    "clip": "clipe 01.mp4",
+    "focus": null,
+    "deviceFile": "3228EC75-595A-420F-90FB-2DCBFF4A429B.mp4",
+    "source": "screen",
+    "number": 1,
+    "durationMs": 60014,
+    "trim": {
+      "startMs": 30014,
+      "endMs": 60014
+    },
+    "createdAt": "2026-10-24T09:25:18.387000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "09h25 aa5ec4f9",
+    "clip": "clipe 01.mp4",
+    "focus": null,
+    "deviceFile": "2BD999EE-6501-4394-BD7E-A541BAC38C07.mp4",
+    "source": "watch",
+    "number": 1,
+    "durationMs": 19015,
+    "trim": {
+      "startMs": 16015,
+      "endMs": 19015
+    },
+    "createdAt": "2026-10-24T09:25:56.090000-03:00",
+    "focusStatus": "none"
+  },
+  {
+    "recording": "09h26 c551f7e8",
+    "clip": "clipe 01.mp4",
+    "focus": null,
+    "deviceFile": "1F51EFEE-A93D-4CEF-B4A7-E70F08F7F4A3.mp4",
+    "source": "watch",
+    "number": 1,
+    "durationMs": 27019,
+    "trim": {
+      "startMs": 24019,
+      "endMs": 27019
+    },
+    "createdAt": "2026-10-24T09:26:33.794000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "09h26 c551f7e8",
+    "clip": "clipe 02.mp4",
+    "focus": null,
+    "deviceFile": "9C26382C-7DFD-432C-B569-5A5523F5C1A3.mp4",
+    "source": "watch",
+    "number": 2,
+    "durationMs": 46001,
+    "trim": {
+      "startMs": 27011,
+      "endMs": 46001
+    },
+    "createdAt": "2026-10-24T09:26:52.784000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "09h28 997785f4",
+    "clip": "clipe 01.mp4",
+    "focus": null,
+    "deviceFile": "F1B2846F-F5F8-4DA7-B83F-8702874B3C69.mp4",
+    "source": "remote",
+    "number": 1,
+    "durationMs": 25019,
+    "trim": {
+      "startMs": 21300,
+      "endMs": 25019
+    },
+    "createdAt": "2026-10-24T09:28:07.169000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "09h28 997785f4",
+    "clip": "clipe 02.mp4",
+    "focus": null,
+    "deviceFile": "6CBDC08E-5B4D-4A07-A731-5074AF578678.mp4",
+    "source": "watch",
+    "number": 2,
+    "durationMs": 29023,
+    "trim": {
+      "startMs": 25489,
+      "endMs": 29023
+    },
+    "createdAt": "2026-10-24T09:28:10.703000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "09h28 7be877f5",
+    "clip": "clipe 01.mp4",
+    "focus": null,
+    "deviceFile": "89CDA1BE-F638-4B8B-8BC3-2A55CDEB17A6.mp4",
+    "source": "remote",
+    "number": 1,
+    "durationMs": 36028,
+    "trim": {
+      "startMs": 6028,
+      "endMs": 36028
+    },
+    "createdAt": "2026-10-24T09:28:53.199000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "09h30 d610eb56",
+    "clip": "clipe 01.mp4",
+    "focus": null,
+    "deviceFile": "E78DAFD3-E4AC-4393-88C2-A6A664B9CCDF.mp4",
+    "source": "watch",
+    "number": 1,
+    "durationMs": 60014,
+    "trim": {
+      "startMs": 30014,
+      "endMs": 60014
+    },
+    "createdAt": "2026-10-24T09:33:26.596000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "09h30 d610eb56",
+    "clip": "clipe 02.mp4",
+    "focus": "clipe 02.focus.json",
+    "deviceFile": "0DD9347A-CCCB-448C-8B27-DB11A71A6D9B.mp4",
+    "source": "watch",
+    "number": 2,
+    "durationMs": 60014,
+    "trim": {
+      "startMs": 30014,
+      "endMs": 60014
+    },
+    "createdAt": "2026-10-24T09:38:56.030000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "09h30 d610eb56",
+    "clip": "clipe 03.mp4",
+    "focus": "clipe 03.focus.json",
+    "deviceFile": "5DF735AB-131B-486D-AA0C-F36701B641D7.mp4",
+    "source": "watch",
+    "number": 3,
+    "durationMs": 59981,
+    "trim": {
+      "startMs": 29981,
+      "endMs": 59981
+    },
+    "createdAt": "2026-10-24T09:39:58.698000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "09h42 047bfb68",
+    "clip": "clipe 01.mp4",
+    "focus": "clipe 01.focus.json",
+    "deviceFile": "09842EB7-94F8-457F-9C2B-59B4EFAB04CC.mp4",
+    "source": "watch",
+    "number": 1,
+    "durationMs": 60014,
+    "trim": {
+      "startMs": 30014,
+      "endMs": 60014
+    },
+    "createdAt": "2026-10-24T09:47:32.144000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "09h42 047bfb68",
+    "clip": "clipe 02.mp4",
+    "focus": "clipe 02.focus.json",
+    "deviceFile": "E2A9363E-C1B0-4EE0-9130-3F3B51C86D8A.mp4",
+    "source": "watch",
+    "number": 2,
+    "durationMs": 59981,
+    "trim": {
+      "startMs": 29981,
+      "endMs": 59981
+    },
+    "createdAt": "2026-10-24T09:49:01.725000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "09h42 047bfb68",
+    "clip": "clipe 03.mp4",
+    "focus": "clipe 03.focus.json",
+    "deviceFile": "608848F2-4E70-4F9B-8234-DDB3D41B3BEE.mp4",
+    "source": "watch",
+    "number": 3,
+    "durationMs": 60014,
+    "trim": {
+      "startMs": 30014,
+      "endMs": 60014
+    },
+    "createdAt": "2026-10-24T09:49:31.964000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "09h51 0ebe3958",
+    "clip": "clipe 01.mp4",
+    "focus": null,
+    "deviceFile": "9112C415-099D-4896-AB44-89DAE0144E49.mp4",
+    "source": "screen",
+    "number": 1,
+    "durationMs": 44001,
+    "trim": {
+      "startMs": 14001,
+      "endMs": 44001
+    },
+    "createdAt": "2026-10-24T09:51:38.126000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "09h52 66244c35",
+    "clip": "clipe 01.mp4",
+    "focus": null,
+    "deviceFile": "B524CB14-C561-4F00-A700-15459306C2BC.mp4",
+    "source": "watch",
+    "number": 1,
+    "durationMs": 60014,
+    "trim": {
+      "startMs": 50485.69811320754,
+      "endMs": 60014
+    },
+    "createdAt": "2026-10-24T09:53:14.206000-03:00",
+    "focusStatus": "none"
+  },
+  {
+    "recording": "09h52 66244c35",
+    "clip": "clipe 02.mp4",
+    "focus": "clipe 02.focus.json",
+    "deviceFile": "424043D6-A01F-4224-A684-5C6573A7FB0F.mp4",
+    "source": "watch",
+    "number": 2,
+    "durationMs": 59981,
+    "trim": {
+      "startMs": 29981,
+      "endMs": 59981
+    },
+    "createdAt": "2026-10-24T09:56:16.003000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "09h52 66244c35",
+    "clip": "clipe 03.mp4",
+    "focus": null,
+    "deviceFile": "D48E5377-B244-4964-8FEC-FD3A89A6E2DB.mp4",
+    "source": "watch",
+    "number": 3,
+    "durationMs": 59981,
+    "trim": {
+      "startMs": 29981,
+      "endMs": 59981
+    },
+    "createdAt": "2026-10-24T09:57:48.830000-03:00",
+    "focusStatus": "none"
+  },
+  {
+    "recording": "09h52 66244c35",
+    "clip": "clipe 04.mp4",
+    "focus": null,
+    "deviceFile": "904A6EFE-25F7-4ABE-8EBF-5C4F3FEEFB3C.mp4",
+    "source": "watch",
+    "number": 4,
+    "durationMs": 60014,
+    "trim": {
+      "startMs": 30014,
+      "endMs": 60014
+    },
+    "createdAt": "2026-10-24T09:59:31.935000-03:00",
+    "focusStatus": "none"
+  },
+  {
+    "recording": "09h52 66244c35",
+    "clip": "clipe 05.mp4",
+    "focus": "clipe 05.focus.json",
+    "deviceFile": "935C0D6E-B11D-447D-A4F9-518BB808D96B.mp4",
+    "source": "watch",
+    "number": 5,
+    "durationMs": 60014,
+    "trim": {
+      "startMs": 30014,
+      "endMs": 60014
+    },
+    "createdAt": "2026-10-24T10:01:20.984000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "09h52 66244c35",
+    "clip": "clipe 06.mp4",
+    "focus": "clipe 06.focus.json",
+    "deviceFile": "E421E9F8-D465-4092-B02E-453A0AACB8C2.mp4",
+    "source": "watch",
+    "number": 6,
+    "durationMs": 59981,
+    "trim": {
+      "startMs": 29981,
+      "endMs": 59981
+    },
+    "createdAt": "2026-10-24T10:04:30.556000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "10h13 b8da7531",
+    "clip": "clipe 01.mp4",
+    "focus": null,
+    "deviceFile": "AE6BEDAE-3073-4785-B52C-650B4281CAE6.mp4",
+    "source": "watch",
+    "number": 1,
+    "durationMs": 1000,
+    "trim": {
+      "startMs": 0,
+      "endMs": 1000
+    },
+    "createdAt": "2026-10-24T10:13:24.617000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "10h13 b8da7531",
+    "clip": "clipe 02.mp4",
+    "focus": "clipe 02.focus.json",
+    "deviceFile": "E762FA78-D723-4EF5-9DE0-0850CF2AC294.mp4",
+    "source": "watch",
+    "number": 2,
+    "durationMs": 59981,
+    "trim": {
+      "startMs": 29981,
+      "endMs": 59981
+    },
+    "createdAt": "2026-10-24T10:14:50.177000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "10h18 7031e69b",
+    "clip": "clipe 01.mp4",
+    "focus": "clipe 01.focus.json",
+    "deviceFile": "5A025093-41F0-488B-AE7F-A0B8CCA03D17.mp4",
+    "source": "watch",
+    "number": 1,
+    "durationMs": 59014,
+    "trim": {
+      "startMs": 29014,
+      "endMs": 59014
+    },
+    "createdAt": "2026-10-24T10:18:59.719000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "10h18 7031e69b",
+    "clip": "clipe 02.mp4",
+    "focus": null,
+    "deviceFile": "6FE85EDE-DCC7-4B1A-BAED-079724F8D227.mp4",
+    "source": "watch",
+    "number": 2,
+    "durationMs": 60016,
+    "trim": {
+      "startMs": 30016,
+      "endMs": 60016
+    },
+    "createdAt": "2026-10-24T10:20:04.433000-03:00",
+    "focusStatus": "none"
+  },
+  {
+    "recording": "10h18 7031e69b",
+    "clip": "clipe 03.mp4",
+    "focus": "clipe 03.focus.json",
+    "deviceFile": "B6752F03-2BB9-4399-9427-A394F6BD0688.mp4",
+    "source": "watch",
+    "number": 3,
+    "durationMs": 60014,
+    "trim": {
+      "startMs": 30014,
+      "endMs": 60014
+    },
+    "createdAt": "2026-10-24T10:20:38.511000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "10h18 7031e69b",
+    "clip": "clipe 04.mp4",
+    "focus": "clipe 04.focus.json",
+    "deviceFile": "B359013A-0000-424A-82E6-3EBC5DFE4F93.mp4",
+    "source": "watch",
+    "number": 4,
+    "durationMs": 60014,
+    "trim": {
+      "startMs": 30014,
+      "endMs": 60014
+    },
+    "createdAt": "2026-10-24T10:21:56.777000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "10h18 7031e69b",
+    "clip": "clipe 05.mp4",
+    "focus": "clipe 05.focus.json",
+    "deviceFile": "7480C784-6A20-4622-BAAD-1B1FB2DD5A33.mp4",
+    "source": "watch",
+    "number": 5,
+    "durationMs": 60014,
+    "trim": {
+      "startMs": 50321,
+      "endMs": 60014
+    },
+    "createdAt": "2026-10-24T10:22:06.470000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "10h18 7031e69b",
+    "clip": "clipe 06.mp4",
+    "focus": "clipe 06.focus.json",
+    "deviceFile": "0194EF2A-18A8-43FE-B2E9-6399B4C55E45.mp4",
+    "source": "watch",
+    "number": 6,
+    "durationMs": 59981,
+    "trim": {
+      "startMs": 29981,
+      "endMs": 59981
+    },
+    "createdAt": "2026-10-24T10:23:04.071000-03:00",
+    "focusStatus": "ready"
+  },
+  {
+    "recording": "10h18 7031e69b",
+    "clip": "clipe 07.mp4",
+    "focus": null,
+    "deviceFile": "297A6194-79D0-4347-8897-0C93DF51BA63.mp4",
+    "source": "watch",
+    "number": 7,
+    "durationMs": 60016,
+    "trim": {
+      "startMs": 30016,
+      "endMs": 60016
+    },
+    "createdAt": "2026-10-24T10:24:51.078000-03:00",
+    "focusStatus": "failed"
+  },
+  {
+    "recording": "10h18 7031e69b",
+    "clip": "clipe 08.mp4",
+    "focus": "clipe 08.focus.json",
+    "deviceFile": "04C2F57E-78AA-47A9-BD84-0F8E8B0AC0EC.mp4",
+    "source": "watch",
+    "number": 8,
+    "durationMs": 60014,
+    "trim": {
+      "startMs": 30014,
+      "endMs": 60014
+    },
+    "createdAt": "2026-10-24T10:26:01.067000-03:00",
+    "focusStatus": "ready"
+  }
+]

@@ -11,15 +11,18 @@ type Props = {
   /** Shows a spinner and blocks presses while something is being done; the label should then say what ("Conectando…"). */
   loading?: boolean;
   icon?: ReactNode;
+  /** Read by screen readers after the label ("Compilar é do plano pago"). */
+  hint?: string;
 };
 
-export function Button({ label, onPress, variant = 'primary', disabled = false, loading = false, icon }: Props) {
+export function Button({ label, onPress, variant = 'primary', disabled = false, loading = false, icon, hint }: Props) {
   const primary = variant !== 'secondary';
   const blocked = disabled || loading;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityHint={hint}
       accessibilityState={{ disabled: blocked, busy: loading }}
       disabled={blocked}
       onPress={onPress}

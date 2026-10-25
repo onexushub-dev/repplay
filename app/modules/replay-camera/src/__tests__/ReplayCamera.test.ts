@@ -17,11 +17,13 @@ jest.mock('expo', () => {
 });
 
 import {
+  concatVideos,
   getWatchStatus,
   getDeviceUpright,
   getZoomRange,
   isVoiceSupported,
   setZoom,
+  shareFiles,
   isRemoteSupported,
   remoteControllerHost,
   remoteControllerPairWithCode,
@@ -177,5 +179,28 @@ test('the phone is held in portrait where native cannot tell, and native answers
     expect(getDeviceUpright()).toBe('landscapeLeft');
   } finally {
     delete mockNative.getUpright;
+  }
+});
+
+test('shareFiles hands the plain paths to native and resolves how the sheet ended', async () => {
+  mockNative.shareFiles = jest.fn().mockResolvedValue('shared');
+  try {
+    await expect(shareFiles(['/exports/a.mp4', '/exports/b.mp4'])).resolves.toBe('shared');
+    expect(mockNative.shareFiles).toHaveBeenCalledWith(['/exports/a.mp4', '/exports/b.mp4']);
+  } finally {
+    delete mockNative.shareFiles;
+  }
+});
+
+test('concatVideos hands the paths and the destination to native and resolves the joined video', async () => {
+  mockNative.concatVideos = jest.fn().mockResolvedValue({ path: '/exports/all.mp4', durationMs: 90000 });
+  try {
+    await expect(concatVideos(['/exports/a.mp4', '/exports/b.mp4'], '/exports/all.mp4')).resolves.toEqual({
+      path: '/exports/all.mp4',
+      durationMs: 90000,
+    });
+    expect(mockNative.concatVideos).toHaveBeenCalledWith(['/exports/a.mp4', '/exports/b.mp4'], '/exports/all.mp4');
+  } finally {
+    delete mockNative.concatVideos;
   }
 });

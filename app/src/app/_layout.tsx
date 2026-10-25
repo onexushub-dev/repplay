@@ -12,9 +12,12 @@ import { useLocaleSync } from '../i18n/useT';
 import { payments } from '../payments';
 import { RemoteStartListener } from '../session/RemoteStartListener';
 import { SessionProvider } from '../session/SessionContext';
+import { clearExportsFolder } from '../share/exportCache';
 import { colors } from '../theme/tokens';
 
 SplashScreen.preventAutoHideAsync();
+// Exports from the last run (a crash or a kill leaves them) go once per start; within a run they are reused.
+clearExportsFolder();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({

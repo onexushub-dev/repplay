@@ -12,14 +12,22 @@ type Size = { width: number; height: number };
  * The frame a clip is previewed (and exported) in, and where its video sits in it. The open clip and the stills of its
  * neighbours use this same reckoning, so that a swipe lands on exactly the picture that was sliding in.
  */
-export function clipStage(tier: Tier, edit: Clip['edit'], trim: Clip['trim'], videoSize: Size, focusReady: string | false | undefined) {
+export function clipStage(
+  tier: Tier,
+  edit: Clip['edit'],
+  trim: Clip['trim'],
+  videoSize: Size,
+  focusReady: string | false | undefined,
+  forceLandscape?: boolean,
+) {
   // The shape after the player's own turn; the clip's own rotation is already in the thumbnail's shape.
   const shape = turnedSize(videoSize, readEdit(edit).rotation);
-  // A landscape clip is exported (and previewed) in a landscape frame; a vertical one in a vertical frame.
-  const landscape = shape.width > shape.height;
+  // A landscape clip is exported (and previewed) in a landscape frame; a vertical one in a vertical frame — unless a
+  // compilation forces one frame for every clip.
+  const landscape = forceLandscape !== undefined ? forceLandscape : shape.width > shape.height;
   const options = exportOptions(tier, edit, trim, landscape, focusReady ? { path: focusReady, ready: true } : undefined);
   const frame = { width: options.width, height: options.height };
-  return { shape, landscape, frame, watermark: options.watermark, layout: frameLayout(shape, frame) };
+  return { shape, landscape, frame, watermark: options.watermark, layout: frameLayout(shape, frame), options };
 }
 
 /** The frame as large as `area` allows (full width at most), and the video's box inside it, in screen points. */

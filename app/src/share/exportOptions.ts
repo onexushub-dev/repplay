@@ -55,3 +55,9 @@ export function exportOptions(
     ...(follow ? { focus: { path: focus.path, aspect: landscape ? ('landscape' as const) : ('portrait' as const) } } : {}),
   };
 }
+
+/** True when a free export drops the framing this clip would otherwise carry: Modo Foco ready, on, not turned or zoomed by hand. */
+export function framingLost(clip: Pick<Clip, 'edit' | 'focus'>): boolean {
+  const { focus, rotation, zoom } = readEdit(clip.edit);
+  return clip.focus !== undefined && clip.focus.status === 'ready' && focus && rotation === 0 && !(zoom !== undefined && zoom.scale > 1);
+}

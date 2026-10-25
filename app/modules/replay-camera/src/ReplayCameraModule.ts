@@ -69,6 +69,10 @@ declare class ReplayCameraModule extends NativeModule<ReplayCameraModuleEvents> 
   remoteDeviceName?(): string;
   remoteSetDeviceName?(name: string): void;
   shareToInstagramStory(videoPath: string, metaAppId: string): Promise<'opened' | 'unavailable'>;
+  /** One system share sheet with all these video files. 'shared' when it completed (Android cannot tell: 'shared' once it opens). */
+  shareFiles(paths: string[]): Promise<'shared' | 'dismissed'>;
+  /** Joins exports of the same size and codec into one video without re-encoding. */
+  concatVideos(paths: string[], outPath: string): Promise<{ path: string; durationMs: number }>;
 }
 
 export default requireNativeModule<ReplayCameraModule>('ReplayCamera');

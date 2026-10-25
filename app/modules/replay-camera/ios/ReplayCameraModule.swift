@@ -73,6 +73,19 @@ struct AnalyzeFocusOptions: Record {
   @Field var debug: Bool = false
 }
 
+/// Kept out of `definition()`: the module's result builder is big enough that a do/catch inside it makes the type
+/// checker give up ("failed to produce diagnostic").
+private func concatVideosResult(paths: [String], outPath: String) async throws -> [String: Any] {
+  do {
+    let result = try await VideoConcat.concat(paths: paths, outPath: outPath)
+    return ["path": result.path, "durationMs": result.durationMs]
+  } catch VideoConcat.Failure.mismatch {
+    throw ReplayException("CONCAT_MISMATCH", "the clips differ in size or codec")
+  } catch {
+    throw ReplayException("ENCODER_FAILED", "\(error)")
+  }
+}
+
 public class ReplayCameraModule: Module {
   private var engine: ReplayEngine { ReplayEngine.shared }
 
@@ -160,6 +173,14 @@ public class ReplayCameraModule: Module {
 
     AsyncFunction("shareToInstagramStory") { (videoPath: String, metaAppId: String) async -> String in
       await InstagramStory.share(videoPath: videoPath, metaAppId: metaAppId) ? "opened" : "unavailable"
+    }
+
+    AsyncFunction("shareFiles") { (paths: [String]) async -> String in
+      await MultiShare.share(paths: paths)
+    }
+
+    AsyncFunction("concatVideos") { (paths: [String], outPath: String) async throws -> [String: Any] in
+      try await concatVideosResult(paths: paths, outPath: outPath)
     }
 
     AsyncFunction("createThumbnail") { (clipPath: String, atMs: Double) async throws -> String in

@@ -1,4 +1,5 @@
-import { exportOptions } from '../exportOptions';
+import type { Clip } from '../../data/schema';
+import { exportOptions, framingLost } from '../exportOptions';
 
 const trim = { startMs: 30000, endMs: 60000 };
 
@@ -91,4 +92,15 @@ test('Modo Foco is a paid edit: a free export never follows, a paid one does', (
   const ready = { path: '/c/1.focus.json', ready: true };
   expect(exportOptions('free', { muted: false }, trim, false, ready).focus).toBeUndefined();
   expect(exportOptions('pro', { muted: false }, trim, false, ready).focus).toEqual({ path: '/c/1.focus.json', aspect: 'portrait' });
+});
+
+test('framingLost: only a ready framing that is on, not turned and not zoomed by hand', () => {
+  const ready = { v: 1, status: 'ready', file: '/c.focus.json' } as Clip['focus'];
+  const clip = (edit: Clip['edit'], focus: Clip['focus'] = ready) => ({ edit, focus });
+  expect(framingLost(clip({ muted: false }))).toBe(true);
+  expect(framingLost(clip({ muted: false, focus: false }))).toBe(false);
+  expect(framingLost(clip({ muted: false, rotation: 90 }))).toBe(false);
+  expect(framingLost(clip({ muted: false, zoom: { scale: 2, cx: 0.5, cy: 0.5 } }))).toBe(false);
+  expect(framingLost(clip({ muted: false }, { v: 1, status: 'pending' } as Clip['focus']))).toBe(false);
+  expect(framingLost(clip({ muted: false }, undefined))).toBe(false);
 });

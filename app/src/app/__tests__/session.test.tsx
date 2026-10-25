@@ -10,6 +10,35 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: 's1' }),
 }));
 jest.mock('../../components/useClipThumbnail', () => ({ useClipThumbnail: () => undefined }));
+const mockCapturer = { element: null, capture: jest.fn(), release: jest.fn() };
+jest.mock('../../share/OverlayCapturer', () => ({ useOverlayCapturer: () => mockCapturer }));
+jest.mock('../../share/batchExport', () => ({ ...jest.requireActual('../../share/batchExport'), runBatch: jest.fn() }));
+const mockShapes: Record<string, { width: number; height: number }> = {};
+jest.mock('../../share/clipExport', () => ({
+  ...jest.requireActual('../../share/clipExport'),
+  clipShapeOf: jest.fn(async (c: { id: string }) => mockShapes[c.id] || { width: 1080, height: 1920 }),
+}));
+jest.mock('../../../modules/replay-camera', () => ({
+  exportClip: jest.fn(),
+  createThumbnail: jest.fn(),
+  shareFiles: jest.fn(async () => 'shared'),
+  concatVideos: jest.fn(async (_paths: string[], out: string) => ({ path: out, durationMs: 90000 })),
+}));
+jest.mock('expo-media-library', () => ({
+  requestPermissionsAsync: jest.fn(async () => ({ granted: true })),
+  Asset: { create: jest.fn(async () => ({})) },
+}));
+jest.mock('expo-file-system', () => ({
+  File: class {
+    uri: string;
+    constructor(_dir: unknown, name?: string) {
+      this.uri = `file:///cache/exports/${name || 'x'}`;
+    }
+    delete() {}
+  },
+  Directory: class {},
+  Paths: { cache: '/cache' },
+}));
 jest.mock('../../payments', () => ({
   payments: { subscribe: () => () => {}, version: () => 0, nextPlan: jest.fn(() => 'free'), showPaywall: jest.fn(), unlockOption: jest.fn(() => ({ kind: 'none' })) },
 }));
@@ -24,6 +53,7 @@ jest.mock('../../data/mmkv', () => {
       sessionStats: jest.fn(),
       renameSession: jest.fn(),
       deleteClip: jest.fn(),
+      updateClip: jest.fn(),
       deleteSession: jest.fn(() => ['/a.mp4', '/b.mp4']),
       subscribe: (fn: () => void) => {
         listeners.add(fn);
@@ -43,6 +73,9 @@ const { repo } = jest.requireMock('../../data/mmkv');
 const { router } = jest.requireMock('expo-router');
 const { payments } = jest.requireMock('../../payments');
 const { useSession } = jest.requireMock('../../session/SessionContext');
+const { runBatch } = jest.requireMock('../../share/batchExport');
+const native = jest.requireMock('../../../modules/replay-camera');
+const media = jest.requireMock('expo-media-library');
 
 const clip = (id: string, source: string, createdAt: number) => ({
   id,
@@ -239,6 +272,19 @@ test('holding a clip starts the selection with it picked; Cancelar leaves it', a
   expect(screen.getByRole('button', { name: 'Selecionar clipes' })).toBeTruthy();
 });
 
+test('lifting the finger after holding a clip keeps it picked; the next tap toggles it', async () => {
+  repo.listClips.mockReturnValue([clip('a', 'gesture', 1), clip('b', 'screen', 2)]);
+  repo.sessionStats.mockReturnValue({ clips: 2, bytes: 1, recordedMs: 1 });
+  await render(<SessionSummary />);
+  const card = screen.getByRole('button', { name: /^Clipe 2/ });
+  await fireEvent(card, 'pressIn');
+  await fireEvent(card, 'longPress');
+  await fireEvent.press(screen.getByRole('button', { name: /^Clipe 2/ })); // the release that follows the hold
+  expect(screen.getByText('1 selecionado')).toBeTruthy();
+  await fireEvent.press(screen.getByRole('button', { name: /^Clipe 2/ }));
+  expect(screen.queryByText('1 selecionado')).toBeNull();
+});
+
 test('Apagar gravação removes the game and its clips after confirming, and goes to the list', async () => {
   repo.listClips.mockReturnValue([clip('a', 'gesture', 1), clip('b', 'screen', 2)]);
   repo.sessionStats.mockReturnValue({ clips: 2, bytes: 1, recordedMs: 1 });
@@ -294,6 +340,179 @@ test('an English phone sees the selection and delete texts in English', async ()
     expect(alert).toHaveBeenLastCalledWith('Delete 1 clip?', "This can't be undone.", expect.any(Array));
     alert.mockRestore();
   } finally {
-    setLocale('pt-BR');
+    await act(async () => setLocale('pt-BR'));
   }
+});
+
+describe('batch: save, send or compile the picked clips', () => {
+  const done = (o: { clips: { id: string }[] }) => o.clips.map((clip) => ({ clip, path: `/exports/${clip.id}.mp4` }));
+  const timing = { totalMs: 1000, perClipMs: [], concurrency: 2 };
+  const three = () => {
+    repo.listClips.mockReturnValue([clip('a', 'gesture', 1), clip('b', 'screen', 2), clip('c', 'screen', 3)]);
+    repo.sessionStats.mockReturnValue({ clips: 3, bytes: 1, recordedMs: 1 });
+  };
+  const pick = async (...numbers: number[]) => {
+    await fireEvent.press(screen.getByRole('button', { name: 'Selecionar clipes' }));
+    for (const n of numbers) await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^Clipe ${n}`) }));
+  };
+  const press = (name: string) => act(async () => fireEvent.press(screen.getByRole('button', { name })));
+
+  beforeEach(() => {
+    runBatch.mockImplementation(async (o: { clips: { id: string }[]; onProgress: (d: number, t: number) => void }) => {
+      o.onProgress(o.clips.length, o.clips.length);
+      return { done: done(o), failed: [], timing };
+    });
+    Object.keys(mockShapes).forEach((k) => delete mockShapes[k]);
+  });
+
+  test('selecting shows Enviar (N) on its own line, then Salvar, Compilar and Apagar, all visible', async () => {
+    three();
+    await render(<SessionSummary />);
+    await pick(1, 3);
+    for (const name of ['Enviar (2)', 'Salvar (2)', 'Compilar', 'Apagar 2 clipes']) expect(screen.getByRole('button', { name })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Mais' })).toBeNull();
+  });
+
+  test('nothing picked: the actions wait for a pick', async () => {
+    three();
+    await render(<SessionSummary />);
+    await pick();
+    expect(screen.getByRole('button', { name: 'Enviar (0)' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Salvar (0)' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Compilar' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Apagar' })).toBeDisabled();
+  });
+
+  test('Salvar exports the picked clips in order and saves each to Photos', async () => {
+    three();
+    await render(<SessionSummary />);
+    await pick(1, 3);
+    await press('Salvar (2)');
+    expect(runBatch.mock.calls[0][0].clips.map((c: { id: string }) => c.id)).toEqual(['a', 'c']);
+    expect(media.Asset.create.mock.calls.map((c: string[]) => c[0])).toEqual(['file:///exports/a.mp4', 'file:///exports/c.mp4']);
+    expect(repo.updateClip).toHaveBeenCalledWith('a', { savedAt: expect.any(Number) });
+    expect(screen.getByText('2 clipes salvos na galeria.')).toBeTruthy();
+  });
+
+  test('Salvar without access to Photos says so and makes nothing', async () => {
+    three();
+    media.requestPermissionsAsync.mockResolvedValueOnce({ granted: false });
+    await render(<SessionSummary />);
+    await pick(1);
+    await press('Salvar (1)');
+    expect(screen.getByText('Sem acesso às fotos. Libere em Ajustes.')).toBeTruthy();
+    expect(runBatch).not.toHaveBeenCalled();
+  });
+
+  test('Enviar opens one share sheet with every picked clip', async () => {
+    three();
+    await render(<SessionSummary />);
+    await pick(1, 2, 3);
+    await press('Enviar (3)');
+    expect(native.shareFiles).toHaveBeenCalledWith(['/exports/a.mp4', '/exports/b.mp4', '/exports/c.mp4']);
+    expect(repo.updateClip).toHaveBeenCalledWith('b', { sharedAt: expect.any(Number) });
+  });
+
+  test('a partial failure names the clip that did not come out', async () => {
+    three();
+    runBatch.mockImplementationOnce(async (o: { clips: { id: string }[] }) => ({
+      done: done({ clips: [o.clips[0], o.clips[2]] }),
+      failed: [{ clip: o.clips[1], reason: 'export' }],
+      timing,
+    }));
+    await render(<SessionSummary />);
+    await pick(1, 2, 3);
+    await press('Salvar (3)');
+    expect(screen.getByText('2 de 3 prontos. Não saíram: Clipe 2.')).toBeTruthy();
+  });
+
+  test('Compilar on the free plan opens the paywall and makes nothing', async () => {
+    three();
+    repo.getSession.mockReturnValue({ id: 's1', sport: 'futevolei', startedAt: 0, paid: false });
+    await render(<SessionSummary />);
+    await pick(1, 2);
+    await press('Compilar');
+    expect(payments.showPaywall).toHaveBeenCalled();
+    expect(runBatch).not.toHaveBeenCalled();
+  });
+
+  test('Compilar with one clip says to pick at least 2', async () => {
+    three();
+    await render(<SessionSummary />);
+    await pick(1);
+    await press('Compilar');
+    expect(screen.getByText('Escolha pelo menos 2 clipes para compilar.')).toBeTruthy();
+    expect(runBatch).not.toHaveBeenCalled();
+  });
+
+  test('Compilar joins the exports in order in the majority orientation and opens the share sheet with the video', async () => {
+    three();
+    mockShapes.a = { width: 1920, height: 1080 };
+    mockShapes.b = { width: 1920, height: 1080 };
+    mockShapes.c = { width: 1080, height: 1920 };
+    await render(<SessionSummary />);
+    await pick(1, 2, 3);
+    await press('Compilar');
+    expect(runBatch.mock.calls[0][0].orientation).toBe('landscape');
+    expect(native.concatVideos).toHaveBeenCalledWith(['/exports/a.mp4', '/exports/b.mp4', '/exports/c.mp4'], expect.stringContaining('compilation'));
+    expect(native.shareFiles).toHaveBeenCalledTimes(1);
+    expect(native.shareFiles).toHaveBeenLastCalledWith([expect.stringContaining('compilation')]);
+    expect(screen.queryByText('Compilação pronta')).toBeNull();
+  });
+
+  test('a failed join says why: the error code shows under the message', async () => {
+    three();
+    native.concatVideos.mockRejectedValueOnce(Object.assign(new Error('the clips differ in size or codec'), { code: 'CONCAT_MISMATCH' }));
+    await render(<SessionSummary />);
+    await pick(1, 2);
+    await press('Compilar');
+    expect(screen.getByText('Não foi possível preparar o vídeo. Tente de novo.')).toBeTruthy();
+    expect(screen.getByText(/CONCAT_MISMATCH/)).toBeTruthy();
+  });
+
+  test('Compilar with fewer than 2 clips coming out makes no video', async () => {
+    three();
+    runBatch.mockImplementationOnce(async (o: { clips: { id: string }[] }) => ({
+      done: done({ clips: [o.clips[0]] }),
+      failed: [{ clip: o.clips[1], reason: 'export' }],
+      timing,
+    }));
+    await render(<SessionSummary />);
+    await pick(1, 2);
+    await press('Compilar');
+    expect(native.concatVideos).not.toHaveBeenCalled();
+    expect(screen.getByText('Sobrou menos de 2 clipes para compilar.')).toBeTruthy();
+  });
+
+  test('leaving the screen mid-batch cancels it and says nothing afterwards', async () => {
+    three();
+    let release: () => void = () => {};
+    let signal: { cancelled: boolean } = { cancelled: false };
+    runBatch.mockImplementationOnce(
+      (o: { clips: { id: string }[]; signal: { cancelled: boolean } }) =>
+        new Promise((resolve) => {
+          signal = o.signal;
+          release = () => resolve({ done: done(o), failed: [], timing });
+        }),
+    );
+    const view = await render(<SessionSummary />);
+    await pick(1, 2);
+    await press('Salvar (2)');
+    await act(async () => view.unmount());
+    expect(signal.cancelled).toBe(true);
+    await act(async () => release());
+    expect(media.Asset.create).not.toHaveBeenCalled();
+    expect(mockCapturer.release).toHaveBeenCalled();
+  });
+
+  test('a picked clip deleted elsewhere drops out of the selection and the counts', async () => {
+    three();
+    await render(<SessionSummary />);
+    await pick(1, 3);
+    repo.listClips.mockReturnValue([clip('a', 'gesture', 1), clip('b', 'screen', 2)]);
+    await act(async () => repo.__change());
+    expect(screen.getByRole('button', { name: 'Salvar (1)' })).toBeTruthy();
+    await press('Salvar (1)');
+    expect(runBatch.mock.calls[0][0].clips.map((c: { id: string }) => c.id)).toEqual(['a']);
+  });
 });

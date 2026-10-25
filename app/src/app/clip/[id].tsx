@@ -1,4 +1,4 @@
-import { Directory, File, Paths } from 'expo-file-system';
+import { File } from 'expo-file-system';
 import { Asset, requestPermissionsAsync } from 'expo-media-library';
 import { router, useLocalSearchParams } from 'expo-router';
 import { shareAsync } from 'expo-sharing';
@@ -49,8 +49,9 @@ import { captureOverlay } from '../../share/captureOverlay';
 import { contentFloor, nextRotation, outputMs, raiseToFloor, readEdit, turnedSize } from '../../share/editing';
 import { clipWindow } from '../../share/trim';
 import { unlockRecording } from '../../payments/unlock';
+import { clipExportJob } from '../../share/clipExport';
 import { useViewPlan } from '../../share/entitlement';
-import { exportOptions } from '../../share/exportOptions';
+import { cachedExport, rememberExport } from '../../share/exportCache';
 import { frameLayout } from '../../share/layout';
 import { ShareOverlay } from '../../share/ShareOverlay';
 import { ZoomableVideo } from '../../share/ZoomableVideo';
@@ -99,14 +100,6 @@ function removeQuietly(path: string) {
   }
 }
 
-/** Exports left by a crash or a kill would otherwise pile up in the cache. */
-function clearOldExports() {
-  try {
-    new Directory(Paths.cache, 'exports').list().forEach((item) => item.delete());
-  } catch {
-    // no exports dir yet
-  }
-}
 
 /**
  * One clip: watch it clean (Salvar, Enviar, hold for 2x) or edit it (tool bar over the cut; Cancelar undoes). The preview
@@ -234,8 +227,6 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
     return () => clearTimeout(timer);
   }, [saved]);
   const exporting = useRef(false);
-  const exported = useRef<{ key: string; path: string } | undefined>(undefined);
-  const made = useRef<string[]>([]);
   const captureRefView = useRef<ComponentRef<typeof View>>(null);
 
   // The shape after the player's own turn; the clip's own rotation is already in the thumbnail's shape.
@@ -281,13 +272,11 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
   });
   const focusEnterMs = reduceMotion ? 0 : showIntro ? FOCUS_INTRO_EASE_MS : readyAtOpen ? 0 : FOCUS_READY_EASE_MS;
 
-  const options = clip
-    ? exportOptions(plan, clip.edit, clip.trim, landscape, focusFile && track ? { path: focusFile, ready: true } : undefined)
-    : undefined;
-  const frame = landscape
-    ? { width: options?.width ?? 1920, height: options?.height ?? 1080 }
-    : { width: options?.width ?? 1080, height: options?.height ?? 1920 };
-  const layout = frameLayout(shape, frame);
+  // The export of this clip as it looks now: the same job the recording screen's batch makes, so they cannot differ.
+  const look = clip ? clipExportJob(clip, plan, videoSize, undefined, track !== undefined) : undefined;
+  const options = look ? look.options : undefined;
+  const frame = look ? look.frame : landscape ? { width: 1920, height: 1080 } : { width: 1080, height: 1920 };
+  const layout = look ? look.layout : frameLayout(shape, frame);
   // The real aspect ratio (rotation applied) comes from the clip's thumbnail.
   const clipPath = clip?.path;
   const startMs = clip?.trim.startMs ?? 0;
@@ -307,12 +296,11 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
   // Exports are temporary: Photos and Instagram keep their own copies.
   const mounted = useRef(true);
   useEffect(() => {
-    clearOldExports();
+    // Exports stay for the whole app session (the recording screen's batch and this screen reuse them); the folder
+    // is cleared when the app starts.
     mounted.current = true;
-    const files = made.current;
     return () => {
       mounted.current = false;
-      files.forEach(removeQuietly);
     };
   }, []);
 
@@ -556,17 +544,15 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
 
   /** One export per look (cut, edits, frame), reused by both buttons. */
   async function ensureExport(): Promise<string> {
-    const key = JSON.stringify([options, layout]);
-    if (exported.current?.key === key) return exported.current.path;
+    const key = look ? look.key : '';
+    const cached = cachedExport(key);
+    if (cached) return cached;
     const overlayPngPath = await captureOverlay(captureRefView);
     const result = await exportClip({ clipPath: clip!.path, ...options!, overlayPngPath, background: colors.ground });
     removeQuietly(overlayPngPath);
-    if (!mounted.current) {
-      removeQuietly(result.path); // the screen closed during the export
-      throw new Error('closed');
-    }
-    made.current.push(result.path);
-    exported.current = { key, path: result.path };
+    // Kept even when the screen closed meanwhile: the next Salvar/Enviar of this look (here or in a batch) uses it.
+    rememberExport(key, result.path);
+    if (!mounted.current) throw new Error('closed');
     return result.path;
   }
 
