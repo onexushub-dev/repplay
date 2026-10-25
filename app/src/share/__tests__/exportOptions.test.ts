@@ -13,8 +13,15 @@ test('pro exports 1080x1920', () => {
   });
 });
 
-test.each(['free', 'pass', 'pro'] as const)('%s exports carry the app mark', (tier) => {
-  expect(exportOptions(tier, undefined, trim).watermark).toBe(true);
+test('a free export carries the app mark; a paid one (pass, pro) does not', () => {
+  expect(exportOptions('free', undefined, trim).watermark).toBe(true);
+  expect(exportOptions('pass', undefined, trim).watermark).toBe(false);
+  expect(exportOptions('pro', undefined, trim).watermark).toBe(false);
+});
+
+test('a free export keeps 1x speed whatever the clip says', () => {
+  expect(exportOptions('free', { speed: 2, muted: false }, trim).speed).toBe(1);
+  expect(exportOptions('pro', { speed: 2, muted: false }, trim).speed).toBe(2);
 });
 
 test('pass exports 1080x1920', () => {
@@ -48,8 +55,8 @@ test('free exports carry no sound, whatever the clip has', () => {
   expect(exportOptions('pro', { speed: 1, muted: false }, trim).muted).toBe(false);
 });
 
-test('free exports 720x1280', () => {
-  expect(exportOptions('free', undefined, trim)).toMatchObject({ width: 720, height: 1280 });
+test('free exports 1080x1920 too', () => {
+  expect(exportOptions('free', undefined, trim)).toMatchObject({ width: 1080, height: 1920 });
 });
 
 test('a turned clip exports with its rotation, and none by default', () => {
@@ -59,8 +66,8 @@ test('a turned clip exports with its rotation, and none by default', () => {
 
 test('a landscape clip gets the frame turned on its side, in both tiers', () => {
   expect(exportOptions('pro', undefined, trim, true)).toMatchObject({ width: 1920, height: 1080 });
-  expect(exportOptions('free', undefined, trim, true)).toMatchObject({ width: 1280, height: 720 });
-  expect(exportOptions('free', undefined, trim)).toMatchObject({ width: 720, height: 1280 });
+  expect(exportOptions('free', undefined, trim, true)).toMatchObject({ width: 1920, height: 1080 });
+  expect(exportOptions('free', undefined, trim)).toMatchObject({ width: 1080, height: 1920 });
 });
 
 describe('Modo Foco', () => {

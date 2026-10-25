@@ -171,7 +171,7 @@ describe('free recording', () => {
     setup('free');
     await render(<SessionSummary />);
     expect(screen.getByText('Gravada no plano grátis')).toBeTruthy();
-    expect(screen.getByText('Seus clipes saem em 720p, sem som e sem Modo Foco. Libere tudo com o Pro ou um Passe Avulso.')).toBeTruthy();
+    expect(screen.getByText('Seus clipes saem com marca d’água, sem som, sem Modo Foco e sem velocidade. Libere tudo com o Pro ou um Passe Avulso.')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: /^Gravada no plano grátis/ }));
     expect(payments.showPaywall).toHaveBeenCalledWith();
   });

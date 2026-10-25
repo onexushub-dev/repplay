@@ -19,7 +19,7 @@ export function clipStage(tier: Tier, edit: Clip['edit'], trim: Clip['trim'], vi
   const landscape = shape.width > shape.height;
   const options = exportOptions(tier, edit, trim, landscape, focusReady ? { path: focusReady, ready: true } : undefined);
   const frame = { width: options.width, height: options.height };
-  return { shape, landscape, frame, layout: frameLayout(shape, frame) };
+  return { shape, landscape, frame, watermark: options.watermark, layout: frameLayout(shape, frame) };
 }
 
 /** The frame as large as `area` allows (full width at most), and the video's box inside it, in screen points. */

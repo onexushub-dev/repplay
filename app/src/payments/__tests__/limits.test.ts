@@ -1,6 +1,6 @@
 import type { ModeSettings } from '../../data/schema';
 import { modeById } from '../../modes/registry';
-import { captureConfig, triggerAllowed } from '../limits';
+import { canCompile, captureConfig, editLocked, triggerAllowed } from '../limits';
 
 const court = modeById('quadra').defaults;
 const gym: ModeSettings = { zoom: 1, gestureEnabled: false, voiceEnabled: true, bufferSeconds: 60, cutSeconds: 60, quality: '1080p30', audio: true };
@@ -21,17 +21,26 @@ test('captureConfig paid: what the player chose', () => {
   expect(captureConfig({ ...court, quality: '720p30' }, 'paid').quality).toBe('720p30');
 });
 
-test('triggerAllowed: tap, gesture and voice are free; watch, remote and phone are paid', () => {
-  for (const s of ['screen', 'gesture', 'voice'] as const) {
+test('triggerAllowed: only the watch is paid; every other trigger is free', () => {
+  for (const s of ['screen', 'gesture', 'voice', 'remote', 'phone'] as const) {
     expect(triggerAllowed(s, 'free')).toBe(true);
     expect(triggerAllowed(s, 'paid')).toBe(true);
   }
-  for (const s of ['watch', 'remote', 'phone'] as const) {
-    expect(triggerAllowed(s, 'free')).toBe(false);
-    expect(triggerAllowed(s, 'paid')).toBe(true);
-  }
+  expect(triggerAllowed('watch', 'free')).toBe(false);
+  expect(triggerAllowed('watch', 'paid')).toBe(true);
 });
 
 test('captureConfig free: a clip length shorter than 15 s is kept', () => {
   expect(captureConfig({ ...court, cutSeconds: 10 }, 'free').cutSeconds).toBe(10);
+});
+
+test('speed is locked on the free plan; the other edits (Modo Foco included, it is only kept out of the export) are not', () => {
+  expect(editLocked('speed', 'free')).toBe(true);
+  expect(editLocked('speed', 'paid')).toBe(false);
+  for (const tool of ['focus', 'sound', 'zoom', 'rotate']) expect(editLocked(tool, 'free')).toBe(false);
+});
+
+test('compiling clips is paid', () => {
+  expect(canCompile('free')).toBe(false);
+  expect(canCompile('paid')).toBe(true);
 });

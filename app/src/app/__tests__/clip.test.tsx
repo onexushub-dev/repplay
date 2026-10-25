@@ -287,7 +287,7 @@ test('deleting asks first, then removes the file and the clip', async () => {
   expect(router.back).not.toHaveBeenCalled();
 });
 
-test('Compartilhar exports with the cut, speed, zoom and the app mark, then opens the share sheet', async () => {
+test('Compartilhar exports with the cut, speed and zoom, without the app mark on a paid recording, then opens the share sheet', async () => {
   const zoom = { scale: 2, cx: 0.25, cy: 0.75 };
   __setClip({ ...base, edit: { speed: 2, muted: false, zoom } });
   await open();
@@ -296,7 +296,7 @@ test('Compartilhar exports with the cut, speed, zoom and the app mark, then open
     expect.objectContaining({
       clipPath: '/c1.mp4', startMs: 30000, endMs: 60000, speed: 2, muted: true,
       crop: { x: 0, y: 0.5, width: 0.5, height: 0.5 },
-      width: 1920, height: 1080, overlayPngPath: '/tmp/overlay.png', watermark: true,
+      width: 1920, height: 1080, overlayPngPath: '/tmp/overlay.png', watermark: false,
     }),
   );
   expect(sharing.shareAsync).toHaveBeenCalledWith('file:///exports/e1.mp4', expect.objectContaining({ mimeType: 'video/mp4' }));
@@ -686,14 +686,8 @@ describe('Modo Foco', () => {
   });
 
   describe('on a free recording the framing works in the app and stays out of what leaves it', () => {
-    const { Alert } = jest.requireActual('react-native');
-    const answer = (label: string) => {
-      const buttons = (Alert.alert as jest.Mock).mock.calls.at(-1)[2] as { text: string; onPress?: () => void }[];
-      return act(async () => buttons.find((b) => b.text === label)!.onPress!());
-    };
     beforeEach(() => {
       jest.requireMock('../../data/mmkv').__setPaid(false);
-      jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     });
 
     test('the clip is shown with the framing on, as for a paid recording', async () => {
@@ -702,33 +696,46 @@ describe('Modo Foco', () => {
       expect(screen.getByRole('button', { name: 'Modo Foco' })).toBeTruthy();
     });
 
-    test('saving says the framing will not go along, and "Continuar sem o Foco" exports without it', async () => {
+    test('saving first lists what the video will not have, framing included, and nothing is exported yet', async () => {
       __setClip({ ...base, focus: ready });
       await open();
       await pressAction('Salvar na galeria');
       expect(camera.exportClip).not.toHaveBeenCalled();
-      expect(Alert.alert).toHaveBeenCalledWith('O Modo Foco fica no app', expect.any(String), expect.any(Array), expect.anything());
-      await answer('Continuar sem o Foco');
+      expect(screen.getByText('No plano grátis, o vídeo sai com limites')).toBeTruthy();
+      expect(screen.getByText('Full HD (1080p) incluso')).toBeTruthy();
+      expect(screen.getByText('Sem som')).toBeTruthy();
+      expect(screen.getByText('Sem o Modo Foco')).toBeTruthy();
+      expect(screen.getByText('Com a marca do Repplay')).toBeTruthy();
+    });
+
+    test('"Continuar no plano grátis" exports Full HD at 1x with the mark, no sound and no framing', async () => {
+      __setClip({ ...base, focus: ready, edit: { speed: 2, muted: false } });
+      await open();
+      await pressAction('Salvar na galeria');
+      await fireEvent.press(screen.getByRole('button', { name: 'Continuar no plano grátis' }));
       await act(async () => {});
       expect(camera.exportClip).toHaveBeenCalledTimes(1);
+      expect(camera.exportClip).toHaveBeenCalledWith(
+        expect.objectContaining({ speed: 1, muted: true, watermark: true, width: 1920, height: 1080 }),
+      );
       expect(camera.exportClip.mock.calls[0][0].focus).toBeUndefined();
     });
 
     test('"Cancelar" leaves without exporting', async () => {
       __setClip({ ...base, focus: ready });
       await open();
-      await pressAction('Salvar na galeria');
-      await answer('Cancelar');
+      await pressAction('Compartilhar');
+      await fireEvent.press(screen.getByRole('button', { name: 'Cancelar' }));
       await act(async () => {});
       expect(camera.exportClip).not.toHaveBeenCalled();
     });
 
-    test('with the framing switched off there is nothing to say', async () => {
+    test('with the framing switched off the notice does not list it', async () => {
       __setClip({ ...base, focus: ready, edit: { muted: false, focus: false } });
       await open();
       await pressAction('Salvar na galeria');
-      expect(Alert.alert).not.toHaveBeenCalled();
-      expect(camera.exportClip).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText('Sem o Modo Foco')).toBeNull();
+      expect(screen.getByText('Sem som')).toBeTruthy();
     });
   });
 

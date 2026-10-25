@@ -33,6 +33,7 @@ import { ExportProgress, type ExportJob } from '../../components/ExportProgress'
 import { clipNumber, seconds, timeOfDay } from '../../components/format';
 import { BackIcon, PauseIcon, PlayIcon } from '../../components/icons';
 import { Playhead } from '../../components/Playhead';
+import { useFreeExportGate } from '../../components/useFreeExportGate';
 import { TrimBar } from '../../components/TrimBar';
 import { knownShape, rememberShape } from '../../components/clipShape';
 import { useClipThumbnail } from '../../components/useClipThumbnail';
@@ -167,9 +168,12 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
   const session = clip ? repo.getSession(clip.sessionId) : undefined;
   const maxMs = session ? effectiveSettings(session.sport, repo.getPrefs()).bufferSeconds * 1000 : undefined;
   const plan = useViewPlan(clip?.sessionId);
+  const freeGate = useFreeExportGate();
 
   const [trim, setTrim] = useState(() => (clip ? clip.trim : { startMs: 0, endMs: 0 }));
-  const edit = readEdit(clip?.edit);
+  const storedEdit = readEdit(clip?.edit);
+  // A free recording has speed locked: the stored choice is kept (an unlock gives it back) but does not play or export.
+  const edit = plan === 'free' ? { ...storedEdit, speed: 1 as const } : storedEdit;
   // A free recording has its sound locked: the clip may carry it, but it is neither heard nor exported until unlocked.
   const soundOff = edit.muted || plan === 'free';
   const floor = clip?.contentStartMs ?? 0;
@@ -249,7 +253,7 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
     [focusFile, focusAspect, sizeKnown],
   );
   const handZoom = edit.zoom !== undefined && edit.zoom.scale > 1;
-  // Modo Foco works in the app for every plan, to be tried and wanted; only a paid recording takes it out when it saves or shares.
+  // Modo Foco works in the app for every plan, to be tried and wanted; a free export leaves without it (see the notice in `run`).
   const focusActive = track !== undefined && edit.focus && edit.rotation === 0 && !handZoom;
   let focusChip: 'preparing' | 'on' | 'off' | undefined;
   if (edit.rotation === 0) {
@@ -424,7 +428,7 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
   }
 
   function setEdit(patch: Partial<ReturnType<typeof readEdit>>) {
-    const next = { ...edit, ...patch };
+    const next = { ...storedEdit, ...patch };
     repo.updateClip(id, {
       edit: {
         speed: next.speed,
@@ -566,29 +570,14 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
     return result.path;
   }
 
-  /** A free recording leaves the app without the framing: say so, and offer to unlock it. False to stop. */
-  async function freeFocusOk(): Promise<boolean> {
-    if (plan !== 'free' || !focusActive) return true;
-    const choice = await new Promise<'go' | 'unlock' | 'cancel'>((resolve) =>
-      Alert.alert(
-        t('clip.focusExportTitle'),
-        t('clip.focusExportMessage'),
-        [
-          { text: t('common.cancel'), style: 'cancel', onPress: () => resolve('cancel') },
-          { text: t('clip.focusExportGo'), onPress: () => resolve('go') },
-          { text: t('clip.focusExportUnlock'), onPress: () => resolve('unlock') },
-        ],
-        { cancelable: true, onDismiss: () => resolve('cancel') },
-      ),
-    );
-    if (choice === 'unlock') void unlockRecording(clip!.sessionId, t);
-    return choice === 'go';
-  }
-
   async function run(kind: ExportJob['kind'], action: (path: string) => Promise<void>) {
     if (exporting.current || !sizeKnown) return;
-    if (!(await freeFocusOk())) return;
-    if (exporting.current) return;
+    if (plan === 'free') {
+      const choice = await freeGate.ask({ focusLost: focusActive });
+      if (choice === 'unlock') void unlockRecording(clip!.sessionId, t);
+      if (choice !== 'go') return;
+      if (exporting.current) return;
+    }
     exporting.current = true;
     saveName(); // a name typed without closing the keyboard still counts
     setBusy(true);
@@ -701,7 +690,7 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
             onHold={editing ? undefined : holdFast}
           />
           <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-            <ShareOverlay frame={frame} layout={layout} scale={scale} />
+            <ShareOverlay frame={frame} layout={layout} scale={scale} watermark={options?.watermark ?? true} />
           </View>
           {!playing ? (
             <View pointerEvents="none" style={styles.pausedBadge}>
@@ -757,7 +746,7 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
               </View>
             </>
           }
-          toolBar={<ToolBar open={tool.id} focusOn={focusUi === 'on'} onOpen={pickTool} tools={tools} />}
+          toolBar={<ToolBar open={tool.id} focusOn={focusUi === 'on'} plan={plan} onOpen={pickTool} tools={tools} />}
         />
       ) : (
         <ClipWatch
@@ -794,9 +783,11 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
         />
       )}
 
+      {freeGate.sheet}
+
       {/* Off-screen copy at exactly the export's pixel size, captured to PNG for the video overlay. */}
       <View pointerEvents="none" style={styles.offscreen}>
-        <ShareOverlay ref={captureRefView} frame={frame} layout={layout} scale={1 / pr} />
+        <ShareOverlay ref={captureRefView} frame={frame} layout={layout} scale={1 / pr} watermark={options.watermark} />
       </View>
 
       {saved && !job ? (

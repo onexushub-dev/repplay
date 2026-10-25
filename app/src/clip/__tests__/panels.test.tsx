@@ -112,8 +112,18 @@ test('on a free recording Modo Foco works, and the hint says it does not leave t
   const c = ctx({ focus: 'on', plan: 'free' });
   const Panel = panel('focus');
   await render(<Panel ctx={c} />);
-  expect(screen.getByText('No plano grátis o Foco funciona aqui, mas não vai no clipe salvo ou enviado.')).toBeTruthy();
+  expect(screen.getByText('No plano grátis o Foco funciona aqui, mas não vai no vídeo salvo ou enviado.')).toBeTruthy();
   await fireEvent.press(screen.getByRole('switch', { name: 'Modo Foco' }));
   expect(c.toggleFocus).toHaveBeenCalledTimes(1);
   expect(c.unlock).not.toHaveBeenCalled();
+});
+
+test('on a free recording the speed is locked and tapping it unlocks the recording', async () => {
+  const c = ctx({ plan: 'free' });
+  const Panel = panel('speed');
+  await render(<Panel ctx={c} />);
+  expect(screen.queryByRole('button', { name: 'Velocidade 2x' })).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: 'Velocidade, Disponível no Pro' }));
+  expect(c.unlock).toHaveBeenCalledTimes(1);
+  expect(c.setEdit).not.toHaveBeenCalled();
 });

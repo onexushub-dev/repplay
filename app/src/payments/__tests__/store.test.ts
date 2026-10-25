@@ -820,10 +820,10 @@ describe('payments store', () => {
 
     it('free below the cap, blocked at it; blocked still plans free', async () => {
       const { repo, store } = await capSetup();
-      repo.freeCount.mockReturnValue(4);
+      repo.freeCount.mockReturnValue(2);
       expect(store.peekStart()).toEqual({ kind: 'free' });
       expect(store.freeLeft()).toBe(1);
-      repo.freeCount.mockReturnValue(5);
+      repo.freeCount.mockReturnValue(3);
       expect(store.peekStart()).toEqual({ kind: 'blocked' });
       await expect(store.startDecision()).resolves.toEqual({ kind: 'blocked' });
       expect(store.nextPlan()).toBe('free');
@@ -846,7 +846,7 @@ describe('payments store', () => {
       });
       expect(store.peekStart()).toEqual({ kind: 'free' });
       await expect(store.startDecision()).resolves.toEqual({ kind: 'free' });
-      expect(store.freeLeft()).toBe(5);
+      expect(store.freeLeft()).toBe(3);
     });
 
     it('a late purchase at a blocked start re-reads and blocks without throwing, then the listener makes it a credit', async () => {
