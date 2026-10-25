@@ -8,6 +8,7 @@ import { payments } from '../payments';
 import { triggerAllowed } from '../payments/limits';
 import { usePlan } from '../share/entitlement';
 import { focusQueue } from '../focus/appFocusQueue';
+import { focusHold } from '../focus/focusQueue';
 import { useVolumeRemote } from '../triggers/useVolumeRemote';
 import { type ReplaySession, type SessionDeps, useReplaySession } from './useReplaySession';
 import { useWatchTriggerGate } from './useWatchTriggerGate';
@@ -35,10 +36,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const plan = usePlan(recording ? session.state.sessionId : undefined);
   useWatchTriggerGate(recording, triggerAllowed('watch', plan), camera.watchSetSaveAllowed);
 
-  // The camera comes first: no new Modo Foco analysis while recording with the phone hot (spec §4.1).
-  const { phase, thermal } = session.state;
-  const hot = phase === 'recording' && (thermal.level === 'serious' || thermal.level === 'critical');
-  useEffect(() => focusQueue.setPaused(hot), [hot]);
+  // The camera comes first: no Modo Foco analysis while recording, except a clip opened with the phone cool
+  // (focus v2 spec, decision 6).
+  const hold = focusHold(recording, session.state.thermal.level);
+  useEffect(() => focusQueue.setHold(hold), [hold]);
   return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>;
 }
 

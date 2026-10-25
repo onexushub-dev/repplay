@@ -1,6 +1,6 @@
 import { createRepo, type KV } from '../../data/repo';
 import type { Clip } from '../../data/schema';
-import { createFocusQueue } from '../focusQueue';
+import { createFocusQueue, focusHold } from '../focusQueue';
 
 type Analysis = { status: 'ready' | 'none'; frames: number; framesWithPeople: number; meanPeople: number; elapsedMs: number };
 
@@ -156,4 +156,59 @@ test('an analysis interrupted (app sent to the background) stays pending and is 
   expect(repo.getClip(clip.id)!.focus).toEqual({ v: 1, status: 'pending' });
   queue.ensure(repo.getClip(clip.id)!);
   expect(runs).toHaveLength(2);
+});
+
+describe('hold while recording (thermal spec item 1)', () => {
+  test('focusHold: recording holds everything but an opened clip when cool, everything when warmer', () => {
+    expect(focusHold(false, 'serious')).toBe('none');
+    expect(focusHold(true, 'nominal')).toBe('openedOnly');
+    expect(focusHold(true, 'fair')).toBe('all');
+    expect(focusHold(true, 'serious')).toBe('all');
+    expect(focusHold(true, 'critical')).toBe('all');
+  });
+
+  test('openedOnly: a saved clip waits, a clip opened in the editor runs first, the rest after the hold ends', async () => {
+    const { queue, runs, addClip, done, flush } = setup();
+    queue.setHold('openedOnly');
+    const saved = addClip('/c/1.mp4');
+    const opened = addClip('/c/2.mp4');
+    queue.enqueue(saved.id);
+    queue.enqueue(opened.id);
+    expect(runs).toHaveLength(0);
+    queue.ensure(opened); // pending, waiting: opening it lets it through
+    expect(runs.map((r) => r.opts.clipPath)).toEqual(['/c/2.mp4']);
+    runs[0].resolve(done());
+    await flush();
+    expect(runs).toHaveLength(1); // the saved one still waits
+    queue.setHold('none');
+    expect(runs.map((r) => r.opts.clipPath)).toEqual(['/c/2.mp4', '/c/1.mp4']);
+  });
+
+  test('openedOnly: a clip never analysed and opened runs at once', () => {
+    const { queue, runs, addClip } = setup();
+    queue.setHold('openedOnly');
+    queue.ensure(addClip('/c/1.mp4'));
+    expect(runs).toHaveLength(1);
+  });
+
+  test('all: not even an opened clip starts', () => {
+    const { queue, runs, addClip } = setup();
+    queue.setHold('all');
+    queue.ensure(addClip('/c/1.mp4'));
+    expect(runs).toHaveLength(0);
+    queue.setHold('none');
+    expect(runs).toHaveLength(1);
+  });
+
+  test('an opened clip jumps ahead of clips saved before it', () => {
+    const { queue, runs, addClip } = setup();
+    queue.setHold('all');
+    const a = addClip('/c/1.mp4');
+    const b = addClip('/c/2.mp4');
+    queue.enqueue(a.id);
+    queue.enqueue(b.id);
+    queue.ensure(b);
+    queue.setHold('none');
+    expect(runs[0].opts.clipPath).toBe('/c/2.mp4');
+  });
 });

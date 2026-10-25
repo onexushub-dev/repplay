@@ -1,13 +1,14 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { addReplayListener } from '../../modules/replay-camera';
+import { addReplayListener, setScreenEconomy } from '../../modules/replay-camera';
 import { VOICE_WORDS } from '../i18n';
 import { useT } from '../i18n/useT';
 import { removeFile, repo } from '../data/mmkv';
 import { useSession } from '../session/SessionContext';
+import { useScreenEconomy } from '../session/useScreenEconomy';
 import { colors, fonts } from '../theme/tokens';
 import { Button } from './Button';
 import { HoldButton } from './HoldButton';
@@ -15,6 +16,15 @@ import { ArmsUpIcon, MicIcon, RemoteIcon, TapIcon, WatchIcon } from './icons';
 import { SavedOverlay } from './SavedOverlay';
 
 const OVERLAY_MS = 2000;
+/** How long the heat tip stays up (thermal work, item 5). */
+const HEAT_TIP_MS = 8000;
+
+/** "1080p30" → "1080p/30", the way the heat banner says it; older builds only ever stepped down to 720p/30. */
+function qualityLabel(quality: string | undefined): string {
+  if (quality === undefined) return '720p/30';
+  const at = quality.indexOf('p');
+  return at > 0 ? `${quality.slice(0, at + 1)}/${quality.slice(at + 1)}` : quality;
+}
 
 function clock(ms: number): string {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -40,11 +50,31 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
   const [now, setNow] = useState(() => Date.now());
   const [dismissed, setDismissed] = useState<string>();
   const last = state.lastSaved;
+  // Screen economy (thermal work, item 2): dark after a while without a touch; any touch brings it back. The tap that
+  // wakes the screen only wakes it (the player checking it still records), so it saves no clip; the triggers keep saving.
+  const economy = useScreenEconomy(state.phase === 'recording', state.thermal.level, setScreenEconomy);
+  const wakingTap = useRef(false);
+  function onAnyTouch() {
+    wakingTap.current = economy.asleep; // decided as the touch starts, before the screen wakes
+    economy.wake();
+  }
 
   useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(tick);
   }, []);
+
+  // Heat tip: the first time the phone gets warm in this recording, a few words on what helps; gone by itself.
+  const warm = state.phase === 'recording' && state.thermal.level === 'fair' && !state.thermal.degraded;
+  const [tipFor, setTipFor] = useState<string>();
+  const [tipGone, setTipGone] = useState<string>();
+  if (warm && state.sessionId !== undefined && tipFor !== state.sessionId) setTipFor(state.sessionId);
+  useEffect(() => {
+    if (tipFor === undefined) return;
+    const hide = setTimeout(() => setTipGone(tipFor), HEAT_TIP_MS);
+    return () => clearTimeout(hide);
+  }, [tipFor]);
+  const showTip = warm && tipFor !== undefined && tipFor === state.sessionId && tipGone !== tipFor;
 
   useEffect(() => {
     if (!last) return;
@@ -110,12 +140,16 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
   const clips = t('summary.clips', { count: state.clipCount });
 
   return (
-    <View style={StyleSheet.absoluteFill}>
+    <View style={StyleSheet.absoluteFill} onTouchStart={onAnyTouch}>
+      {economy.asleep ? <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.dark]} testID="screen-economy" /> : null}
       {/* The whole screen is the save button; nothing covers the picture. */}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={t('recording.tapAnywhere')}
-        onPress={() => trigger('screen')}
+        onPress={() => {
+          if (wakingTap.current) return;
+          trigger('screen');
+        }}
         style={StyleSheet.absoluteFill}
       />
 
@@ -135,8 +169,13 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
           <View pointerEvents="none" style={styles.banner}>
             <Text style={styles.bannerText}>
               <Text style={styles.bold}>{t('recording.hotTitle')}</Text>
-              {t('recording.hotBody')}
+              {t('recording.hotBody', { quality: qualityLabel(state.thermal.quality) })}
             </Text>
+          </View>
+        ) : null}
+        {showTip ? (
+          <View pointerEvents="none" style={styles.banner}>
+            <Text style={styles.bannerText}>{t('recording.heatTip')}</Text>
           </View>
         ) : null}
         {state.paused ? (
@@ -145,20 +184,28 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
           </View>
         ) : null}
 
-        <View pointerEvents="box-none" style={styles.bottom}>
-          <View pointerEvents="none" style={styles.hintCard}>
-            <TapIcon color={colors.accent} size={28} />
-            <View style={styles.hintText}>
-              <Text style={styles.hint}>{t('recording.tapHint')}</Text>
-              <Text style={styles.hintSub}>{hintSub}</Text>
-            </View>
-            <View style={styles.icons}>
-              {voice ? <MicIcon color={colors.accent} size={20} /> : null}
-              {gesture ? <ArmsUpIcon color={colors.accent} size={20} /> : null}
-              <RemoteIcon color={colors.accent} size={20} />
-              <WatchIcon color={colors.muted} size={20} />
-            </View>
+        {economy.asleep ? (
+          <View pointerEvents="none" style={styles.economy}>
+            <Text style={styles.economyText}>{t('recording.economy')}</Text>
           </View>
+        ) : null}
+
+        <View pointerEvents="box-none" style={styles.bottom}>
+          {economy.asleep ? null : (
+            <View pointerEvents="none" style={styles.hintCard}>
+              <TapIcon color={colors.accent} size={28} />
+              <View style={styles.hintText}>
+                <Text style={styles.hint}>{t('recording.tapHint')}</Text>
+                <Text style={styles.hintSub}>{hintSub}</Text>
+              </View>
+              <View style={styles.icons}>
+                {voice ? <MicIcon color={colors.accent} size={20} /> : null}
+                {gesture ? <ArmsUpIcon color={colors.accent} size={20} /> : null}
+                <RemoteIcon color={colors.accent} size={20} />
+                <WatchIcon color={colors.muted} size={20} />
+              </View>
+            </View>
+          )}
           <HoldButton
             label={t('recording.holdToEnd')}
             holdingLabel={t('recording.keepHolding')}
@@ -175,6 +222,9 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
 const glass = 'rgba(15,16,13,0.72)';
 
 const styles = StyleSheet.create({
+  dark: { backgroundColor: colors.screenOff },
+  economy: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
+  economyText: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21, color: colors.soft, textAlign: 'center' },
   content: { flex: 1, paddingHorizontal: 16, gap: 10 },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
   pill: {
