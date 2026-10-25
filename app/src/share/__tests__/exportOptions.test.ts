@@ -102,5 +102,5 @@ test('framingLost: only a ready framing that is on, not turned and not zoomed by
   expect(framingLost(clip({ muted: false, rotation: 90 }))).toBe(false);
   expect(framingLost(clip({ muted: false, zoom: { scale: 2, cx: 0.5, cy: 0.5 } }))).toBe(false);
   expect(framingLost(clip({ muted: false }, { v: 1, status: 'pending' } as Clip['focus']))).toBe(false);
-  expect(framingLost(clip({ muted: false }, undefined))).toBe(false);
+  expect(framingLost({ edit: { muted: false }, focus: undefined })).toBe(false);
 });
