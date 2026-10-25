@@ -62,6 +62,11 @@ test('native error ends the session keeping clips', () => {
   expect(s).toMatchObject({ phase: 'ended', error: 'ENCODER_FAILED', thermalStop: true, clipCount: 4, sessionId: 's1' });
 });
 
+test('thermal stores the quality in use when the native side sends it', () => {
+  const s = reducer(recording(), { type: 'thermal', level: 'serious', degraded: true, quality: '1080p30' });
+  expect(s.thermal).toEqual({ level: 'serious', degraded: true, quality: '1080p30' });
+});
+
 test('thermal stores level and degraded', () => {
   const s = reducer(recording(), { type: 'thermal', level: 'serious', degraded: true });
   expect(s.thermal).toEqual({ level: 'serious', degraded: true });

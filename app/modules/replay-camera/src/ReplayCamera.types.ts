@@ -83,7 +83,8 @@ export type ReplayCameraModuleEvents = {
   ) => void;
   /** Camera phone only: the answer to `remoteHostCheck`. `ms` is the round trip; 0 when `ok` is false. */
   onRemoteCheck: (e: { id: string; ok: boolean; ms: number }) => void;
-  onThermalChange: (e: { level: ThermalLevel; degraded: boolean }) => void;
+  /** `quality`: what the camera records now ("1080p30", "720p30"…); missing in older builds. */
+  onThermalChange: (e: { level: ThermalLevel; degraded: boolean; quality?: string }) => void;
   onInterrupted: () => void;
   onResumed: () => void;
   onError: (e: { code: ReplayErrorCode; message: string }) => void;

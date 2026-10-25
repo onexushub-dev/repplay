@@ -101,7 +101,7 @@ export const en = {
     tapAnywhere: 'Tap anywhere to save the clip',
     recording: 'Recording',
     hotTitle: 'Phone is hot. ',
-    hotBody: 'We switched to 720p/30 to keep recording. Move it into the shade if you can.',
+    hotBody: 'We switched to %{quality} to keep recording. Take the case off and move it into the shade if you can.',
     paused: 'Recording paused. Return to the app to continue.',
     tapHint: 'Tap the screen to save the clip',
     holdToEnd: 'Hold to end the recording',
@@ -109,6 +109,8 @@ export const en = {
     savedTitle: 'CLIP #%{number} SAVED',
     savedVia: 'via %{source} · %{seconds}s',
     undo: 'Undo',
+    heatTip: 'Phone warming up: take the case off and avoid charging while recording.',
+    economy: 'Screen dimmed to keep the phone cool. Tap to wake it.',
   },
   summary: {
     clips: { one: '%{count} clip', other: '%{count} clips' },

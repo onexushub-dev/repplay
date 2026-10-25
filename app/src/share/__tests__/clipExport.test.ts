@@ -41,9 +41,10 @@ test('clipExportJob matches what the clip screen exports', () => {
   expect(free.watermark).toBe(true);
 });
 
-test('Modo Foco ready: the framing file goes along', () => {
+test('Modo Foco ready: the framing file goes along on a paid export, never on a free one', () => {
   const ready = { ...clip, edit: { muted: false }, focus: { v: 1, status: 'ready', file: '/c.focus.json' } } as Clip;
   expect(clipExportJob(ready, 'paid', vertical).options.focus).toEqual({ path: '/c.focus.json', aspect: 'portrait' });
+  expect(clipExportJob(ready, 'free', vertical).options.focus).toBeUndefined();
   readFocusFile.mockReturnValueOnce(undefined);
   expect(clipExportJob(ready, 'paid', vertical).options.focus).toBeUndefined();
 });

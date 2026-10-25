@@ -145,7 +145,7 @@ export function useReplaySession(deps: SessionDeps) {
       camera.addReplayListener('onInterrupted', () => dispatch({ type: 'interrupted' })),
       camera.addReplayListener('onResumed', () => dispatch({ type: 'resumed' })),
       camera.addReplayListener('onThermalChange', (e) =>
-        dispatch({ type: 'thermal', level: e.level, degraded: e.degraded })
+        dispatch({ type: 'thermal', level: e.level, degraded: e.degraded, quality: e.quality })
       ),
       camera.addReplayListener('onError', (e) => {
         // The native side has already stopped; keep what was saved and end the game.

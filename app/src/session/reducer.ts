@@ -15,7 +15,8 @@ export type SessionState = {
   lastSaved?: { clipId: string; number: number; source: TriggerSource; at: number; cutMs: number };
   saving: boolean;
   paused: boolean;
-  thermal: { level: ThermalLevel; degraded: boolean };
+  /** `quality`: what the camera records now, when the native side says (it steps down as the phone heats up). */
+  thermal: { level: ThermalLevel; degraded: boolean; quality?: string };
   error?: ReplayErrorCode;
   /** The native side stopped because the phone got too hot. */
   thermalStop?: boolean;
@@ -40,7 +41,7 @@ export type SessionAction =
   | { type: 'undone'; clipId: string }
   | { type: 'interrupted' }
   | { type: 'resumed' }
-  | { type: 'thermal'; level: ThermalLevel; degraded: boolean }
+  | { type: 'thermal'; level: ThermalLevel; degraded: boolean; quality?: string }
   | { type: 'nativeError'; code: ReplayErrorCode; thermal: boolean }
   | { type: 'stopRequested' }
   | { type: 'stopped' }
@@ -107,7 +108,14 @@ export function reducer(state: SessionState, action: SessionAction): SessionStat
     case 'resumed':
       return { ...state, paused: false };
     case 'thermal':
-      return { ...state, thermal: { level: action.level, degraded: action.degraded } };
+      return {
+        ...state,
+        thermal: {
+          level: action.level,
+          degraded: action.degraded,
+          ...(action.quality !== undefined ? { quality: action.quality } : {}),
+        },
+      };
     case 'nativeError':
       return { ...state, phase: 'ended', saving: false, error: action.code, thermalStop: action.thermal };
     case 'stopRequested':
