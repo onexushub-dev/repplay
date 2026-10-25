@@ -1,0 +1,19 @@
+# Conversion and decode tests (tested 2026-10-24 on Python 3.13).
+torch==2.14.1
+torchvision==0.29.1
+coremltools==9.0
+onnx==1.23.2
+onnxruntime==1.29.0
+opencv-python==5.0.0.93
+numpy
+pytest
+# YOLOX repo needs:
+loguru
+tabulate
+# D-FINE repo needs:
+pyyaml
+scipy
+tensorboard
+transformers
+faster-coco-eval
+calflops

@@ -1,0 +1,38 @@
+file,source,width,height,fps,duration_s,bounds_start_ms,v1_focus,case_reviewed,nota,recording,trigger,trim_start_ms,trim_end_ms
+basket-v-corner-normal-01.mp4,raw-dump/clips/1937B0C3-2F17-4215-91DD-60D15B048606.mp4,1080,1920,59.94,60.0,29984,ready,no,,,,,
+basket-v-corner-unavailable-01.mp4,raw-dump/clips/69A93876-FF9B-4E99-8F4E-F47C62AC1414.mp4,1080,1920,59.94,60.0,31250,none,no,,,,,
+basket-v-corner-normal-02.mp4,raw-dump/clips/5B8624CD-B29C-4FD4-9801-71952494761B.mp4,1080,1920,59.94,60.0,30003,ready,no,,,,,
+basket-v-corner-unavailable-02.mp4,raw-dump/clips/BADCFC77-07EC-471D-8837-136F892DBA5F.mp4,1080,1920,59.94,60.0,29986,none,no,,,,,
+basket-v-corner-normal-03.mp4,raw-dump/clips/5EE5D7B5-22D9-4C3B-82E8-C41A78E550BB.mp4,1080,1920,59.94,60.0,30003,ready,no,,,,,
+basket-v-corner-normal-04.mp4,raw-dump/clips/160DA797-F410-4AE0-A6BA-E1BB577A110E.mp4,1080,1920,59.94,60.0,30004,ready,no,,,,,
+basket-v-corner-normal-05.mp4,raw-dump/clips/87018BDD-39BA-4F6F-A121-4D8F52A18DD6.mp4,1080,1920,59.94,53.0,23009,ready,no,,,,,
+basket-v-corner-normal-06.mp4,raw-dump/clips/9398F3F9-6E6D-4D41-8D3C-CB1917B1E389.mp4,1080,1920,59.94,60.0,30003,ready,no,,,,,
+basket-v-corner-normal-07.mp4,raw-dump/clips/8D90499E-92BA-4CB7-B74C-EAED8CF20C38.mp4,1080,1920,59.94,60.0,29986,ready,no,,,,,
+basket-v-corner-normal-08.mp4,raw-dump/clips/454F2AF1-4AB4-47A7-8418-2DD0F33BE6F5.mp4,720,1280,29.97,60.0,30014,ready,no,,,,,
+basket-v-corner-unavailable-03.mp4,raw-dump/clips/E04277AB-8894-49A8-BD0E-13A035A865D7.mp4,720,1280,29.97,60.0,29981,none,no,,,,,
+basket-v-corner-unavailable-04.mp4,raw-dump/clips/C6DE0C66-7E57-4058-9461-D76A84FBE0DF.mp4,720,1280,29.97,60.0,30014,none,no,,,,,
+basket-v-corner-normal-09.mp4,raw-dump/clips/91F26A42-3D7D-49C4-A66D-56D765B83DA7.mp4,1080,1920,59.94,60.0,30003,ready,no,,,,,
+basket-v-corner-normal-10.mp4,raw-dump/clips/F46D318F-0864-461D-B1B0-386BB8D83FEE.mp4,1080,1920,59.94,60.0,30001,ready,no,,,,,
+basket-v-corner-normal-11.mp4,raw-dump/clips/B19CE35F-9B7A-4991-8F91-ED8493857577.mp4,1080,1920,59.94,60.0,29986,ready,no,,,,,
+basket-v-corner-unavailable-05.mp4,raw-dump/clips/65C701F8-5B8E-4A12-969A-22EE08300BA7.mp4,1080,1920,59.94,60.0,30003,none,no,,,,,
+basket-h-corner-backlight-01.mp4,horizontal/09h30 d610eb56/clipe 01.mp4 (E78DAFD3-E4AC-4393-88C2-A6A664B9CCDF.mp4),1280,720,29.97,60.0,30014,ready,no,status ready but no focus.json in the export,09h30 d610eb56,watch,30014,60014
+basket-h-corner-backlight-02.mp4,horizontal/09h30 d610eb56/clipe 02.mp4 (0DD9347A-CCCB-448C-8B27-DB11A71A6D9B.mp4),1280,720,29.97,60.0,30014,ready,no,,09h30 d610eb56,watch,30014,60014
+basket-h-corner-backlight-03.mp4,horizontal/09h30 d610eb56/clipe 03.mp4 (5DF735AB-131B-486D-AA0C-F36701B641D7.mp4),1280,720,29.97,60.0,29981,ready,no,,09h30 d610eb56,watch,29981,59981
+basket-h-corner-backlight-04.mp4,horizontal/09h42 047bfb68/clipe 01.mp4 (09842EB7-94F8-457F-9C2B-59B4EFAB04CC.mp4),1280,720,29.97,60.0,30014,ready,no,,09h42 047bfb68,watch,30014,60014
+basket-h-corner-backlight-05.mp4,horizontal/09h42 047bfb68/clipe 02.mp4 (E2A9363E-C1B0-4EE0-9130-3F3B51C86D8A.mp4),1280,720,29.97,60.0,29981,ready,no,,09h42 047bfb68,watch,29981,59981
+basket-h-corner-backlight-06.mp4,horizontal/09h42 047bfb68/clipe 03.mp4 (608848F2-4E70-4F9B-8234-DDB3D41B3BEE.mp4),1280,720,29.97,60.0,30014,ready,no,,09h42 047bfb68,watch,30014,60014
+basket-h-side-low-unavailable-01.mp4,horizontal/09h52 66244c35/clipe 01.mp4 (B524CB14-C561-4F00-A700-15459306C2BC.mp4),1280,720,29.97,60.0,50485,none,no,short trim 9.5s,09h52 66244c35,watch,50485,60014
+basket-h-side-low-normal-01.mp4,horizontal/09h52 66244c35/clipe 02.mp4 (424043D6-A01F-4224-A684-5C6573A7FB0F.mp4),1280,720,29.97,60.0,29981,ready,no,,09h52 66244c35,watch,29981,59981
+basket-h-side-low-unavailable-02.mp4,horizontal/09h52 66244c35/clipe 03.mp4 (D48E5377-B244-4964-8FEC-FD3A89A6E2DB.mp4),1280,720,29.97,60.0,29981,none,no,,09h52 66244c35,watch,29981,59981
+basket-h-side-low-unavailable-03.mp4,horizontal/09h52 66244c35/clipe 04.mp4 (904A6EFE-25F7-4ABE-8EBF-5C4F3FEEFB3C.mp4),1280,720,29.97,60.0,30014,none,no,,09h52 66244c35,watch,30014,60014
+basket-h-side-low-normal-02.mp4,horizontal/09h52 66244c35/clipe 05.mp4 (935C0D6E-B11D-447D-A4F9-518BB808D96B.mp4),1280,720,29.97,60.0,30014,ready,no,,09h52 66244c35,watch,30014,60014
+basket-h-side-low-normal-03.mp4,horizontal/09h52 66244c35/clipe 06.mp4 (E421E9F8-D465-4092-B02E-453A0AACB8C2.mp4),1280,720,29.97,60.0,29981,ready,no,,09h52 66244c35,watch,29981,59981
+basket-h-side-low-normal-04.mp4,horizontal/10h13 b8da7531/clipe 02.mp4 (E762FA78-D723-4EF5-9DE0-0850CF2AC294.mp4),1280,720,29.97,60.0,29981,ready,no,,10h13 b8da7531,watch,29981,59981
+basket-h-side-low-normal-05.mp4,horizontal/10h18 7031e69b/clipe 01.mp4 (5A025093-41F0-488B-AE7F-A0B8CCA03D17.mp4),1280,720,29.97,59.0,29014,ready,no,,10h18 7031e69b,watch,29014,59014
+basket-h-side-low-unavailable-04.mp4,horizontal/10h18 7031e69b/clipe 02.mp4 (6FE85EDE-DCC7-4B1A-BAED-079724F8D227.mp4),1280,720,29.97,60.0,30016,none,no,,10h18 7031e69b,watch,30016,60016
+basket-h-side-low-normal-06.mp4,horizontal/10h18 7031e69b/clipe 03.mp4 (B6752F03-2BB9-4399-9427-A394F6BD0688.mp4),1280,720,29.97,60.0,30014,ready,no,,10h18 7031e69b,watch,30014,60014
+basket-h-side-low-normal-07.mp4,horizontal/10h18 7031e69b/clipe 04.mp4 (B359013A-0000-424A-82E6-3EBC5DFE4F93.mp4),1280,720,29.97,60.0,30014,ready,no,,10h18 7031e69b,watch,30014,60014
+basket-h-side-low-normal-08.mp4,horizontal/10h18 7031e69b/clipe 05.mp4 (7480C784-6A20-4622-BAAD-1B1FB2DD5A33.mp4),1280,720,29.97,60.0,50321,ready,no,short trim 9.7s,10h18 7031e69b,watch,50321,60014
+basket-h-side-low-normal-09.mp4,horizontal/10h18 7031e69b/clipe 06.mp4 (0194EF2A-18A8-43FE-B2E9-6399B4C55E45.mp4),1280,720,29.97,60.0,29981,ready,no,,10h18 7031e69b,watch,29981,59981
+basket-h-side-low-failed-01.mp4,horizontal/10h18 7031e69b/clipe 07.mp4 (297A6194-79D0-4347-8897-0C93DF51BA63.mp4),1280,720,29.97,60.0,30016,failed,no,,10h18 7031e69b,watch,30016,60016
+basket-h-side-low-normal-10.mp4,horizontal/10h18 7031e69b/clipe 08.mp4 (04C2F57E-78AA-47A9-BD84-0F8E8B0AC0EC.mp4),1280,720,29.97,60.0,30014,ready,no,,10h18 7031e69b,watch,30014,60014

@@ -1,3 +1,13 @@
 .superpowers/
 .DS_Store
 .build/
+
+# Python tooling (focus bench, model conversion)
+__pycache__/
+.pytest_cache/
+.venv/
+
+# Model files never go to git (tens of MB)
+*.onnx
+*.mlpackage/
+*.pth
