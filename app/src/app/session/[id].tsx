@@ -10,7 +10,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { ExportProgress } from '../../components/ExportProgress';
 import { SelectionBar } from '../../components/SelectionBar';
 import { UpgradeCard } from '../../components/UpgradeCard';
-import { ClipIcon } from '../../components/icons';
+import { ClipIcon, TrashIcon } from '../../components/icons';
 import { clipNumber, dayAndTime, megabytes, modeLabel, recordedLabel, sessionLabel } from '../../components/format';
 import { removeFile, repo } from '../../data/mmkv';
 import { MAX_GAME_NAME } from '../../data/schema';
@@ -151,12 +151,26 @@ export default function SessionSummary() {
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.header}>
-        {session ? (
-          <Text style={styles.subtitle}>{`${modeLabel(session.sport, locale)} · ${dayAndTime(session.startedAt, undefined, locale)}`}</Text>
-        ) : null}
-        <Text style={styles.title} accessibilityRole="header" numberOfLines={2}>
-          {session?.name ? sessionLabel(session, undefined, locale) : t('summary.ended')}
-        </Text>
+        <View style={styles.headerTop}>
+          <View style={styles.headerText}>
+            {session ? (
+              <Text style={styles.subtitle}>{`${modeLabel(session.sport, locale)} · ${dayAndTime(session.startedAt, undefined, locale)}`}</Text>
+            ) : null}
+            <Text style={styles.title} accessibilityRole="header" numberOfLines={2}>
+              {session?.name ? sessionLabel(session, undefined, locale) : t('summary.ended')}
+            </Text>
+          </View>
+          {session && !selecting ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('games.deleteRecording')}
+              hitSlop={6}
+              onPress={confirmDeleteGame}
+              style={styles.deleteGame}>
+              <TrashIcon color={colors.rec} size={22} />
+            </Pressable>
+          ) : null}
+        </View>
         {session ? (
           <View style={styles.nameBox}>
             <TextInput
@@ -269,19 +283,7 @@ export default function SessionSummary() {
             onDelete={confirmDeleteClips}
           />
         ) : (
-          <>
-            <Button label={t('summary.newRecording')} onPress={newGame} />
-            {session ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('games.deleteRecording')}
-                hitSlop={8}
-                onPress={confirmDeleteGame}
-                style={styles.deleteGame}>
-                <Text style={styles.deleteGameText}>{t('games.deleteRecording')}</Text>
-              </Pressable>
-            ) : null}
-          </>
+          <Button label={t('summary.newRecording')} onPress={newGame} />
         )}
       </View>
       {freeGate.sheet}
@@ -334,7 +336,8 @@ const styles = StyleSheet.create({
   pickBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 32 },
   pickLink: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.accent },
   pickCount: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text },
-  deleteGame: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  deleteGameText: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.rec },
+  headerTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  headerText: { flex: 1, minWidth: 0, gap: 4 },
+  deleteGame: { width: 44, height: 44, marginRight: -10, marginTop: -6, alignItems: 'center', justifyContent: 'center' },
   buttons: { flexDirection: 'row', gap: 10 },
 });
