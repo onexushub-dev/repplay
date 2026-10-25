@@ -1,6 +1,6 @@
 import type { ModeSettings } from '../../data/schema';
 import { modeById } from '../../modes/registry';
-import { canCompile, captureConfig, editLocked, triggerAllowed } from '../limits';
+import { canCompile, captureConfig, triggerAllowed } from '../limits';
 
 const court = modeById('quadra').defaults;
 const gym: ModeSettings = { zoom: 1, gestureEnabled: false, voiceEnabled: true, bufferSeconds: 60, cutSeconds: 60, quality: '1080p30', audio: true };
@@ -32,12 +32,6 @@ test('triggerAllowed: only the watch is paid; every other trigger is free', () =
 
 test('captureConfig free: a clip length shorter than 15 s is kept', () => {
   expect(captureConfig({ ...court, cutSeconds: 10 }, 'free').cutSeconds).toBe(10);
-});
-
-test('speed is locked on the free plan; the other edits (Modo Foco included, it is only kept out of the export) are not', () => {
-  expect(editLocked('speed', 'free')).toBe(true);
-  expect(editLocked('speed', 'paid')).toBe(false);
-  for (const tool of ['focus', 'sound', 'zoom', 'rotate']) expect(editLocked(tool, 'free')).toBe(false);
 });
 
 test('compiling clips is paid', () => {

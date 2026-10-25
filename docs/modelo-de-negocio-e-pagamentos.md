@@ -9,10 +9,10 @@
 | Gravações | **3 por mês** (mês civil local) | Ilimitadas, com todos os recursos |
 | Exportação | **Full HD (1080×1920)** | Full HD (1080×1920) |
 | Duração do clipe | Só **15 s** | Acima de 15 s |
-| Som no clipe exportado | Não (sai sem som) | Sim |
+| Som | Toca no editor, mas **não vai no vídeo salvo/enviado** | Vai no vídeo |
 | Marca d'água | Sim, em todo clipe | **Removida** |
 | Modo Foco | Funciona no editor (para experimentar), mas **não vai no vídeo salvo/enviado** | Liberado, vai no vídeo |
-| Velocidade | Bloqueada no editor (sempre 1x) | Liberada |
+| Velocidade | Funciona no editor, mas o vídeo sai sempre em **1x** | Vai no vídeo |
 | Compilar clipes | Bloqueado (abre o paywall) | Liberado |
 | Gatilhos | Voz, gesto, toque na tela, controle Bluetooth e celular controle | Todos, **incluindo o relógio** |
 
@@ -44,8 +44,7 @@ O plano da gravação fica **fixado no início** (`Session.paid`). Uma gravaçã
 | Limite mensal (`FREE_RECORDINGS_PER_MONTH = 3`) | `payments/rules.ts` |
 | 15 s no grátis (`FREE_MAX_SECONDS`), aplicado na captura | `payments/limits.ts` (`captureConfig`) e seletor de duração em `app/setup.tsx` |
 | Gatilho pago (`PAID_TRIGGERS = ['watch']`) | `payments/limits.ts` (`triggerAllowed`), usado em `app/setup.tsx` e `session/SessionContext.tsx` |
-| Velocidade bloqueada no editor (`PAID_EDITS`) | `payments/limits.ts` (`editLocked`), `clip/ToolBar.tsx`, `clip/panels/SpeedPanel.tsx`; o clipe guarda a escolha, mas ela só vale no pago |
-| Aviso antes de exportar no grátis (salvar, enviar, compilar) | `components/FreeExportSheet.tsx` + `components/useFreeExportGate.tsx`; usado em `run()` de `app/clip/[id].tsx`. Lista o que o vídeo não terá (sem som, sem Foco se estiver ligado, com marca d'água) e oferece Liberar com o Pro / Continuar no plano grátis / Cancelar. A compilação deve chamar o mesmo `ask` |
+| Aviso antes de exportar no grátis (salvar, enviar, compilar) | `components/FreeExportSheet.tsx` + `components/useFreeExportGate.tsx`; usado em `run()` de `app/clip/[id].tsx`. Lista só o que o clipe tinha e o vídeo não terá (`freeLosses` em `share/exportOptions.ts`: som, velocidade, Foco) e sempre a marca d'água e oferece Liberar com o Pro / Continuar no plano grátis / Cancelar. A compilação deve chamar o mesmo `ask` |
 | Compilar pago | `share/useBatchActions.ts` (`compile`: no grátis abre o paywall) e `canCompile` em `payments/limits.ts`. Salvar/enviar em lote no grátis passam pelo mesmo aviso de exportação em `app/session/[id].tsx` |
 | Resolução, som, velocidade, Foco e marca d'água na exportação | `share/exportOptions.ts` (`exportOptions`); a marca é desenhada por `share/ShareOverlay.tsx` |
 
@@ -53,7 +52,7 @@ Quem decide o plano na tela: `usePlan` (antes de gravar e durante a gravação) 
 
 ## Textos que mencionam as regras
 
-`app/src/i18n/locales/pt-BR.ts` e `en.ts`: `summary.freeNote`, `games.proMessage`, `unlock.message`, `clip.focusPro`, `clip.speedLocked`, `freeExport.*`, `clip.soundPro`, `setup.watchProOnly`, `setup.proOnly`.
+`app/src/i18n/locales/pt-BR.ts` e `en.ts`: `summary.freeNote`, `games.proMessage`, `unlock.message`, `clip.focusPro`, `clip.speedFree`, `clip.soundFree`, `freeExport.*`, `setup.watchProOnly`, `setup.proOnly`.
 
 Fora do código (a atualizar nas lojas e no RevenueCat quando publicar): descrição do paywall, textos da App Store / Google Play e o paywall publicado no painel do RevenueCat, que devem listar as regras da tabela acima.
 

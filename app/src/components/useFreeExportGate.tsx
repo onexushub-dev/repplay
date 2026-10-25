@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Platform } from 'react-native';
 
+import type { FreeLosses } from '../share/exportOptions';
 import { FreeExportSheet, type FreeExportChoice } from './FreeExportSheet';
+
+const NONE: FreeLosses = { focus: false, speed: false, sound: false };
 
 /** Longest wait for the sheet to finish closing on iOS before going on anyway. */
 const DISMISS_FALLBACK_MS = 800;
@@ -13,8 +16,8 @@ const DISMISS_FALLBACK_MS = 800;
  * "Unlock" resolves only once the sheet has closed: the paywall is a native screen, and iOS drops one presented while a
  * Modal is still sliding away (it flashes and closes, and the Modal's layer keeps eating touches).
  */
-export function useFreeExportGate(): { ask: (o: { focusLost: boolean }) => Promise<FreeExportChoice>; sheet: ReactNode } {
-  const [open, setOpen] = useState<{ focusLost: boolean } | null>(null);
+export function useFreeExportGate(): { ask: (o: FreeLosses) => Promise<FreeExportChoice>; sheet: ReactNode } {
+  const [open, setOpen] = useState<FreeLosses | null>(null);
   const resolver = useRef<((c: FreeExportChoice) => void) | null>(null);
   const waiting = useRef<{ choice: FreeExportChoice; timer: ReturnType<typeof setTimeout> } | null>(null);
 
@@ -29,7 +32,7 @@ export function useFreeExportGate(): { ask: (o: { focusLost: boolean }) => Promi
   }, []);
 
   const ask = useCallback(
-    (o: { focusLost: boolean }) =>
+    (o: FreeLosses) =>
       new Promise<FreeExportChoice>((resolve) => {
         resolver.current = resolve;
         setOpen(o);
@@ -51,5 +54,5 @@ export function useFreeExportGate(): { ask: (o: { focusLost: boolean }) => Promi
   const onDismissed = useCallback(() => {
     if (waiting.current?.choice === 'unlock') settle();
   }, [settle]);
-  return { ask, sheet: <FreeExportSheet visible={open !== null} focusLost={open?.focusLost ?? false} onChoose={choose} onDismissed={onDismissed} /> };
+  return { ask, sheet: <FreeExportSheet visible={open !== null} losses={open ?? NONE} onChoose={choose} onDismissed={onDismissed} /> };
 }

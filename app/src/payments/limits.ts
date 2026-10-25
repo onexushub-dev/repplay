@@ -31,16 +31,6 @@ export function triggerAllowed(source: TriggerSource, plan: Plan): boolean {
   return plan === 'paid' || !PAID_TRIGGERS.includes(source);
 }
 
-/**
- * Edits that only a paid recording has: the free plan sees them locked in the editor. Modo Foco is not here: it works in
- * the editor to be tried, and `exportOptions` keeps it out of what leaves the app.
- */
-export const PAID_EDITS: readonly string[] = ['speed'];
-
-export function editLocked(tool: string, plan: Plan): boolean {
-  return plan === 'free' && PAID_EDITS.includes(tool);
-}
-
 /** Compiling several clips into one video is paid. */
 export function canCompile(plan: Plan): boolean {
   return plan === 'paid';

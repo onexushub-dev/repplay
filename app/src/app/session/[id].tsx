@@ -17,7 +17,7 @@ import { MAX_GAME_NAME } from '../../data/schema';
 import { unlockRecording } from '../../payments/unlock';
 import { useFreeExportGate } from '../../components/useFreeExportGate';
 import { useViewPlan } from '../../share/entitlement';
-import { framingLost } from '../../share/exportOptions';
+import { freeLosses } from '../../share/exportOptions';
 import { useBatchActions } from '../../share/useBatchActions';
 import { useT } from '../../i18n/useT';
 import { useSession } from '../../session/SessionContext';
@@ -57,7 +57,11 @@ export default function SessionSummary() {
   const freeGate = useFreeExportGate();
   const exportAfterNotice = async (clips: typeof pickedClips, go: (clips: typeof pickedClips) => Promise<void>) => {
     if (plan === 'free') {
-      const choice = await freeGate.ask({ focusLost: clips.some(framingLost) });
+      const choice = await freeGate.ask({
+        focus: clips.some((c) => freeLosses(c).focus),
+        speed: clips.some((c) => freeLosses(c).speed),
+        sound: clips.some((c) => freeLosses(c).sound),
+      });
       if (choice === 'unlock') void unlockRecording(id, t);
       if (choice !== 'go') return;
     }

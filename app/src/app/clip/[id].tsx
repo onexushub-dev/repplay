@@ -164,11 +164,9 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
   const freeGate = useFreeExportGate();
 
   const [trim, setTrim] = useState(() => (clip ? clip.trim : { startMs: 0, endMs: 0 }));
-  const storedEdit = readEdit(clip?.edit);
-  // A free recording has speed locked: the stored choice is kept (an unlock gives it back) but does not play or export.
-  const edit = plan === 'free' ? { ...storedEdit, speed: 1 as const } : storedEdit;
-  // A free recording has its sound locked: the clip may carry it, but it is neither heard nor exported until unlocked.
-  const soundOff = edit.muted || plan === 'free';
+  // Speed, sound and Modo Foco work in the app for every plan; a free export drops them (see the notice in `run`).
+  const edit = readEdit(clip?.edit);
+  const soundOff = edit.muted;
   const floor = clip?.contentStartMs ?? 0;
   // The track covers only what the clip was first saved with, so the cut can be shortened but never reach moments
   // that already belong to the previous clip.
@@ -416,7 +414,7 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
   }
 
   function setEdit(patch: Partial<ReturnType<typeof readEdit>>) {
-    const next = { ...storedEdit, ...patch };
+    const next = { ...edit, ...patch };
     repo.updateClip(id, {
       edit: {
         speed: next.speed,
@@ -559,7 +557,7 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
   async function run(kind: ExportJob['kind'], action: (path: string) => Promise<void>) {
     if (exporting.current || !sizeKnown) return;
     if (plan === 'free') {
-      const choice = await freeGate.ask({ focusLost: focusActive });
+      const choice = await freeGate.ask({ focus: focusActive, speed: edit.speed !== 1, sound: !edit.muted && edit.speed === 1 });
       if (choice === 'unlock') void unlockRecording(clip!.sessionId, t);
       if (choice !== 'go') return;
       if (exporting.current) return;
@@ -732,7 +730,7 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
               </View>
             </>
           }
-          toolBar={<ToolBar open={tool.id} focusOn={focusUi === 'on'} plan={plan} onOpen={pickTool} tools={tools} />}
+          toolBar={<ToolBar open={tool.id} focusOn={focusUi === 'on'} onOpen={pickTool} tools={tools} />}
         />
       ) : (
         <ClipWatch

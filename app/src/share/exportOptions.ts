@@ -56,8 +56,15 @@ export function exportOptions(
   };
 }
 
-/** True when a free export drops the framing this clip would otherwise carry: Modo Foco ready, on, not turned or zoomed by hand. */
-export function framingLost(clip: Pick<Clip, 'edit' | 'focus'>): boolean {
-  const { focus, rotation, zoom } = readEdit(clip.edit);
-  return clip.focus !== undefined && clip.focus.status === 'ready' && focus && rotation === 0 && !(zoom !== undefined && zoom.scale > 1);
+/** What a free export drops from this clip: the framing, the speed, the sound (only what the clip actually had). */
+export type FreeLosses = { focus: boolean; speed: boolean; sound: boolean };
+
+export function freeLosses(clip: Pick<Clip, 'edit' | 'focus'>): FreeLosses {
+  const { focus, rotation, zoom, speed, muted } = readEdit(clip.edit);
+  return {
+    focus: clip.focus !== undefined && clip.focus.status === 'ready' && focus && rotation === 0 && !(zoom !== undefined && zoom.scale > 1),
+    speed: speed !== 1,
+    // Away from 1x the video is silent anyway, so there is no sound to lose.
+    sound: !muted && speed === 1,
+  };
 }

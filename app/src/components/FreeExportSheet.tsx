@@ -2,17 +2,18 @@ import type { ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import type { FreeLosses } from '../share/exportOptions';
 import { useT } from '../i18n/useT';
 import { colors, fonts, radius } from '../theme/tokens';
 import { Button } from './Button';
-import { CheckIcon, ClipIcon, FocusIcon, LockIcon, SoundIcon } from './icons';
+import { CheckIcon, ClipIcon, FocusIcon, LockIcon, SoundIcon, SpeedIcon } from './icons';
 
 export type FreeExportChoice = 'unlock' | 'go' | 'cancel';
 
 type Props = {
   visible: boolean;
-  /** Modo Foco is on in the editor: the framing will not be in the video. */
-  focusLost: boolean;
+  /** What the editor has that the free video will not: shown row by row. */
+  losses: FreeLosses;
   onChoose: (choice: FreeExportChoice) => void;
   /** The sheet is fully gone (iOS only: Android has no such event). */
   onDismissed?: () => void;
@@ -35,7 +36,7 @@ function Row({ icon, title, note }: { icon: ReactNode; title: string; note: stri
  * Shown before a free recording leaves the app (save, share, compile): what its video will not have, what it does,
  * and the way to unlock it. The same sheet serves every export path.
  */
-export function FreeExportSheet({ visible, focusLost, onChoose, onDismissed }: Props) {
+export function FreeExportSheet({ visible, losses, onChoose, onDismissed }: Props) {
   const { t } = useT();
   return (
     <Modal
@@ -60,8 +61,13 @@ export function FreeExportSheet({ visible, focusLost, onChoose, onDismissed }: P
           </View>
 
           <View style={styles.list}>
-            <Row icon={<SoundIcon color={colors.soft} size={20} />} title={t('freeExport.sound')} note={t('freeExport.soundNote')} />
-            {focusLost ? (
+            {losses.sound ? (
+              <Row icon={<SoundIcon color={colors.soft} size={20} />} title={t('freeExport.sound')} note={t('freeExport.soundNote')} />
+            ) : null}
+            {losses.speed ? (
+              <Row icon={<SpeedIcon color={colors.soft} size={20} />} title={t('freeExport.speed')} note={t('freeExport.speedNote')} />
+            ) : null}
+            {losses.focus ? (
               <Row icon={<FocusIcon color={colors.soft} size={20} />} title={t('freeExport.focus')} note={t('freeExport.focusNote')} />
             ) : null}
             <Row icon={<ClipIcon color={colors.soft} size={20} />} title={t('freeExport.watermark')} note={t('freeExport.watermarkNote')} />

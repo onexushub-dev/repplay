@@ -719,6 +719,8 @@ describe('Modo Foco', () => {
       __setClip({ ...base, focus: ready, edit: { speed: 2, muted: false } });
       await open();
       await pressAction('Salvar na galeria');
+      expect(screen.getByText('Sem a velocidade escolhida')).toBeTruthy();
+      expect(screen.queryByText('Sem som')).toBeNull(); // 2x is silent anyway
       await fireEvent.press(screen.getByRole('button', { name: 'Continuar no plano grátis' }));
       await act(async () => {});
       expect(camera.exportClip).toHaveBeenCalledTimes(1);

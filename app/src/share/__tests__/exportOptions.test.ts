@@ -1,5 +1,5 @@
 import type { Clip } from '../../data/schema';
-import { exportOptions, framingLost } from '../exportOptions';
+import { exportOptions, freeLosses } from '../exportOptions';
 
 const trim = { startMs: 30000, endMs: 60000 };
 
@@ -94,13 +94,16 @@ test('Modo Foco is a paid edit: a free export never follows, a paid one does', (
   expect(exportOptions('pro', { muted: false }, trim, false, ready).focus).toEqual({ path: '/c/1.focus.json', aspect: 'portrait' });
 });
 
-test('framingLost: only a ready framing that is on, not turned and not zoomed by hand', () => {
+test('freeLosses: what a free export drops, only if the clip had it', () => {
   const ready = { v: 1, status: 'ready', file: '/c.focus.json' } as Clip['focus'];
-  const clip = (edit: Clip['edit'], focus: Clip['focus'] = ready) => ({ edit, focus });
-  expect(framingLost(clip({ muted: false }))).toBe(true);
-  expect(framingLost(clip({ muted: false, focus: false }))).toBe(false);
-  expect(framingLost(clip({ muted: false, rotation: 90 }))).toBe(false);
-  expect(framingLost(clip({ muted: false, zoom: { scale: 2, cx: 0.5, cy: 0.5 } }))).toBe(false);
-  expect(framingLost(clip({ muted: false }, { v: 1, status: 'pending' } as Clip['focus']))).toBe(false);
-  expect(framingLost({ edit: { muted: false }, focus: undefined })).toBe(false);
+  const losses = (edit: Clip['edit'], focus: Clip['focus'] = ready) => freeLosses({ edit, focus });
+  expect(losses({ muted: false })).toEqual({ focus: true, speed: false, sound: true });
+  expect(losses({ muted: true })).toEqual({ focus: true, speed: false, sound: false });
+  // Away from 1x the video is silent anyway: speed is lost, sound is not.
+  expect(losses({ muted: false, speed: 2 })).toEqual({ focus: true, speed: true, sound: false });
+  expect(losses({ muted: false, focus: false }).focus).toBe(false);
+  expect(losses({ muted: false, rotation: 90 }).focus).toBe(false);
+  expect(losses({ muted: false, zoom: { scale: 2, cx: 0.5, cy: 0.5 } }).focus).toBe(false);
+  expect(losses({ muted: false }, { v: 1, status: 'pending' } as Clip['focus']).focus).toBe(false);
+  expect(freeLosses({ edit: { muted: false }, focus: undefined }).focus).toBe(false);
 });
