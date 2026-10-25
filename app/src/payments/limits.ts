@@ -8,9 +8,9 @@ export const FREE_MAX_SECONDS = 15;
 export type CaptureConfig = { quality: Quality; bufferSeconds: number; cutSeconds: number; audio: boolean };
 
 /**
- * What the camera runs with. The free plan records what the player chose, with sound, but keeps 15 s at most: Full HD
- * and sound are locked when a clip leaves the app (export), so a Single Pass or Pro can still unlock a recording that
- * is already made. The 15 s ceiling cannot be given back later, so it stays at capture.
+ * What the camera runs with. The free plan records what the player chose, with sound, but keeps 15 s at most: sound is
+ * locked when a clip leaves the app (export), so a Single Pass or Pro can still unlock a recording that is already
+ * made. The 15 s ceiling cannot be given back later, so it stays at capture.
  */
 export function captureConfig(settings: ModeSettings, plan: Plan): CaptureConfig {
   if (plan === 'paid') {
@@ -24,8 +24,14 @@ export function captureConfig(settings: ModeSettings, plan: Plan): CaptureConfig
   };
 }
 
-export const PAID_TRIGGERS: readonly TriggerSource[] = ['watch', 'remote', 'phone'];
+/** The watch is the only paid trigger: voice, gesture, screen, Bluetooth remote and phone remote are free. */
+export const PAID_TRIGGERS: readonly TriggerSource[] = ['watch'];
 
 export function triggerAllowed(source: TriggerSource, plan: Plan): boolean {
   return plan === 'paid' || !PAID_TRIGGERS.includes(source);
+}
+
+/** Compiling several clips into one video is paid. */
+export function canCompile(plan: Plan): boolean {
+  return plan === 'paid';
 }

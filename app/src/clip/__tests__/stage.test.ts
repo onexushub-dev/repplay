@@ -31,11 +31,11 @@ describe('openingZoom: what the picture shows when the clip starts playing', () 
 test('clipStage: a vertical clip gets a vertical frame filled by the video; a landscape one a landscape frame', () => {
   const vertical = clipStage('free', undefined, { startMs: 0, endMs: 1000 }, { width: 1080, height: 1920 }, false);
   expect(vertical.landscape).toBe(false);
-  expect(vertical.frame).toEqual({ width: 720, height: 1280 });
-  expect(vertical.layout.video).toEqual({ x: 0, y: 0, width: 720, height: 1280 });
+  expect(vertical.frame).toEqual({ width: 1080, height: 1920 });
+  expect(vertical.layout.video).toEqual({ x: 0, y: 0, width: 1080, height: 1920 });
   const turned = clipStage('free', { muted: false, rotation: 90 }, { startMs: 0, endMs: 1000 }, { width: 1080, height: 1920 }, false);
   expect(turned.landscape).toBe(true);
-  expect(turned.frame).toEqual({ width: 1280, height: 720 });
+  expect(turned.frame).toEqual({ width: 1920, height: 1080 });
 });
 
 test('previewBox: the frame as large as the area allows, the video box scaled with it', () => {

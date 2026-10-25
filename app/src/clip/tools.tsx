@@ -17,7 +17,7 @@ export type FocusUi = 'on' | 'off' | 'preparing' | 'unavailable';
 /** Everything a tool panel reads and does; the clip screen builds it. */
 export type ToolContext = {
   edit: Edit;
-  /** The recording's plan: a free one has its sound locked. */
+  /** The recording's plan: a free one has speed and sound locked. */
   plan: Plan;
   /** Unlocks this recording (Pro, a Pass or the paywall). */
   unlock(): void;

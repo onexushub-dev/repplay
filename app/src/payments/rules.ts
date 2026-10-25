@@ -10,7 +10,7 @@ export function creditCount(snapshot: Snapshot, spent: ReadonlySet<string>): num
   return snapshot.passTransactions.filter((t) => t.productId === PASS_PRODUCT_ID && !spent.has(t.id)).length;
 }
 
-export const FREE_RECORDINGS_PER_MONTH = 5;
+export const FREE_RECORDINGS_PER_MONTH = 3;
 
 /** The local calendar month, `YYYY-MM`. */
 export function monthKey(now: number): string {

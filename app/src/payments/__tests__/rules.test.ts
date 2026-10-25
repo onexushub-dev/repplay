@@ -35,11 +35,11 @@ test('creditCount counts unspent Passes', () => {
 test('startPlan: Pro, then the oldest credit, else free (a credit is not spent with Pro)', () => {
   const A = tx('A', 1);
   expect(startPlan({ proActive: true, credit: A, freeUsed: 5 })).toEqual({ kind: 'pro' });
-  expect(startPlan({ proActive: false, credit: A, freeUsed: 5 })).toEqual({ kind: 'credit', passTransactionId: 'A' });
+  expect(startPlan({ proActive: false, credit: A, freeUsed: 3 })).toEqual({ kind: 'credit', passTransactionId: 'A' });
   expect(startPlan({ proActive: false, freeUsed: 0 })).toEqual({ kind: 'free' });
-  expect(startPlan({ proActive: false, freeUsed: 4 })).toEqual({ kind: 'free' });
-  expect(startPlan({ proActive: false, freeUsed: 5 })).toEqual({ kind: 'blocked' });
-  expect(startPlan({ proActive: false, freeUsed: 6 })).toEqual({ kind: 'blocked' });
+  expect(startPlan({ proActive: false, freeUsed: 2 })).toEqual({ kind: 'free' });
+  expect(startPlan({ proActive: false, freeUsed: 3 })).toEqual({ kind: 'blocked' });
+  expect(startPlan({ proActive: false, freeUsed: 4 })).toEqual({ kind: 'blocked' });
 });
 
 test('planOf: free only for the free decision', () => {
@@ -63,7 +63,7 @@ test('monthKey is the local YYYY-MM', () => {
 });
 
 test('freeLeft', () => {
-  expect(freeLeft(0)).toBe(5);
-  expect(freeLeft(4)).toBe(1);
+  expect(freeLeft(0)).toBe(3);
+  expect(freeLeft(2)).toBe(1);
   expect(freeLeft(7)).toBe(0);
 });

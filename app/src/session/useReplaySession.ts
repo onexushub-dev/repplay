@@ -13,7 +13,7 @@ import type {
 import type { Repo } from '../data/repo';
 import type { ModeId, ModeSettings, Sport, TriggerSource } from '../data/schema';
 import { type AppLocale, voiceLocale } from '../i18n/locale';
-import { type CaptureConfig, captureConfig, triggerAllowed } from '../payments/limits';
+import { type CaptureConfig, captureConfig } from '../payments/limits';
 import { planOf } from '../payments/rules';
 import type { Plan, StartDecision } from '../payments/types';
 import { effectiveSettings } from '../modes/registry';
@@ -181,14 +181,11 @@ export function useReplaySession(deps: SessionDeps) {
     return () => sub.remove();
   }, [bus]);
 
-  // The Bluetooth remote is paid: only a paid game turns it on.
-  deps.useRemote(
-    state.phase === 'recording' && triggerAllowed('remote', state.paid ? 'paid' : 'free'),
-    () => trigger('remote'),
-  );
+  // The Bluetooth remote is free: any game turns it on.
+  deps.useRemote(state.phase === 'recording', () => trigger('remote'));
 
   /**
-   * Turns the camera on for `mode` with what `plan` allows (the free plan: HD, no sound, 15 s).
+   * Turns the camera on for `mode` with what `plan` allows (the free plan: 15 s at most).
    * Reopens it when the quality, buffer or sound differ from what is open (and, with two fixed lenses, its lens);
    * with continuous zoom a different zoom is applied to the running camera instead. Resolves with what the camera is
    * open with (start uses exactly that, even if the prefs change meanwhile), or undefined when it failed.

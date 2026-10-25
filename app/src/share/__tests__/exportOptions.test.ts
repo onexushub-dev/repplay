@@ -1,4 +1,5 @@
-import { exportOptions } from '../exportOptions';
+import type { Clip } from '../../data/schema';
+import { exportOptions, freeLosses } from '../exportOptions';
 
 const trim = { startMs: 30000, endMs: 60000 };
 
@@ -13,8 +14,15 @@ test('pro exports 1080x1920', () => {
   });
 });
 
-test.each(['free', 'pass', 'pro'] as const)('%s exports carry the app mark', (tier) => {
-  expect(exportOptions(tier, undefined, trim).watermark).toBe(true);
+test('a free export carries the app mark; a paid one (pass, pro) does not', () => {
+  expect(exportOptions('free', undefined, trim).watermark).toBe(true);
+  expect(exportOptions('pass', undefined, trim).watermark).toBe(false);
+  expect(exportOptions('pro', undefined, trim).watermark).toBe(false);
+});
+
+test('a free export keeps 1x speed whatever the clip says', () => {
+  expect(exportOptions('free', { speed: 2, muted: false }, trim).speed).toBe(1);
+  expect(exportOptions('pro', { speed: 2, muted: false }, trim).speed).toBe(2);
 });
 
 test('pass exports 1080x1920', () => {
@@ -48,8 +56,8 @@ test('free exports carry no sound, whatever the clip has', () => {
   expect(exportOptions('pro', { speed: 1, muted: false }, trim).muted).toBe(false);
 });
 
-test('free exports 720x1280', () => {
-  expect(exportOptions('free', undefined, trim)).toMatchObject({ width: 720, height: 1280 });
+test('free exports 1080x1920 too', () => {
+  expect(exportOptions('free', undefined, trim)).toMatchObject({ width: 1080, height: 1920 });
 });
 
 test('a turned clip exports with its rotation, and none by default', () => {
@@ -59,8 +67,8 @@ test('a turned clip exports with its rotation, and none by default', () => {
 
 test('a landscape clip gets the frame turned on its side, in both tiers', () => {
   expect(exportOptions('pro', undefined, trim, true)).toMatchObject({ width: 1920, height: 1080 });
-  expect(exportOptions('free', undefined, trim, true)).toMatchObject({ width: 1280, height: 720 });
-  expect(exportOptions('free', undefined, trim)).toMatchObject({ width: 720, height: 1280 });
+  expect(exportOptions('free', undefined, trim, true)).toMatchObject({ width: 1920, height: 1080 });
+  expect(exportOptions('free', undefined, trim)).toMatchObject({ width: 1080, height: 1920 });
 });
 
 describe('Modo Foco', () => {
@@ -84,4 +92,18 @@ test('Modo Foco is a paid edit: a free export never follows, a paid one does', (
   const ready = { path: '/c/1.focus.json', ready: true };
   expect(exportOptions('free', { muted: false }, trim, false, ready).focus).toBeUndefined();
   expect(exportOptions('pro', { muted: false }, trim, false, ready).focus).toEqual({ path: '/c/1.focus.json', aspect: 'portrait' });
+});
+
+test('freeLosses: what a free export drops, only if the clip had it', () => {
+  const ready = { v: 1, status: 'ready', file: '/c.focus.json' } as Clip['focus'];
+  const losses = (edit: Clip['edit'], focus: Clip['focus'] = ready) => freeLosses({ edit, focus });
+  expect(losses({ muted: false })).toEqual({ focus: true, speed: false, sound: true });
+  expect(losses({ muted: true })).toEqual({ focus: true, speed: false, sound: false });
+  // Away from 1x the video is silent anyway: speed is lost, sound is not.
+  expect(losses({ muted: false, speed: 2 })).toEqual({ focus: true, speed: true, sound: false });
+  expect(losses({ muted: false, focus: false }).focus).toBe(false);
+  expect(losses({ muted: false, rotation: 90 }).focus).toBe(false);
+  expect(losses({ muted: false, zoom: { scale: 2, cx: 0.5, cy: 0.5 } }).focus).toBe(false);
+  expect(losses({ muted: false }, { v: 1, status: 'pending' } as Clip['focus']).focus).toBe(false);
+  expect(freeLosses({ edit: { muted: false }, focus: undefined }).focus).toBe(false);
 });

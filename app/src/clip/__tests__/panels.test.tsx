@@ -98,22 +98,32 @@ test('Foco: a switch when ready, a wait while preparing, a message when it canno
   expect(screen.queryByRole('switch', { name: 'Modo Foco' })).toBeNull();
 });
 
-test('on a free recording the sound is locked and tapping it unlocks the recording', async () => {
+test('on a free recording the sound works, and the hint says it does not leave the app', async () => {
   const c = ctx({ plan: 'free' });
   const Panel = panel('sound');
   await render(<Panel ctx={c} />);
-  expect(screen.getByText('Sem som')).toBeTruthy();
-  await fireEvent.press(screen.getByRole('button', { name: 'Som, Disponível no Pro' }));
-  expect(c.unlock).toHaveBeenCalledTimes(1);
-  expect(c.setEdit).not.toHaveBeenCalled();
+  expect(screen.getByText('No plano grátis o som toca aqui, mas não vai no vídeo salvo ou enviado.')).toBeTruthy();
+  await fireEvent.press(screen.getByRole('button', { name: 'Som' }));
+  expect(c.setEdit).toHaveBeenCalledWith({ muted: true });
+  expect(c.unlock).not.toHaveBeenCalled();
 });
 
 test('on a free recording Modo Foco works, and the hint says it does not leave the app', async () => {
   const c = ctx({ focus: 'on', plan: 'free' });
   const Panel = panel('focus');
   await render(<Panel ctx={c} />);
-  expect(screen.getByText('No plano grátis o Foco funciona aqui, mas não vai no clipe salvo ou enviado.')).toBeTruthy();
+  expect(screen.getByText('No plano grátis o Foco funciona aqui, mas não vai no vídeo salvo ou enviado.')).toBeTruthy();
   await fireEvent.press(screen.getByRole('switch', { name: 'Modo Foco' }));
   expect(c.toggleFocus).toHaveBeenCalledTimes(1);
+  expect(c.unlock).not.toHaveBeenCalled();
+});
+
+test('on a free recording the speed works, and the hint says it does not leave the app', async () => {
+  const c = ctx({ plan: 'free' });
+  const Panel = panel('speed');
+  await render(<Panel ctx={c} />);
+  expect(screen.getByText('No plano grátis a velocidade funciona aqui, mas não vai no vídeo salvo ou enviado.')).toBeTruthy();
+  await fireEvent.press(screen.getByRole('button', { name: 'Velocidade 2x' }));
+  expect(c.setEdit).toHaveBeenCalledWith({ speed: 2 });
   expect(c.unlock).not.toHaveBeenCalled();
 });

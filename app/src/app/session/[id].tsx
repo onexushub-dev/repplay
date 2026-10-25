@@ -10,12 +10,14 @@ import { EmptyState } from '../../components/EmptyState';
 import { ExportProgress } from '../../components/ExportProgress';
 import { SelectionBar } from '../../components/SelectionBar';
 import { UpgradeCard } from '../../components/UpgradeCard';
-import { ClipIcon } from '../../components/icons';
+import { ClipIcon, TrashIcon } from '../../components/icons';
 import { clipNumber, dayAndTime, megabytes, modeLabel, recordedLabel, sessionLabel } from '../../components/format';
 import { removeFile, repo } from '../../data/mmkv';
 import { MAX_GAME_NAME } from '../../data/schema';
 import { unlockRecording } from '../../payments/unlock';
+import { useFreeExportGate } from '../../components/useFreeExportGate';
 import { useViewPlan } from '../../share/entitlement';
+import { freeLosses } from '../../share/exportOptions';
 import { useBatchActions } from '../../share/useBatchActions';
 import { useT } from '../../i18n/useT';
 import { useSession } from '../../session/SessionContext';
@@ -51,6 +53,20 @@ export default function SessionSummary() {
     labelOf: (c) => (c.name ? c.name : t('batch.clipNumber', { number: clipNumber(c, clips.indexOf(c)) })),
   });
   const working = batch.job !== undefined;
+  // A free recording's clips leave without sound, Modo Foco and the app mark off: say so before saving or sending them.
+  const freeGate = useFreeExportGate();
+  const exportAfterNotice = async (clips: typeof pickedClips, go: (clips: typeof pickedClips) => Promise<void>) => {
+    if (plan === 'free') {
+      const choice = await freeGate.ask({
+        focus: clips.some((c) => freeLosses(c).focus),
+        speed: clips.some((c) => freeLosses(c).speed),
+        sound: clips.some((c) => freeLosses(c).sound),
+      });
+      if (choice === 'unlock') void unlockRecording(id, t);
+      if (choice !== 'go') return;
+    }
+    await go(clips);
+  };
   const stopSelecting = () => {
     setSelecting(false);
     setPicked([]);
@@ -135,12 +151,26 @@ export default function SessionSummary() {
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.header}>
-        {session ? (
-          <Text style={styles.subtitle}>{`${modeLabel(session.sport, locale)} · ${dayAndTime(session.startedAt, undefined, locale)}`}</Text>
-        ) : null}
-        <Text style={styles.title} accessibilityRole="header" numberOfLines={2}>
-          {session?.name ? sessionLabel(session, undefined, locale) : t('summary.ended')}
-        </Text>
+        <View style={styles.headerTop}>
+          <View style={styles.headerText}>
+            {session ? (
+              <Text style={styles.subtitle}>{`${modeLabel(session.sport, locale)} · ${dayAndTime(session.startedAt, undefined, locale)}`}</Text>
+            ) : null}
+            <Text style={styles.title} accessibilityRole="header" numberOfLines={2}>
+              {session?.name ? sessionLabel(session, undefined, locale) : t('summary.ended')}
+            </Text>
+          </View>
+          {session && !selecting ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('games.deleteRecording')}
+              hitSlop={6}
+              onPress={confirmDeleteGame}
+              style={styles.deleteGame}>
+              <TrashIcon color={colors.rec} size={22} />
+            </Pressable>
+          ) : null}
+        </View>
         {session ? (
           <View style={styles.nameBox}>
             <TextInput
@@ -247,27 +277,16 @@ export default function SessionSummary() {
             count={pickedClips.length}
             paid={plan === 'paid'}
             busy={working}
-            onShare={() => void batch.share(pickedClips)}
-            onSave={() => void batch.save(pickedClips)}
+            onShare={() => void exportAfterNotice(pickedClips, batch.share)}
+            onSave={() => void exportAfterNotice(pickedClips, batch.save)}
             onCompile={() => void batch.compile(pickedClips)}
             onDelete={confirmDeleteClips}
           />
         ) : (
-          <>
-            <Button label={t('summary.newRecording')} onPress={newGame} />
-            {session ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('games.deleteRecording')}
-                hitSlop={8}
-                onPress={confirmDeleteGame}
-                style={styles.deleteGame}>
-                <Text style={styles.deleteGameText}>{t('games.deleteRecording')}</Text>
-              </Pressable>
-            ) : null}
-          </>
+          <Button label={t('summary.newRecording')} onPress={newGame} />
         )}
       </View>
+      {freeGate.sheet}
       {batch.overlay}
       {batch.job ? <ExportProgress job={batch.job} onCancel={batch.job.stage === 'preparing' ? batch.cancel : undefined} /> : null}
       {batch.card ? (
@@ -317,7 +336,8 @@ const styles = StyleSheet.create({
   pickBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 32 },
   pickLink: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.accent },
   pickCount: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text },
-  deleteGame: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  deleteGameText: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.rec },
+  headerTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  headerText: { flex: 1, minWidth: 0, gap: 4 },
+  deleteGame: { width: 44, height: 44, marginRight: -10, marginTop: -6, alignItems: 'center', justifyContent: 'center' },
   buttons: { flexDirection: 'row', gap: 10 },
 });

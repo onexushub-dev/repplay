@@ -30,11 +30,15 @@ beforeEach(() => {
 });
 
 test('clipExportJob matches what the clip screen exports', () => {
-  const job = clipExportJob(clip, 'free', vertical);
-  expect(job.options).toMatchObject({ width: 720, height: 1280, startMs: 30000, endMs: 60000, speed: 2, rotation: 0 });
+  const job = clipExportJob(clip, 'paid', vertical);
+  expect(job.options).toMatchObject({ width: 1080, height: 1920, startMs: 30000, endMs: 60000, speed: 2, rotation: 0 });
   expect(job.options.crop).toBeUndefined();
-  expect(job.watermark).toBe(true);
-  expect(job.frame).toEqual({ width: 720, height: 1280 });
+  expect(job.watermark).toBe(false);
+  expect(job.frame).toEqual({ width: 1080, height: 1920 });
+  // The free plan: same frame, speed held at 1x, the app mark kept.
+  const free = clipExportJob(clip, 'free', vertical);
+  expect(free.options).toMatchObject({ width: 1080, height: 1920, speed: 1 });
+  expect(free.watermark).toBe(true);
 });
 
 test('Modo Foco ready: the framing file goes along on a paid export, never on a free one', () => {
@@ -52,17 +56,17 @@ test('the screen can say it already read the framing, so the file is not read ag
 });
 
 test('forced orientation: a vertical clip in a landscape compilation', () => {
-  const job = clipExportJob(clip, 'free', vertical, 'landscape');
-  expect(job.frame).toEqual({ width: 1280, height: 720 });
-  expect(job.layout.video.width).toBeLessThan(1280);
+  const job = clipExportJob(clip, 'paid', vertical, 'landscape');
+  expect(job.frame).toEqual({ width: 1920, height: 1080 });
+  expect(job.layout.video.width).toBeLessThan(1920);
 });
 
 test('the same look gives the same key, any edit change a new one', () => {
-  expect(clipExportJob(clip, 'free', vertical).key).toBe(clipExportJob(clip, 'free', vertical).key);
-  expect(clipExportJob({ ...clip, edit: { muted: false, speed: 1 } }, 'free', vertical).key).not.toBe(
-    clipExportJob(clip, 'free', vertical).key,
+  expect(clipExportJob(clip, 'paid', vertical).key).toBe(clipExportJob(clip, 'paid', vertical).key);
+  expect(clipExportJob({ ...clip, edit: { muted: false, speed: 1 } }, 'paid', vertical).key).not.toBe(
+    clipExportJob(clip, 'paid', vertical).key,
   );
-  expect(clipExportJob({ ...clip, path: '/other.mp4' }, 'free', vertical).key).not.toBe(clipExportJob(clip, 'free', vertical).key);
+  expect(clipExportJob({ ...clip, path: '/other.mp4' }, 'paid', vertical).key).not.toBe(clipExportJob(clip, 'paid', vertical).key);
 });
 
 test('compilationOrientation: the most clips win, a tie goes to the first clip', () => {

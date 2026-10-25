@@ -55,7 +55,7 @@ export function NeighbourStage({ clip, tier, area }: Props) {
   if (!uri) return null;
   if (!size || !clip.trim) return <ExpoImage source={{ uri }} contentFit="contain" style={StyleSheet.absoluteFill} />;
 
-  const { frame, layout } = clipStage(tier, clip.edit, clip.trim, size, track ? focusFile : undefined);
+  const { frame, layout, watermark } = clipStage(tier, clip.edit, clip.trim, size, track ? focusFile : undefined);
   const box = previewBox(frame, layout, area);
   const zoom = openingZoom(clip.edit, track, startMs);
   return (
@@ -66,7 +66,7 @@ export function NeighbourStage({ clip, tier, area }: Props) {
         </View>
       </View>
       <View style={StyleSheet.absoluteFill}>
-        <ShareOverlay frame={frame} layout={layout} scale={box.scale} />
+        <ShareOverlay frame={frame} layout={layout} scale={box.scale} watermark={watermark} />
       </View>
     </View>
   );

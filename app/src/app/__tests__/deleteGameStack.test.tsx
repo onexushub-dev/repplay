@@ -72,7 +72,7 @@ async function deleteFreshGame() {
   );
   await act(async () => router.replace(`/session/${s.id}`));
   spy.navigation = undefined;
-  fireEvent.press(screen.getByText('Apagar gravação'));
+  fireEvent.press(screen.getByRole('button', { name: 'Apagar gravação' }));
   const buttons = alert.mock.calls.at(-1)![2] as { text: string; onPress?: () => void }[];
   await act(async () => buttons.find((x) => x.text === 'Apagar')!.onPress!());
   await act(async () => {});
