@@ -99,7 +99,7 @@ export const ptBR: Messages = {
     tapAnywhere: 'Toque em qualquer lugar para salvar o clipe',
     recording: 'Gravando',
     hotTitle: 'Celular quente. ',
-    hotBody: 'Passamos para 720p/30 para não parar a gravação. Coloque na sombra se puder.',
+    hotBody: 'Passamos para %{quality} para não parar a gravação. Tire a capinha e deixe o celular na sombra se puder.',
     paused: 'Gravação pausada. Volte para o app para continuar.',
     tapHint: 'Toque na tela para salvar o clipe',
     holdToEnd: 'Segure para encerrar a gravação',
@@ -107,6 +107,8 @@ export const ptBR: Messages = {
     savedTitle: 'CLIPE #%{number} SALVO',
     savedVia: 'via %{source} · %{seconds}s',
     undo: 'Desfazer',
+    heatTip: 'Celular esquentando: tire a capinha e evite carregar durante a gravação.',
+    economy: 'Tela em economia para não esquentar. Toque para acender a tela.',
   },
   summary: {
     clips: { one: '%{count} clipe', other: '%{count} clipes' },

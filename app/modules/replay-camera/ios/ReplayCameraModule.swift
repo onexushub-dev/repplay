@@ -138,6 +138,11 @@ public class ReplayCameraModule: Module {
       }
     }
 
+    // Screen economy while recording: preview off and brightness down; false gives both back.
+    Function("setScreenEconomy") { (on: Bool) in
+      DispatchQueue.main.async { MainActor.assumeIsolated { ScreenEconomy.set(on) } }
+    }
+
     Function("setGestureEnabled") { (enabled: Bool) in
       self.engine.gesture.enabled = enabled
     }

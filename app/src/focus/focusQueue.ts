@@ -19,9 +19,25 @@ export type FocusQueue = {
   ensure(clip: Clip): void;
   /** The clip file is being deleted: drop it from the queue and stop its analysis. */
   cancel(clipPath: string): void;
-  /** True while recording with the phone hot: the camera comes first, nothing new starts. */
+  /** True: nothing new starts (same as `setHold('all')`); false: `setHold('none')`. */
   setPaused(paused: boolean): void;
+  /** What may start while a recording runs: see `focusHold`. */
+  setHold(hold: FocusHold): void;
 };
+
+/**
+ * `none`: everything runs. `openedOnly`: only clips opened in the editor (`ensure`) start. `all`: nothing new starts.
+ */
+export type FocusHold = 'none' | 'openedOnly' | 'all';
+
+/**
+ * The camera comes first (thermal spec, item 1): no analysis while recording, except a clip the player opens with the
+ * phone still cool; none at all once it warms up.
+ */
+export function focusHold(recording: boolean, thermal: 'nominal' | 'fair' | 'serious' | 'critical'): FocusHold {
+  if (!recording) return 'none';
+  return thermal === 'nominal' ? 'openedOnly' : 'all';
+}
 
 const codeOf = (e: unknown) => (typeof e === 'object' && e !== null ? (e as { code?: unknown }).code : undefined);
 
@@ -29,12 +45,17 @@ const codeOf = (e: unknown) => (typeof e === 'object' && e !== null ? (e as { co
 export function createFocusQueue(deps: FocusQueueDeps): FocusQueue {
   let waiting: string[] = [];
   let running: { id: string; path: string } | undefined;
-  let paused = false;
+  let hold: FocusHold = 'none';
+  /** Clips opened in the editor: they may start during an `openedOnly` hold. */
+  const opened = new Set<string>();
 
   function pump() {
-    if (running || paused) return;
+    if (running || hold === 'all') return;
     while (waiting.length > 0) {
-      const id = waiting.shift() as string;
+      const index = hold === 'openedOnly' ? waiting.findIndex((id) => opened.has(id)) : 0;
+      if (index < 0) return;
+      const id = waiting.splice(index, 1)[0];
+      opened.delete(id);
       const clip = deps.repo.getClip(id);
       if (!clip) continue; // deleted while waiting
       start(clip);
@@ -77,7 +98,24 @@ export function createFocusQueue(deps: FocusQueueDeps): FocusQueue {
   return {
     enqueue,
     ensure(clip) {
-      if (!clip.focus || clip.focus.status === 'pending') enqueue(clip.id);
+      if (clip.focus && clip.focus.status !== 'pending') return;
+      if (!deps.supported()) return;
+      if (running && running.id === clip.id) return;
+      // Opened in the editor: it goes first, and may run during an `openedOnly` hold.
+      opened.add(clip.id);
+      const at = waiting.indexOf(clip.id);
+      if (at >= 0) {
+        waiting.splice(at, 1);
+        waiting.unshift(clip.id);
+        pump();
+        return;
+      }
+      if (!deps.repo.updateClip(clip.id, { focus: { v: 1, status: 'pending' } })) {
+        opened.delete(clip.id);
+        return;
+      }
+      waiting.unshift(clip.id);
+      pump();
     },
     cancel(clipPath) {
       waiting = waiting.filter((id) => {
@@ -87,7 +125,11 @@ export function createFocusQueue(deps: FocusQueueDeps): FocusQueue {
       if (running && running.path === clipPath) deps.cancel(clipPath);
     },
     setPaused(value) {
-      paused = value;
+      hold = value ? 'all' : 'none';
+      pump();
+    },
+    setHold(value) {
+      hold = value;
       pump();
     },
   };

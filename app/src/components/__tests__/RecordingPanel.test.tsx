@@ -7,12 +7,16 @@ jest.mock('../../data/mmkv', () => ({
   repo: { listClips: jest.fn(() => [{ id: 'c1' }]), deleteSession: jest.fn(() => []) },
   removeFile: jest.fn(),
 }));
-jest.mock('../../../modules/replay-camera', () => ({ addReplayListener: jest.fn(() => ({ remove: jest.fn() })) }));
+jest.mock('../../../modules/replay-camera', () => ({
+  addReplayListener: jest.fn(() => ({ remove: jest.fn() })),
+  setScreenEconomy: jest.fn(),
+}));
 jest.mock('../../session/SessionContext', () => ({ useSession: jest.fn() }));
 
 const { useSession } = jest.requireMock('../../session/SessionContext');
 const { router } = jest.requireMock('expo-router');
 const { repo } = jest.requireMock('../../data/mmkv');
+const { setScreenEconomy } = jest.requireMock('../../../modules/replay-camera');
 
 function session(state: object) {
   const value = {
@@ -83,6 +87,18 @@ test('holding the footer ends the game and opens its summary', async () => {
 
 test('a hot phone shows the heat banner', async () => {
   session({ thermal: { level: 'serious', degraded: true } });
+  await render(<Recording />);
+  expect(screen.getByText(/Passamos para 720p\/30/)).toBeTruthy();
+});
+
+test('the heat banner says which step was taken: Full HD at 30 fps first', async () => {
+  session({ thermal: { level: 'serious', degraded: true, quality: '1080p30' } });
+  await render(<Recording />);
+  expect(screen.getByText(/Passamos para 1080p\/30/)).toBeTruthy();
+});
+
+test('then 720p at 30 fps', async () => {
+  session({ thermal: { level: 'serious', degraded: true, quality: '720p30' } });
   await render(<Recording />);
   expect(screen.getByText(/Passamos para 720p\/30/)).toBeTruthy();
 });
@@ -178,5 +194,94 @@ describe('a recording without any clip', () => {
     expect(s.reset).toHaveBeenCalled();
     expect(router.push).toHaveBeenCalledWith('/games');
     repo.listClips.mockReturnValue([{ id: 'c1' }]);
+  });
+});
+
+describe('screen economy', () => {
+  test('after 20 s without a touch the screen goes dark and says a tap wakes it', async () => {
+    session({});
+    jest.useFakeTimers();
+    await render(<Recording />);
+    expect(screen.queryByTestId('screen-economy')).toBeNull();
+    await act(async () => jest.advanceTimersByTime(20_000));
+    expect(screen.getByTestId('screen-economy')).toBeTruthy();
+    expect(screen.getByText('Tela em economia para não esquentar. Toque para acender a tela.')).toBeTruthy();
+    expect(screen.queryByText('Toque na tela para salvar o clipe')).toBeNull();
+    expect(setScreenEconomy).toHaveBeenLastCalledWith(true);
+    jest.useRealTimers();
+  });
+
+  test('the first tap while dark only wakes the screen: no clip is saved', async () => {
+    const s = session({});
+    jest.useFakeTimers();
+    await render(<Recording />);
+    await act(async () => jest.advanceTimersByTime(20_000));
+    const surface = screen.getByRole('button', { name: /Toque em qualquer lugar/ });
+    await fireEvent(surface, 'touchStart');
+    await fireEvent.press(surface);
+    expect(s.trigger).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('screen-economy')).toBeNull();
+    expect(setScreenEconomy).toHaveBeenLastCalledWith(false);
+    jest.useRealTimers();
+  });
+
+  test('once awake, the next tap saves as usual', async () => {
+    const s = session({});
+    jest.useFakeTimers();
+    await render(<Recording />);
+    await act(async () => jest.advanceTimersByTime(20_000));
+    const surface = screen.getByRole('button', { name: /Toque em qualquer lugar/ });
+    await fireEvent(surface, 'touchStart');
+    await fireEvent.press(surface);
+    await fireEvent(surface, 'touchStart');
+    await fireEvent.press(surface);
+    expect(s.trigger).toHaveBeenCalledTimes(1);
+    expect(s.trigger).toHaveBeenCalledWith('screen');
+    jest.useRealTimers();
+  });
+
+  test('ending the game is still possible while dark', async () => {
+    session({});
+    jest.useFakeTimers();
+    await render(<Recording />);
+    await act(async () => jest.advanceTimersByTime(20_000));
+    expect(screen.getByRole('button', { name: 'Segure para encerrar a gravação' })).toBeTruthy();
+    jest.useRealTimers();
+  });
+});
+
+describe('heat tip', () => {
+  const tip = 'Celular esquentando: tire a capinha e evite carregar durante a gravação.';
+
+  test('shows once when the phone gets warm, then goes away by itself', async () => {
+    session({ thermal: { level: 'fair', degraded: false } });
+    jest.useFakeTimers();
+    await render(<Recording />);
+    expect(screen.getByText(tip)).toBeTruthy();
+    await act(async () => jest.advanceTimersByTime(8000));
+    expect(screen.queryByText(tip)).toBeNull();
+    jest.useRealTimers();
+  });
+
+  test('does not come back in the same recording', async () => {
+    session({ thermal: { level: 'fair', degraded: false } });
+    jest.useFakeTimers();
+    const view = await render(<Recording />);
+    await act(async () => jest.advanceTimersByTime(8000));
+    session({ thermal: { level: 'nominal', degraded: false } });
+    await view.rerender(<Recording />);
+    session({ thermal: { level: 'fair', degraded: false } });
+    await view.rerender(<Recording />);
+    expect(screen.queryByText(tip)).toBeNull();
+    jest.useRealTimers();
+  });
+
+  test('not shown while cool, nor next to the step-down banner', async () => {
+    session({});
+    const view = await render(<Recording />);
+    expect(screen.queryByText(tip)).toBeNull();
+    session({ thermal: { level: 'serious', degraded: true, quality: '1080p30' } });
+    await view.rerender(<Recording />);
+    expect(screen.queryByText(tip)).toBeNull();
   });
 });

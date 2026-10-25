@@ -34,7 +34,13 @@ final class ReplayEngine {
   private var generation = 0
   private var pendingSaves: [PendingSave] = []
   private var lens = "ultraWide"
-  private var degraded = false
+  /// Steps the recording down as the phone heats up (1080p60 → 1080p30 → 720p30). Only touched on `thermalQueue`.
+  private var ladder = ThermalLadder(requested: "1080p60", state: .nominal, now: 0)
+  private let thermalQueue = DispatchQueue(label: "replay.thermal")
+  /// Bumped per session, so a recheck scheduled by an old session does nothing.
+  private var thermalEpoch = 0
+  /// A recheck is waiting (only one at a time).
+  private var thermalRecheck = false
   private var observers: [NSObjectProtocol] = []
   private(set) var running = false
   let watchPreview = WatchPreview()
@@ -88,16 +94,22 @@ final class ReplayEngine {
 
     self.lens = lens
     capture.wantedZoom = zoom // nil = no zoom (the lens decides); a thermal reconfiguration keeps whatever is set here
-    let hot = ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue
-    degraded = hot
-    gesture.degraded = hot
-    do { try capture.configure(lens: lens, maxQuality: hot ? "720p30" : maxQuality) } catch { throw Failure.unavailable(error) }
+    let state = Self.thermalLevel()
+    let quality: String = thermalQueue.sync {
+      thermalEpoch += 1
+      thermalRecheck = false
+      ladder = ThermalLadder(requested: maxQuality, state: state, now: Self.uptime())
+      return ladder.quality
+    }
+    gesture.degraded = state >= .fair
+    do { try capture.configure(lens: lens, maxQuality: quality) } catch { throw Failure.unavailable(error) }
     capture.queue.sync { startWriter() }
     gesture.start()
     capture.start()
     running = true
     observe()
-    if hot { thermalChanged() }
+    NSLog("[replay] thermal at start: %@, recording %@ (asked %@)", state.name, quality, maxQuality)
+    if state != .nominal { thermalChanged() }
   }
 
   func stop(completion: @escaping () -> Void = {}) {
@@ -232,39 +244,62 @@ final class ReplayEngine {
     })
   }
 
-  private func thermalChanged() {
-    let state = ProcessInfo.processInfo.thermalState
-    let level: String
-    switch state {
-    case .nominal: level = "nominal"
-    case .fair: level = "fair"
-    case .serious: level = "serious"
-    case .critical: level = "critical"
-    @unknown default: level = "nominal"
-    }
+  private static func thermalLevel() -> ThermalLevel {
+    ThermalLevel(rawValue: ProcessInfo.processInfo.thermalState.rawValue) ?? .nominal
+  }
 
-    if state == .critical {
-      emit?("onThermalChange", ["level": level, "degraded": true])
-      fail(code: "ENCODER_FAILED", "thermal")
-      return
-    }
-    if state == .serious && !degraded {
-      degraded = true
-      gesture.degraded = true
-      capture.stop()
-      capture.queue.async {
-        self.failPendingSaves(.noSession)
-        self.finishWriter {
-          do {
-            try self.capture.configure(lens: self.lens, maxQuality: "720p30")
-          } catch {
-            return self.fail(code: "CAMERA_UNAVAILABLE", "\(error)")
-          }
-          self.startWriter()
-          self.capture.start()
+  private static func uptime() -> TimeInterval { ProcessInfo.processInfo.systemUptime }
+
+  /// Thermal work, item 3: `fair` slows the gesture checks; `serious` halves the frame rate first and drops to 720p30
+  /// only if it stays `serious` for two minutes; `critical` stops (`ThermalLadder`).
+  private func thermalChanged() {
+    thermalQueue.async { [weak self] in
+      guard let self, self.running else { return }
+      let state = Self.thermalLevel()
+      let action = self.ladder.update(state: state, now: Self.uptime())
+      let quality = self.ladder.quality
+      let degraded = self.ladder.degraded
+      self.gesture.degraded = state >= .fair || degraded
+      NSLog("[replay] thermal %@: recording %@ (asked %@)", state.name, quality, self.ladder.requested)
+
+      switch action {
+      case .stop:
+        self.emit?("onThermalChange", ["level": state.name, "degraded": true, "quality": quality])
+        self.fail(code: "ENCODER_FAILED", "thermal")
+        return
+      case .reconfigure(let next):
+        self.restartCapture(quality: next)
+      case .none:
+        break
+      }
+      // Still `serious` later? Look again when the next step would be allowed: no notification comes by itself.
+      if state == .serious && !self.thermalRecheck {
+        self.thermalRecheck = true
+        let epoch = self.thermalEpoch
+        self.thermalQueue.asyncAfter(deadline: .now() + ThermalLadder.holdBeforeNextStep + 1) { [weak self] in
+          guard let self, self.thermalEpoch == epoch else { return }
+          self.thermalRecheck = false
+          self.thermalChanged()
         }
       }
+      self.emit?("onThermalChange", ["level": state.name, "degraded": degraded, "quality": quality])
     }
-    emit?("onThermalChange", ["level": level, "degraded": degraded])
+  }
+
+  /// Closes the writer and reopens the camera at `quality`; saves waiting on the old writer fail (the UI says so).
+  private func restartCapture(quality: String) {
+    capture.stop()
+    capture.queue.async {
+      self.failPendingSaves(.noSession)
+      self.finishWriter {
+        do {
+          try self.capture.configure(lens: self.lens, maxQuality: quality)
+        } catch {
+          return self.fail(code: "CAMERA_UNAVAILABLE", "\(error)")
+        }
+        self.startWriter()
+        self.capture.start()
+      }
+    }
   }
 }

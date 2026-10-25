@@ -37,16 +37,17 @@ test('clipExportJob matches what the clip screen exports', () => {
   expect(job.frame).toEqual({ width: 720, height: 1280 });
 });
 
-test('Modo Foco ready: the framing file goes along', () => {
+test('Modo Foco ready: the framing file goes along on a paid export, never on a free one', () => {
   const ready = { ...clip, edit: { muted: false }, focus: { v: 1, status: 'ready', file: '/c.focus.json' } } as Clip;
-  expect(clipExportJob(ready, 'free', vertical).options.focus).toEqual({ path: '/c.focus.json', aspect: 'portrait' });
-  readFocusFile.mockReturnValueOnce(undefined);
+  expect(clipExportJob(ready, 'paid', vertical).options.focus).toEqual({ path: '/c.focus.json', aspect: 'portrait' });
   expect(clipExportJob(ready, 'free', vertical).options.focus).toBeUndefined();
+  readFocusFile.mockReturnValueOnce(undefined);
+  expect(clipExportJob(ready, 'paid', vertical).options.focus).toBeUndefined();
 });
 
 test('the screen can say it already read the framing, so the file is not read again', () => {
   const ready = { ...clip, edit: { muted: false }, focus: { v: 1, status: 'ready', file: '/c.focus.json' } } as Clip;
-  expect(clipExportJob(ready, 'free', vertical, undefined, true).options.focus).toEqual({ path: '/c.focus.json', aspect: 'portrait' });
+  expect(clipExportJob(ready, 'paid', vertical, undefined, true).options.focus).toEqual({ path: '/c.focus.json', aspect: 'portrait' });
   expect(readFocusFile).not.toHaveBeenCalled();
 });
 

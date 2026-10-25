@@ -56,6 +56,12 @@ export function setZoom(factor: number, animated: boolean = false): void {
   if (typeof ReplayCameraModule.setZoom === 'function') ReplayCameraModule.setZoom(factor, animated);
 }
 
+/** Screen economy while recording (iOS): the preview stops and the brightness goes down; false gives both back. */
+export function setScreenEconomy(on: boolean): void {
+  const set = ReplayCameraModule.setScreenEconomy;
+  if (typeof set === 'function') set.call(ReplayCameraModule, on);
+}
+
 /** Short "saved" chime and/or two blinks of the rear torch, so a player far from the phone knows. */
 export function signalSaved({ sound, flash }: { sound: boolean; flash: boolean }): void {
   ReplayCameraModule.signalSaved(sound, flash);
