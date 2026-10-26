@@ -14,6 +14,12 @@ State: spec §13 (amendment 2026-10-25) approved in conversation; Part 1 plan ta
 4. Victor records beach tennis and society (football) clips with the app on the evening of 2026-10-26: label them and
    use them as examples (both are players-framed today: §13.6).
 
+## Watch
+
+- `BallTracker` speed: the fixture test (two 30 s clips) takes 8–11 s in debug but **0.27 s in release** on Victor's
+  Mac (2026-10-26), JSON decoding included. No change now; Part 3 measures it on the XR. If a 60 s clip costs more
+  than ~1 s there, move `KalmanMatrix` to a fixed-size value type (16 stored Doubles, no heap), same operation order.
+
 ## Open decisions (spec §13.4)
 
 - Person detector: YOLOX-S or D-FINE-S (device timing).
