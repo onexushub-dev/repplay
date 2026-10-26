@@ -20,6 +20,12 @@ State: spec §13 (amendment 2026-10-25) approved in conversation; Part 1 plan ta
   Mac (2026-10-26), JSON decoding included. No change now; Part 3 measures it on the XR. If a 60 s clip costs more
   than ~1 s there, move `KalmanMatrix` to a fixed-size value type (16 stored Doubles, no heap), same operation order.
 
+- D-FINE-S on the Neural Engine: on Victor's Mac (2026-10-26) Core ML could not compile the converted model for the
+  ANE (`ANECCompile() FAILED`; the conversion also warns of an FP16 overflow in a cast, likely a large mask constant)
+  and ran it on GPU/CPU. Part 1 task 2 / Part 3 task 8 must log which compute unit runs on the XR and the 16 Pro Max
+  and the ms per pass. If the ANE is out and the GPU too slow: keep that op in FP32 (`op_selector` in
+  `ct.precision`), or try `computeUnits = .cpuAndGPU` explicitly, or YOLOX-S for players-framed sports.
+
 ## Open decisions (spec §13.4)
 
 - Person detector: YOLOX-S or D-FINE-S (device timing).
