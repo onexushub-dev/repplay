@@ -127,3 +127,21 @@ Ball source per clip (ball-led, `ball_rects`; 2160 D-FINE-S, 6×4 grid unless no
 - volley-01 at 4K is 94.7%, one point under the plan's 95% bar; TrackNetV3's 97.4% comes with almost no zoom (1.07×).
 - Basketball fixtures (players, 1.5× cap on these 1080×1920 clips): 100% (6/6 points each) — too few labels to score;
   they are there to check the players preset.
+
+## Part 3 task 1 — the native motion score (2026-10-26)
+
+The analyser computes the motion score on the frames as it decodes them (the clip's own pixels up to 1920 px on the
+long side), with a float 3×3 binomial blur (`focusbench/motion.py`; Part 3 plan, decision 5). The round used 960 px
+frames and OpenCV's 8-bit blur. Test D again (8 app basketball clips, D-FINE-S, 107 labelled points with a true
+candidate):
+
+| Motion ≥ | True ball kept (round, 960 px) | Junk kept (round) | True ball kept (native) | Junk kept (native) |
+|---|---|---|---|---|
+| 3 | 93% | 33% | 93% | 34% |
+| **4** | **91%** | **31%** | **92%** | **32%** |
+| 6 | 79% | 28% | 85% | 30% |
+| 8 | 78% | 25% | 79% | 27% |
+
+The threshold 4.0 holds (`BallFilterTuning.motionMin` unchanged). Frozen ball-led path at 3× on the same clips: 85.8%
+ball in crop with the round's scores, 87.7% with the native ones (players framing: 97.4% — basketball stays
+players-framed). The 4K clips' fixtures keep the round's scores (they are inputs to the ReplayCore parity tests only).

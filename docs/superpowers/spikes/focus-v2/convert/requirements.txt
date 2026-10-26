@@ -17,3 +17,4 @@ tensorboard
 transformers
 faster-coco-eval
 calflops
+pillow  # Core ML image inputs in tests
