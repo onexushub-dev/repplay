@@ -32,3 +32,12 @@ FOCUS_V2_MODELS=../../../../focus-refs/bench-out/models FOCUS_V2_SRC=<src> pytho
 
 `tests/test_decode.py`: decode on the ONNX output matches each repo's own inference on `tests/data/sample.jpg` (a
 Repplay basketball frame); on macOS it also checks Core ML (FP16) against ONNX.
+
+## The app's model (Part 3)
+
+`./make-app-model.sh` (macOS with Xcode) converts D-FINE-S with an image input (`--image-input`: RGB, scaled 1/255,
+so Vision crops and scales each tile), checks it against the ONNX bench model (`test_dfine_image_input_matches_onnx`),
+compiles it and puts it in the pod as `app/modules/replay-camera/ios/Models/FocusDetector.mlmodelc`. The D-FINE code
+and the weights are kept outside the repo (`~/.cache/repplay-focus-v2`); the weights are checked against the SHA-256
+above and loaded with `torch.load(..., weights_only=True)`.
+

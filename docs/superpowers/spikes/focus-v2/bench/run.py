@@ -5,6 +5,7 @@
     python run.py all     --model yolox_s [--clips <glob>] [--previews]   # v1 vs v2 report (+ side-by-side videos)
     python run.py compare --models yolox_s,dfine_s [--clips <glob>]       # detector comparison table
     python run.py fixtures                                                 # ReplayCore v2 fixtures (+ their scores)
+    python run.py native-fixtures                                          # Part 3: motion, tiles, D-FINE decode
 
 The window of each clip is the part the app analyses: from `bounds_start_ms` to the trim end (or the file end).
 """
@@ -176,6 +177,13 @@ def cmd_fixtures(a: argparse.Namespace) -> None:
         print(line, flush=True)
 
 
+def cmd_native_fixtures(a: argparse.Namespace) -> None:
+    from focusbench.native_fixtures import write_all
+
+    for path, size in write_all():
+        print(f"{os.path.basename(path)} {size / 1e6:.2f} MB", flush=True)
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -195,8 +203,10 @@ def main() -> None:
     c.add_argument("--models", required=True)
     c.add_argument("--clips", default="*")
     sub.add_parser("fixtures")
+    sub.add_parser("native-fixtures")
     a = p.parse_args()
-    {"detect": cmd_detect, "propose": cmd_propose, "all": cmd_all, "compare": cmd_compare, "fixtures": cmd_fixtures}[a.cmd](a)
+    {"detect": cmd_detect, "propose": cmd_propose, "all": cmd_all, "compare": cmd_compare, "fixtures": cmd_fixtures,
+     "native-fixtures": cmd_native_fixtures}[a.cmd](a)
 
 
 if __name__ == "__main__":

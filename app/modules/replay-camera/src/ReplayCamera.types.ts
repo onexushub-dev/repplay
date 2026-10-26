@@ -139,8 +139,10 @@ export type AnalyzeFocusOptions = {
   startMs: number;
   endMs: number;
   outPath: string;
-  /** Also write the people found in each analysed frame (`samples`), for the test screen. */
+  /** Also write each sample's people, ball candidates and motion scores (`samples`), for the bench (dev builds). */
   debug?: boolean;
+  /** The recording's sport id (spec §13.6, `livre` when absent): tennis and volleyball follow the ball. */
+  sport?: string;
 };
 
 /** `none`: too few people for a framing (the file has empty tracks). */
@@ -150,6 +152,10 @@ export type FocusAnalysis = {
   framesWithPeople: number;
   meanPeople: number;
   elapsedMs: number;
+  /** v2 builds: what the framing follows, the share of samples with the ball found, and the detector used. */
+  follow?: 'ball' | 'players';
+  ballShare?: number;
+  model?: string;
 };
 
 export type ReplayCameraViewProps = {

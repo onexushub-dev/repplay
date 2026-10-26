@@ -38,4 +38,26 @@ final class FocusGridTests: XCTestCase {
   func test_noFramesGiveNoSamples() {
     XCTAssertTrue(FocusGrid.samples(from: [], startMs: 0, endMs: 1000, stepMs: 100).isEmpty)
   }
+
+  // MARK: - Ticks (Modo Foco v2: ball candidates must not carry over a gap)
+
+  func test_ticksMarkGapsAndCarryThePeopleOver() {
+    let ticks = FocusGrid.ticks(frameTimes: [0, 100, 200, 600, 700], startMs: 0, endMs: .infinity, stepMs: 100)
+    XCTAssertEqual(ticks.map { $0.tMs }, [0, 100, 200, 300, 400, 500, 600, 700])
+    XCTAssertEqual(ticks.map { $0.frame }, [0, 1, 2, nil, nil, nil, 3, 4])
+    XCTAssertEqual(ticks.map { $0.people }, [0, 1, 2, 2, 2, 2, 3, 4])
+  }
+
+  func test_aLateFirstFrameHasNoOwnFrameBeforeIt() {
+    let ticks = FocusGrid.ticks(frameTimes: [250, 350], startMs: 0, endMs: .infinity, stepMs: 100)
+    XCTAssertEqual(ticks.map { $0.frame }, [nil, nil, 0, 1])
+    XCTAssertEqual(ticks.map { $0.people }, [0, 0, 0, 1])
+  }
+
+  func test_aBurstOfFramesUsesTheFirstPerTick() {
+    let ticks = FocusGrid.ticks(frameTimes: [0, 20, 40, 100], startMs: 0, endMs: .infinity, stepMs: 100)
+    XCTAssertEqual(ticks.map { $0.frame }, [0, 3])
+    XCTAssertEqual(ticks.map { $0.people }, [0, 3])
+  }
 }
+

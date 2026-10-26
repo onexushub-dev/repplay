@@ -1,7 +1,7 @@
 import type { AnalyzeFocusOptions, FocusAnalysis } from '../../modules/replay-camera/src/ReplayCamera.types';
 import { focusPath } from '../data/focusFile';
 import type { Repo } from '../data/repo';
-import type { Clip } from '../data/schema';
+import type { Clip, ClipFocus } from '../data/schema';
 
 export type FocusQueueDeps = {
   analyze(opts: AnalyzeFocusOptions): Promise<FocusAnalysis>;
@@ -10,12 +10,19 @@ export type FocusQueueDeps = {
   supported(): boolean;
   repo: Pick<Repo, 'getClip' | 'updateClip'>;
   deleteFile(path: string): void;
+  /** The sport of the clip's recording (spec §13.6); absent → `livre` (players). */
+  sportOf?(clip: Clip): string;
+  /** Write each sample into the file too (dev builds, for the bench). */
+  debug?: boolean;
 };
 
 export type FocusQueue = {
   /** A clip just saved: mark it pending and analyse it when its turn comes. */
   enqueue(clipId: string): void;
-  /** A clip opened in the editor: queue it if it was never analysed, or was left pending by a closed app. */
+  /**
+   * A clip opened in the editor: queue it if it was never analysed, or was left pending by a closed app (it goes
+   * first). A clip analysed by v1 is queued again, last, keeping its v1 framing until the new one is written.
+   */
   ensure(clip: Clip): void;
   /** The clip file is being deleted: drop it from the queue and stop its analysis. */
   cancel(clipPath: string): void;
@@ -38,6 +45,9 @@ export function focusHold(recording: boolean, thermal: 'nominal' | 'fair' | 'ser
   if (!recording) return 'none';
   return thermal === 'nominal' ? 'openedOnly' : 'all';
 }
+
+/** The analysis this app runs (`ClipFocus.v`). */
+const FOCUS_V = 2 as const;
 
 const codeOf = (e: unknown) => (typeof e === 'object' && e !== null ? (e as { code?: unknown }).code : undefined);
 
@@ -66,12 +76,15 @@ export function createFocusQueue(deps: FocusQueueDeps): FocusQueue {
   function start(clip: Clip) {
     const outPath = focusPath(clip.path);
     const range = clip.bounds ? clip.bounds : { startMs: 0, endMs: clip.durationMs };
+    // A v1 framing being redone: kept if the new analysis breaks, so the clip does not lose what it had.
+    const before = clip.focus && clip.focus.v === 1 && clip.focus.status === 'ready' ? clip.focus.file : undefined;
+    const sport = deps.sportOf ? deps.sportOf(clip) : 'livre';
     running = { id: clip.id, path: clip.path };
     deps
-      .analyze({ clipPath: clip.path, startMs: range.startMs, endMs: range.endMs, outPath })
+      .analyze({ clipPath: clip.path, startMs: range.startMs, endMs: range.endMs, outPath, sport, ...(deps.debug ? { debug: true } : {}) })
       .then((result) => {
         // updateClip never brings back a deleted clip; the file it wrote is then left over.
-        if (!deps.repo.updateClip(clip.id, { focus: { v: 1, status: result.status, file: outPath } })) deps.deleteFile(outPath);
+        if (!deps.repo.updateClip(clip.id, { focus: { v: FOCUS_V, status: result.status, file: outPath } })) deps.deleteFile(outPath);
       })
       .catch((e: unknown) => {
         const code = codeOf(e);
@@ -79,7 +92,9 @@ export function createFocusQueue(deps: FocusQueueDeps): FocusQueue {
         // Vision cannot run with the app in the background: left pending, it is redone when the clip is opened.
         if (code === 'FOCUS_INTERRUPTED') return;
         console.warn('[Repplay] Modo Foco analysis failed', clip.path, e);
-        deps.repo.updateClip(clip.id, { focus: { v: 1, status: 'failed' } });
+        // The v1 file is untouched (the analysis writes only when it succeeds): keep showing it, and do not retry.
+        const focus: ClipFocus = before !== undefined ? { v: FOCUS_V, status: 'ready', file: before } : { v: FOCUS_V, status: 'failed' };
+        deps.repo.updateClip(clip.id, { focus });
       })
       .finally(() => {
         running = undefined;
@@ -90,7 +105,7 @@ export function createFocusQueue(deps: FocusQueueDeps): FocusQueue {
   function enqueue(clipId: string) {
     if (!deps.supported()) return;
     if (waiting.includes(clipId) || (running && running.id === clipId)) return;
-    if (!deps.repo.updateClip(clipId, { focus: { v: 1, status: 'pending' } })) return;
+    if (!deps.repo.updateClip(clipId, { focus: { v: FOCUS_V, status: 'pending' } })) return;
     waiting.push(clipId);
     pump();
   }
@@ -98,9 +113,16 @@ export function createFocusQueue(deps: FocusQueueDeps): FocusQueue {
   return {
     enqueue,
     ensure(clip) {
-      if (clip.focus && clip.focus.status !== 'pending') return;
+      const redo = clip.focus !== undefined && clip.focus.v === 1 && clip.focus.status !== 'pending';
+      if (clip.focus && clip.focus.status !== 'pending' && !redo) return;
       if (!deps.supported()) return;
       if (running && running.id === clip.id) return;
+      if (redo) {
+        // Analysed by v1: redone after everything else, outside a recording (it is not an `opened` clip).
+        if (!waiting.includes(clip.id)) waiting.push(clip.id);
+        pump();
+        return;
+      }
       // Opened in the editor: it goes first, and may run during an `openedOnly` hold.
       opened.add(clip.id);
       const at = waiting.indexOf(clip.id);
@@ -110,7 +132,7 @@ export function createFocusQueue(deps: FocusQueueDeps): FocusQueue {
         pump();
         return;
       }
-      if (!deps.repo.updateClip(clip.id, { focus: { v: 1, status: 'pending' } })) {
+      if (!deps.repo.updateClip(clip.id, { focus: { v: FOCUS_V, status: 'pending' } })) {
         opened.delete(clip.id);
         return;
       }

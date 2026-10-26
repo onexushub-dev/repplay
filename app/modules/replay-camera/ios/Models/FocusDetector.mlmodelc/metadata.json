@@ -1,0 +1,105 @@
+[
+  {
+    "metadataOutputVersion" : "3.0",
+    "storagePrecision" : "Float16",
+    "outputSchema" : [
+      {
+        "hasShapeFlexibility" : "0",
+        "isOptional" : "0",
+        "dataType" : "Float16",
+        "formattedType" : "MultiArray (Float16 1 × 300 × 80)",
+        "shortDescription" : "",
+        "shape" : "[1, 300, 80]",
+        "name" : "output0",
+        "type" : "MultiArray"
+      },
+      {
+        "hasShapeFlexibility" : "0",
+        "isOptional" : "0",
+        "dataType" : "Float16",
+        "formattedType" : "MultiArray (Float16 1 × 300 × 4)",
+        "shortDescription" : "",
+        "shape" : "[1, 300, 4]",
+        "name" : "output1",
+        "type" : "MultiArray"
+      }
+    ],
+    "modelParameters" : [
+
+    ],
+    "specificationVersion" : 7,
+    "mlProgramOperationTypeHistogram" : {
+      "Stack" : 3,
+      "Ios16.matmul" : 8,
+      "Ios16.silu" : 40,
+      "UpsampleNearestNeighbor" : 2,
+      "Ios16.reduceMax" : 1,
+      "SliceByIndex" : 24,
+      "Concat" : 22,
+      "Ios16.gatherAlongAxis" : 2,
+      "Ios16.linear" : 62,
+      "Ios16.reduceSum" : 3,
+      "Pad" : 2,
+      "Ios16.reshape" : 56,
+      "Ios16.mul" : 77,
+      "Ios16.topk" : 2,
+      "Ios16.resample" : 9,
+      "Ios16.realDiv" : 1,
+      "Ios16.log" : 1,
+      "Ios16.conv" : 91,
+      "Ios16.maxPool" : 1,
+      "Ios16.cast" : 1,
+      "Ios16.add" : 91,
+      "ExpandDims" : 10,
+      "Ios16.sigmoid" : 5,
+      "Ios16.layerNorm" : 12,
+      "Ios16.gelu" : 1,
+      "Split" : 11,
+      "Ios16.sub" : 16,
+      "Transpose" : 42,
+      "Ios16.reduceMean" : 1,
+      "Ios16.relu" : 47,
+      "Ios16.softmax" : 11,
+      "Ios16.clip" : 9,
+      "Tile" : 2
+    },
+    "computePrecision" : "Mixed (Float16, Float32, Int32)",
+    "isUpdatable" : "0",
+    "stateSchema" : [
+
+    ],
+    "availability" : {
+      "macOS" : "13.0",
+      "tvOS" : "16.0",
+      "visionOS" : "1.0",
+      "watchOS" : "9.0",
+      "iOS" : "16.0",
+      "macCatalyst" : "16.0"
+    },
+    "modelType" : {
+      "name" : "MLModelType_mlProgram"
+    },
+    "userDefinedMetadata" : {
+      "com.github.apple.coremltools.conversion_date" : "2026-10-26",
+      "com.github.apple.coremltools.source" : "torch==2.14.1",
+      "com.github.apple.coremltools.version" : "9.0",
+      "com.github.apple.coremltools.source_dialect" : "TorchScript"
+    },
+    "inputSchema" : [
+      {
+        "height" : "640",
+        "colorspace" : "RGB",
+        "isOptional" : "0",
+        "width" : "640",
+        "isColor" : "1",
+        "formattedType" : "Image (Color 640 × 640)",
+        "hasSizeFlexibility" : "0",
+        "type" : "Image",
+        "shortDescription" : "",
+        "name" : "images"
+      }
+    ],
+    "generatedClassName" : "dfine_s_image",
+    "method" : "predict"
+  }
+]
