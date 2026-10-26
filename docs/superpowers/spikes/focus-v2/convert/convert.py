@@ -1,6 +1,8 @@
 """Converts a Modo Foco v2 candidate detector to ONNX and Core ML (spec 2026-10-24, step 0; plan part 1, task 1).
 
 Usage: python convert.py <yolox_s|dfine_s> --src <dir with the cloned repos> --weights <dir with the .pth> --out <dir>
+       [--image-input]   # dfine_s only: Core ML takes an RGB image (Vision scales and crops it); writes <name>_image
+
 
 The models return their raw heads; decoding and NMS live in decode.py (and later in Swift), so both sides share one
 decoder. Input: 1×3×640×640 float, prepared by decode.preprocess for that model.
@@ -22,7 +24,7 @@ def build_yolox_s(src: str, weights: str) -> nn.Module:
 
     exp = get_exp(None, "yolox-s")
     model = exp.get_model()
-    state = torch.load(os.path.join(weights, "yolox_s.pth"), map_location="cpu", weights_only=False)
+    state = torch.load(os.path.join(weights, "yolox_s.pth"), map_location="cpu", weights_only=True)
     model.load_state_dict(state["model"])
     model.head.decode_in_inference = False  # raw (1, 8400, 85): x, y, w, h (grid units), obj logit… after sigmoid
     model.eval()
@@ -47,7 +49,7 @@ def build_dfine_s(src: str, weights: str) -> nn.Module:
     cfg = YAMLConfig(os.path.join(root, "configs/dfine/dfine_hgnetv2_s_coco.yml"))
     if "HGNetv2" in cfg.yaml_cfg:
         cfg.yaml_cfg["HGNetv2"]["pretrained"] = False
-    state = torch.load(os.path.join(weights, "dfine_s_coco.pth"), map_location="cpu", weights_only=False)
+    state = torch.load(os.path.join(weights, "dfine_s_coco.pth"), map_location="cpu", weights_only=True)
     cfg.model.load_state_dict(state["ema"]["module"] if "ema" in state else state["model"])
 
     class Raw(nn.Module):
@@ -91,7 +93,11 @@ def main() -> None:
     p.add_argument("--weights", required=True)
     p.add_argument("--out", required=True)
     p.add_argument("--no-coreml", action="store_true")
+    p.add_argument("--image-input", action="store_true",
+                   help="Core ML input as an RGB image scaled 1/255 (D-FINE's own normalisation); skips the ONNX export")
     a = p.parse_args()
+    if a.image_input and a.name != "dfine_s":
+        p.error("--image-input is for dfine_s (YOLOX expects BGR 0..255 with grey padding)")
     os.makedirs(a.out, exist_ok=True)
 
     model = BUILDERS[a.name](a.src, a.weights)
@@ -100,10 +106,11 @@ def main() -> None:
         outputs = model(example)
     names = ["output"] if isinstance(outputs, torch.Tensor) else [f"output{i}" for i in range(len(outputs))]
 
-    onnx_path = os.path.join(a.out, f"{a.name}.onnx")
-    torch.onnx.export(model, (example,), onnx_path, input_names=["images"], output_names=names, opset_version=17,
-                      do_constant_folding=True, dynamo=False)
-    print("onnx:", onnx_path)
+    if not a.image_input:
+        onnx_path = os.path.join(a.out, f"{a.name}.onnx")
+        torch.onnx.export(model, (example,), onnx_path, input_names=["images"], output_names=names, opset_version=17,
+                          do_constant_folding=True, dynamo=False)
+        print("onnx:", onnx_path)
 
     if a.no_coreml:
         return
@@ -111,16 +118,22 @@ def main() -> None:
 
     _patch_coremltools_cast()
     traced = torch.jit.trace(model, example)
+    if a.image_input:
+        # Vision feeds the model a 640×640 RGB image (each tile stretched to it, `.scaleFill`); the model divides by
+        # 255 as decode.preprocess does. Part 3 plan, decision 2.
+        model_input = ct.ImageType(name="images", shape=example.shape, color_layout=ct.colorlayout.RGB, scale=1 / 255.0)
+    else:
+        model_input = ct.TensorType(name="images", shape=example.shape)
     ml = ct.convert(
         traced,
-        inputs=[ct.TensorType(name="images", shape=example.shape)],
+        inputs=[model_input],
         outputs=[ct.TensorType(name=n) for n in names],
         convert_to="mlprogram",
         compute_precision=ct.precision.FLOAT16,
         compute_units=ct.ComputeUnit.ALL,
         minimum_deployment_target=ct.target.iOS16,
     )
-    ml_path = os.path.join(a.out, f"{a.name}.mlpackage")
+    ml_path = os.path.join(a.out, f"{a.name}{'_image' if a.image_input else ''}.mlpackage")
     ml.save(ml_path)
     print("coreml:", ml_path)
 
