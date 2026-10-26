@@ -99,13 +99,13 @@
   - `public struct BallTrackerTuning` with the Global Constraints tracker values plus `staticRadius 0.02`, `staticShare 0.5`, `staticWindowMs 2000`; `static let standard`.
   - `public enum BallTracker { static func track(times: [Double], balls: [[BallCandidate]], people: [[FocusBox]], heightOverWidth hw: Double, tuning: BallTrackerTuning = .standard) -> [BallRow] }` — port of `tracker.track_ball` (static filter → greedy most-confident-first association with growing gate → forward Kalman → RTS smoothing per confirmed, moving track → main track per sample → predicted/held/lost).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
   - The 7 synthetic cases of Part 1 Task 6 (`parabola`, `straight pass`, `static dropped`, `0.5 s gap predicted`, `1.5 s gap held by the nearest moving player`, `4 s lost`, `moving beats static`), same inputs and assertions.
   - `testMatchesBenchOnTennisAndVolley`: for `tennis-02.json` and `volley-01.json`, `track(...)` equals `track` rows: same states everywhere, x and y within 1e-4.
-- [ ] **Step 2:** Run `swift test --filter BallTrackerTests`. Expected: FAIL.
-- [ ] **Step 3:** Implement. The 4×4 Kalman matrices as fixed-size arrays with small helpers (multiply, transpose, 2×2 inverse); same operation order as the numpy code so the fixtures match. Python's `sorted` is stable and Swift's `sorted(by:)` is not guaranteed to be: sort candidates by (confidence descending, index ascending) and pick the main track by (seen, score) with the earliest track winning ties, as Python's `max` does. One candidate on tennis-02 sits at conf 0.29997, so ties and thresholds do decide tracks.
-- [ ] **Step 4:** Run. Expected: PASS.
-- [ ] **Step 5: Checkpoint** — "feat(replay-core): ball tracker".
+- [x] **Step 2:** Run `swift test --filter BallTrackerTests`. Expected: FAIL.
+- [x] **Step 3:** Implement. The 4×4 Kalman matrices as fixed-size arrays with small helpers (multiply, transpose, 2×2 inverse); same operation order as the numpy code so the fixtures match. Python's `sorted` is stable and Swift's `sorted(by:)` is not guaranteed to be: sort candidates by (confidence descending, index ascending) and pick the main track by (seen, score) with the earliest track winning ties, as Python's `max` does. One candidate on tennis-02 sits at conf 0.29997, so ties and thresholds do decide tracks. *(2026-10-26: written without a Swift toolchain; a pure-Python transcription of the Swift code (no numpy, Gauss–Jordan inverse, windowed neighbours) reproduces both ball fixtures: 0 state mismatches, 5e-9. All 11 bench tracker cases ported, plus an empty-input case. Matrix type: internal `KalmanMatrix`.)*
+- [x] **Step 4:** Run. Expected: PASS. *(2026-10-26, Victor's Mac: 13/13; whole package 210/210. The fixture test takes 8–11 s in a debug build for two 30 s clips: see NEXT.md.)*
+- [x] **Step 5: Checkpoint** — "feat(replay-core): ball tracker".
 
 ### Task 4: Players path tuning preset
 
@@ -116,9 +116,9 @@
 **Interfaces:**
 - Produces: `public static let players: FocusTuning` = `.standard` with `spreadScale 1.1`, `spreadMargin 0.10`, `sigmaXMs 800`; `public static func maxZoom(shortSidePx: Double) -> Double` on `FocusPath` (= `max(1, min(3, shortSidePx / 720))`).
 
-- [ ] **Step 1: Write the failing tests** `testPlayersPresetMatchesBench` (both basketball fixtures: `compute(..., aspect: clip's, zoom: true, maxZoom: fixture.maxZoom, tuning: .players)` equals `rects` within 1e-6) and `testMaxZoomByResolution` (`1080 → 1.5`, `1440 → 2`, `2160 → 3`, `607 → 1`, `1215 → 1215/720`).
+- [x] **Step 1: Write the failing tests** `testPlayersPresetMatchesBench` (both basketball fixtures: `compute(..., aspect: clip's, zoom: true, maxZoom: fixture.maxZoom, tuning: .players)` equals `rects` within 1e-6) and `testMaxZoomByResolution` (`1080 → 1.5`, `1440 → 2`, `2160 → 3`, `607 → 1`, `1215 → 1215/720`).
 - [ ] **Step 2:** Run `swift test --filter FocusPathTests`. Expected: the new tests FAIL; existing v1 tests PASS.
-- [ ] **Step 3:** Implement.
+- [x] **Step 3:** Implement. *(2026-10-26: `FocusTuning.players`, `FocusPath.maxZoom(shortSidePx:)` and `FocusPath.minCropShortSidePx`; extra test: the preset changes only its three values.)*
 - [ ] **Step 4:** Run. Expected: PASS (old and new).
 - [ ] **Step 5: Checkpoint** — "feat(replay-core): players framing preset and resolution zoom cap".
 

@@ -43,6 +43,12 @@ struct FocusV2Fixture {
   var balls: [[BallCandidate]] { raw.samples.map { $0.balls.map(FocusV2Fixture.ball) } }
   var motion: [[Double?]?] { raw.samples.map { $0.motion } }
   var filtered: [[BallCandidate]] { raw.filtered.map { $0.map(FocusV2Fixture.ball) } }
+  var times: [Double] { raw.samples.map { $0.t } }
+  var track: [BallRow] {
+    raw.track.map { r in
+      BallRow(x: r[0], y: r[1], state: BallState(rawValue: Int(r[2])) ?? .lost, conf: r[3])
+    }
+  }
   var rects: [FocusRect]? {
     guard let rs = raw.rects else { return nil }
     return rs.map { FocusRect(x: $0[0], y: $0[1], width: $0[2], height: $0[3]) }
