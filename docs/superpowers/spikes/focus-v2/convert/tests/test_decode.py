@@ -1,7 +1,5 @@
 """decode.py on the ONNX models matches each upstream repo's own inference on a real Repplay frame."""
 
-from __future__ import annotations
-
 import os
 import platform
 import sys

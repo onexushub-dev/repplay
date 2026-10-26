@@ -63,21 +63,15 @@ All spike code lives on a branch Victor names (e.g. `spike/focus-v2`) and is not
 - Create (kept): `docs/superpowers/spikes/focus-v2/RESULTS.md`
 
 **Interfaces:**
-- Produces (native, spike only): `AsyncFunction("spikeTimeModel") (model: String, clipPath: String, grid: String, decodeLongSide: Int, frames: Int) -> { msPerFrame: Double, msPerFrameP95: Double }` (`grid`: `"full" | "2x2" | "3x2" | "4x3"`; multi-frame models — `wasb_*` 3 frames, `tnv3_*` 8 frames + a median background of 60 frames — keep a rolling buffer, so one call per sample); `Function("spikeCaptureFormats") -> [{ width: Int, height: Int, maxFps: Double, lens: String }]`; `AsyncFunction("spikeExportPortrait") (clipPath: String, focusPath: String, outPath: String) -> String`.
+- Produces (native, spike only): `AsyncFunction("spikeTimeModel") (model: String, clipPath: String, tiled: Bool, frames: Int) -> { msPerFrame: Double, msPerFrameP95: Double }`; `Function("spikeCaptureFormats") -> [{ width: Int, height: Int, maxFps: Double, lens: String }]`; `AsyncFunction("spikeExportPortrait") (clipPath: String, focusPath: String, outPath: String) -> String`.
 
-- [ ] **Step 1:** `spikeTimeModel`: loads the bundled `.mlpackage` (copied into the spike build), reads `frames` frames at 10 fps from the clip with `AVAssetReader` scaled to 1920 px long side, runs `VNCoreMLRequest` on the full frame or each tile of `grid` (15% overlap), and times model + decode (NMS for detectors, heatmap blobs > 0.5 for `wasb_*`/`tnv3_*`) per sample. No assertions: it is a measurement.
+- [ ] **Step 1:** `spikeTimeModel`: loads the bundled `.mlpackage` (copied into the spike build), reads `frames` frames at 10 fps from the clip with `AVAssetReader` scaled to 1920 px long side, runs `VNCoreMLRequest` full frame (and, when `tiled`, the 6 tiles), and times model + decode + NMS per frame. No assertions: it is a measurement.
 - [ ] **Step 2:** `spikeCaptureFormats`: every 16:9 format of the back wide and ultra-wide cameras with its max frame rate.
 - [ ] **Step 3:** `spikeExportPortrait`: `ClipExporter` with a 1080×1920 render size, the clip's `portrait` rows from its `.focus.json` and the vertical overlay; returns the output path.
-- [ ] **Step 4: Measure** on the XR and the 16 Pro Max, 300 frames each, with `clips/basket-v-corner-unavailable-01.mp4`
-  and the 4K cut `refs4k/seg/tennis-02-2160.mp4` (copy both into the spike build's documents). Updated 2026-10-25 (spec §13.4):
-  - person detector, `yolox_s` and `dfine_s`: full frame, 3×2 tiles from a 1920 px decode, 4×3 tiles from a 2560 px decode;
-  - `wasb_tennis` (3 frames → 288×512 heatmaps; Core ML from `bench-out/models/ext/onnx/wasb_tennis.onnx` via `coremltools`): full frame and 2×2 tiles of the 4K frame;
-  - `tnv3_beachvolley` (8 frames + background → 288×512): full frame;
-  - the motion score of spec §13.3 over 10 candidates (should be negligible; confirms it).
-  Record in `RESULTS.md` a table `model | grid | phone | ms/frame | p95 | 30 s window estimate (×300)`.
-- [ ] **Step 5: Measure** capture: the formats list for both phones; 20 minutes recording indoors at 4K30, then 4K60 if listed (2K capture is dropped, spec decision 11), reading the `[replay] thermal` log lines; record time to `fair` and `serious`.
+- [ ] **Step 4: Measure** on the XR and the 16 Pro Max, with `clips/basket-v-corner-unavailable-01.mp4` and one landscape clip (any `-h-` clip Victor adds, or a `-cam4k` one), 300 frames each: every converted model, full and tiled. Record in `RESULTS.md` a table `model | phone | full ms/frame | tiled ms/frame | 30 s window estimate (×300)`.
+- [ ] **Step 5: Measure** capture: the formats list for both phones; 20 minutes recording indoors at 4K30, then 4K60 if listed, reading the `[replay] thermal` log lines; record time to `fair` and `serious`.
 - [ ] **Step 6: Check** the 9:16 export by eye: framing follows the play, the mark is bottom-right in every frame, duration matches the cut.
-- [ ] **Step 7: Decide** in `RESULTS.md`: the person detector (YOLOX-S or D-FINE-S) and its grid per resolution (3×2 or 4×3) within the time budget; whether TrackNetV3 ships for volleyball; WASB full frame or 2×2 for 4K tennis; 4K frame rate (30, or 60 if it reached no `serious` in 20 min on both phones).
+- [ ] **Step 7: Decide** (after Task 10 has run `compare`) in `RESULTS.md`: the model kept for Parts 2–3 (the best ball and small-person recall from Task 10's report among those within the time budget), 2K source (native 2560×1440 or 4K written at 1440p), 4K frame rate (30, or 60 if it reached no `serious` in 20 min on both phones).
 - [ ] **Step 8: Checkpoint** — "spike(focus-v2): device measurements and decisions" (only `RESULTS.md` is meant for main).
 
 ---
@@ -174,9 +168,8 @@ TrackRow = tuple[float, float, int, float]         # x, y, state (0 seen, 1 pred
 - Create: `bench/focusbench/tracker.py`, `bench/tests/test_tracker.py`
 
 **Interfaces:**
-- Produces: `track_ball(samples: list[Sample], tuning: dict | None = None, hw: float = 1.0) -> list[TrackRow]` (one row per sample; `hw` = frame height / width, distances in frame widths); defaults in `TRACKER_TUNING` (tracker.py), which `TUNING_V2` (path_v2.py) includes.
-- Tuning keys and starting values (spec §4.2): `static_share 0.70`, `static_window_ms 2000`, `static_radius 0.01`, `start_hits 3`, `start_window_ms 500`, `predict_max_ms 700`, `held_max_ms 3000`; free starting values: `accel_std 3.0`, `meas_std 0.006`, `gate_base 0.08`, `gate_growth 0.05`, `gate_new 0.35` (one-match tracks).
-- Added on the real clips (2026-10-24): `static_track_radius 0.015` (a track that never moves is scenery: an intermittent blob escaped rule 1), and HELD follows moving people only (v1's still rule; a painted wall figure was being followed).
+- Produces: `track_ball(samples: list[Sample], tuning: dict = TUNING_V2) -> list[TrackRow]` (one row per sample); `TUNING_V2` lives in `path_v2.py` and is imported here (keys below).
+- Tuning keys and starting values (spec §4.2): `static_share 0.70`, `static_window_ms 2000`, `static_radius 0.01`, `start_hits 3`, `start_window_ms 500`, `predict_max_ms 700`, `held_max_ms 3000`, plus Kalman `process_noise` and `gate_base`, `gate_growth` (free starting values, recorded in `TUNING_V2`).
 
 - [ ] **Step 1: Write the failing tests** (spec §6 list, as pytest):
   - `test_parabola_is_tracked`: candidates on `y = 0.8 - 2.4t + 3t²`, x linear, every sample → all rows `seen`, positions within 0.01.
@@ -198,9 +191,7 @@ TrackRow = tuple[float, float, int, float]         # x, y, state (0 seen, 1 pred
 
 **Interfaces:**
 - Consumes: Task 5 `v1_rects` (fallback and steps 1–2 filters), Task 6 `track_ball`.
-- Produces: `v2_rects(samples: list[Sample], track: list[TrackRow], W: int, H: int, aspect: str, zoom: bool, max_zoom: float, tuning: dict | None = None) -> list[Rect] | None`; `max_zoom_for(fit_short_px: float) -> float` = `max(1, min(3, fit_short_px / 720))` (short side, in source pixels, of the largest rect of the target aspect that fits).
-- v1's steps 1–4 are factored out of `v1path.py` as `filter_people`, `enough_people`, `v1_targets`, `place`; `v1_rects` output is bit-identical before and after (checked on the 6 fixtures × 2 aspects × zoom on/off).
-- Deviations kept for the tuning round (2026-10-25): no vertical dead zone yet (y is smoothed 0.8 s as v1); added `settle_speed 0.1` (the camera stops following only when the target is nearly still) and `sigma_lead_ms 300` (the lead uses a smoothed speed, so jitter does not move the camera).
+- Produces: `v2_rects(samples: list[Sample], track: list[TrackRow], W: int, H: int, aspect: str, zoom: bool, max_zoom: float, tuning: dict = TUNING_V2) -> list[Rect] | None`; `max_zoom_for(source_short_px: int, aspect_fits_short_px: int) -> float` = `max(1, min(3, aspect_fits_short_px / 720))`.
 - Tuning keys and starting values (spec §4.3): `ball_weight_x 0.7`, `ball_weight_y 0.3`, `near_players 2`, `lookahead_max_s 0.5`, `lead_max 0.15`, `dead_zone_w 0.40`, `dead_zone_h 0.50`, `size_lookahead_s 0.8`, `spread_scale 1.3`, `spread_margin 0.15`, `sigma_size_ms 1200`, `pan_base 0.35` (frame widths/s), `pan_fast 0.8` (crop widths/s), `fast_when_outside 0.70`, `accel_max 1.5` (crop widths/s²), `lift 0.1`, `min_people_share 0.2`.
 
 - [ ] **Step 1: Write the failing tests**
@@ -224,8 +215,8 @@ TrackRow = tuple[float, float, int, float]         # x, y, state (0 seen, 1 pred
 
 **Interfaces:**
 - Consumes: Task 4 detections, Task 6 tracker.
-- Produces: `python run.py propose --model <m> [--clips <glob>]` (uses `write_label_folder`, `proposals_from`) writes `docs/focus-refs/bench-out/label/<clip>/` with one JPEG per sample (`t_<ms>.jpg`, 1280 px long side: at 540 px a basketball was ~3 px) and `proposal.json` `{ clip, startMs, endMs, proposals: { "<t>": [x, y] | null }, labels }`; label file `docs/focus-refs/clips/<clip>.ball.json` `{ "v": 1, "samples": { "<t>": [x, y] | "out" | "none" } }` (`out` = ball not in play, `none` = not visible but in play); `load_labels(clip) -> dict[int, tuple[float,float] | str]`.
-- The page: open `label/index.html` from Finder, pick the clip's `bench-out/label/<clip>/` folder (file input, `webkitdirectory`), it shows each frame with the proposal dot; keys: click = set ball, `Enter` = accept proposal, `O` = out of play, `N` = not visible, `⌫` = clear, arrows = previous/next, `S` = download `<clip>.ball.json`. A 4× loupe follows the cursor; "label 1 in N samples" (default 5: two per second, ~60 per 30 s clip) keeps the work to minutes per clip. Work in progress is kept in the browser's localStorage per clip; the download is the real save. No network.
+- Produces: `propose(clip: str, model: str) -> None` writes `docs/focus-refs/bench-out/label/<clip>/` with one JPEG per sample (`t_<ms>.jpg`, 540 px long side) and `proposal.json` `{ "<t>": [x, y] | null }`; label file `docs/focus-refs/clips/<clip>.ball.json` `{ "v": 1, "samples": { "<t>": [x, y] | "out" | "none" } }` (`out` = ball not in play, `none` = not visible but in play); `load_labels(clip) -> dict[int, tuple[float,float] | str]`.
+- The page: open `label/index.html` from Finder, pick the clip's `bench-out/label/<clip>/` folder (file input, `webkitdirectory`), it shows each frame with the proposal dot; keys: click = set ball, `Enter` = accept proposal, `O` = out of play, `N` = not visible, arrows = previous/next, `S` = download `<clip>.ball.json`. No network, no storage beyond the download.
 
 - [ ] **Step 1: Write the failing tests** `test_label_file_round_trip` (write → `load_labels` gives the same dict) and `test_labels_reject_out_of_range_points` (`[1.2, 0.5]` raises `ValueError`).
 - [ ] **Step 2:** Run. Expected: FAIL.
@@ -239,7 +230,7 @@ TrackRow = tuple[float, float, int, float]         # x, y, state (0 seen, 1 pred
 - Create: `bench/focusbench/metrics.py`, `bench/tests/test_metrics.py`
 
 **Interfaces:**
-- Produces: `clip_metrics(rects: list[Rect] | None, labels: dict, start_ms: int, step_ms: int = 100) -> ClipMetrics` with `available: bool`, `ball_in_crop: float | None` (share of labelled in-play samples whose ball point lies inside the rect; `None` when there are none), `mean_zoom: float | None` (mean of `1 / rect.w`), `jerk_p95: float | None` (95th percentile of |second difference| of the crop centre, in crop widths/s²); `overall(rows: list[ClipMetrics]) -> dict` (sample-weighted ball share, count of unavailable clips, mean zoom, mean jerk).
+- Produces: `clip_metrics(rects: list[Rect] | None, labels: dict, step_ms: int = 100) -> ClipMetrics` with `available: bool`, `ball_in_crop: float | None` (share of labelled in-play samples whose ball point lies inside the rect; `None` when there are none), `mean_zoom: float | None` (mean of `1 / rect.w`), `jerk_p95: float | None` (95th percentile of |second difference| of the crop centre, in crop widths/s²); `overall(rows: list[ClipMetrics]) -> dict` (sample-weighted ball share, count of unavailable clips, mean zoom, mean jerk).
 
 - [ ] **Step 1: Write the failing tests**
   - `test_ball_share_counts_only_in_play_points`: 10 labels, 2 `out`, 1 `none`, 7 points of which 6 inside → `6/7`.
@@ -260,9 +251,6 @@ TrackRow = tuple[float, float, int, float]         # x, y, state (0 seen, 1 pred
 - Consumes: Tasks 3–9.
 - Produces: `python run.py all --model yolox_s [--clips <glob>]` → `docs/focus-refs/bench-out/report-<model>-<yyyymmdd-hhmm>.md` with a per-clip table (`clip | v1 available | v2 available | ball in crop v1 → v2 | mean zoom v1 → v2 | jerk p95 v1 → v2 | no ball track?`), the overall row against the spec §1 targets (✓/✗), the `TUNING_V2` values used, and per clip `preview/<clip>.mp4`: v1 and v2 crops side by side at the export size (ffmpeg, crop path applied per 100 ms with linear interpolation, labelled ball drawn as a dot). `python run.py compare --models yolox_s,rtmdet_s,dfine_s` adds a model table (people found per sample, small-person recall vs. the largest model, ball candidates per sample, ball-in-crop with v2) for Task 2 step 7.
 - The source size for `max_zoom_for` comes from the clip's real resolution (720p clips get max zoom 1).
-- First run (2026-10-25, 1 clip): v2 jerk p95 1.50 vs v1 0.22 crop widths/s²: the camera accelerates and brakes at the
-  limit (bang-bang). First item for Task 11: a smoother controller (e.g. a critically damped spring) or a lower
-  `accel_max`. With the generic YOLOX-S the ball is SEEN in 6–25% of the samples of the vertical clips.
 
 - [ ] **Step 1: Write the failing test** `test_report_marks_targets`: overall ball share 0.96, 0 unavailable, zoom 1.6 vs v1 1.2, jerk not worse → every target row ✓; ball share 0.90 → that row ✗.
 - [ ] **Step 2:** Run. Expected: FAIL.
