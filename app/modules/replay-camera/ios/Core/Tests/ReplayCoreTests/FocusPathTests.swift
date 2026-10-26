@@ -140,45 +140,4 @@ final class FocusPathTests: XCTestCase {
                                                 aspect: .portrait, zoom: false))
     for r in rects { XCTAssertEqual(r.height, 1, accuracy: 1e-9) }
   }
-
-  // MARK: - Modo Foco v2 (spec §13.1 decisions 4 and 12)
-
-  func test_playersPresetMatchesTheBench() throws {
-    for name in ["basket-v-corner-normal-01", "basket-v-corner-unavailable-01"] {
-      let f = try FocusV2Fixture.load(name)
-      let expected = try XCTUnwrap(f.rects, name)
-      let rects = try XCTUnwrap(FocusPath.compute(samples: f.samples, videoWidth: f.width, videoHeight: f.height,
-                                                  aspect: f.aspect, zoom: true, maxZoom: f.raw.maxZoom,
-                                                  tuning: .players), name)
-      XCTAssertEqual(rects.count, expected.count, name)
-      for (i, (a, b)) in zip(rects, expected).enumerated() {
-        XCTAssertEqual(a.x, b.x, accuracy: 1e-6, "\(name) sample \(i)")
-        XCTAssertEqual(a.y, b.y, accuracy: 1e-6, "\(name) sample \(i)")
-        XCTAssertEqual(a.width, b.width, accuracy: 1e-6, "\(name) sample \(i)")
-        XCTAssertEqual(a.height, b.height, accuracy: 1e-6, "\(name) sample \(i)")
-      }
-    }
-  }
-
-  func test_playersPresetChangesOnlyItsThreeValues() {
-    let p = FocusTuning.players, s = FocusTuning.standard
-    XCTAssertEqual(p.spreadScale, 1.1)
-    XCTAssertEqual(p.spreadMargin, 0.10)
-    XCTAssertEqual(p.sigmaXMs, 800)
-    XCTAssertEqual(p.sigmaYMs, s.sigmaYMs)
-    XCTAssertEqual(p.sigmaSizeMs, s.sigmaSizeMs)
-    XCTAssertEqual(p.maxPanPerSecond, s.maxPanPerSecond)
-    XCTAssertEqual(p.lift, s.lift)
-    XCTAssertEqual(p.farShare, s.farShare)
-    XCTAssertEqual(p.stillRadius, s.stillRadius)
-  }
-
-  func test_maxZoomByResolution() {
-    XCTAssertEqual(FocusPath.maxZoom(shortSidePx: 1080), 1.5)
-    XCTAssertEqual(FocusPath.maxZoom(shortSidePx: 1440), 2)
-    XCTAssertEqual(FocusPath.maxZoom(shortSidePx: 2160), 3)
-    XCTAssertEqual(FocusPath.maxZoom(shortSidePx: 4320), 3)
-    XCTAssertEqual(FocusPath.maxZoom(shortSidePx: 607), 1)
-    XCTAssertEqual(FocusPath.maxZoom(shortSidePx: 1215), 1215.0 / 720.0)
-  }
 }

@@ -58,28 +58,9 @@ public struct FocusTuning {
 
   public init() {}
   public static let standard = FocusTuning()
-
-  /// Players framing tuned for zoom (spec 2026-10-24 §13.1 decision 12; bench `TUNING_PLAYERS`): a tighter crop around
-  /// the players and a smoother pan, for the 3× cap of a 4K source. Every other value is `standard`'s.
-  public static let players: FocusTuning = {
-    var t = FocusTuning()
-    t.spreadScale = 1.1
-    t.spreadMargin = 0.10
-    t.sigmaXMs = 800
-    return t
-  }()
 }
 
 public enum FocusPath {
-  /// The crop keeps at least this many source pixels on its short side (spec decision 4).
-  public static let minCropShortSidePx = 720.0
-
-  /// The zoom cap for a source whose largest same-aspect crop has this short side in pixels: 1080 → 1.5×, 1440 → 2×,
-  /// 2160 → 3× (never above 3×, never below 1×).
-  public static func maxZoom(shortSidePx: Double) -> Double {
-    max(1, min(3, shortSidePx / minCropShortSidePx))
-  }
-
   /// One crop rect per sample, or nil when there are too few people for a framing. `zoom: false` gives the largest rect
   /// of `aspect` that fits, moved with the play (the track for the other shape).
   public static func compute(samples: [FocusSample], videoWidth: Double, videoHeight: Double, aspect: FocusAspect,
@@ -89,34 +70,6 @@ public enum FocusPath {
     let W = videoWidth, H = videoHeight
     let step = n < 2 ? 100 : (samples[n - 1].tMs - samples[0].tMs) / Double(n - 1)
 
-    guard let people = filteredPeople(samples, W: W, H: H, tuning: t) else { return nil }
-    let (cx, cy, spread) = targets(people, W: W, H: H, tuning: t)
-
-    // 5. Smooth with look-ahead, then limit the pan speed.
-    var x = gaussian(fill(cx), sigma: t.sigmaXMs / step)
-    let y = gaussian(fill(cy), sigma: t.sigmaYMs / step)
-    let limit = t.maxPanPerSecond * step / 1000
-    for i in 1..<max(n, 1) { x[i] = x[i - 1] + min(max(x[i] - x[i - 1], -limit), limit) }
-
-    // 6–7. Size and placement.
-    let widths: [Double] = zoom
-      ? gaussian(fill(spread).map { min(max($0 * t.spreadScale + t.spreadMargin, 1 / maxZoom), 1) }, sigma: t.sigmaSizeMs / step)
-      : Array(repeating: 1, count: n)
-    let ratio = aspect.ratio
-    return (0..<n).map { i -> FocusRect in
-      var w = zoom ? widths[i] : min(1, ratio * H / W)
-      var h = w * W / (ratio * H)
-      if h > 1 { h = 1; w = ratio * H / W }
-      let left = min(max(x[i] - w / 2, 0), 1 - w)
-      let top = min(max(y[i] - t.lift * h - h / 2, 0), 1 - h)
-      return FocusRect(x: left, y: top, width: w, height: h)
-    }
-  }
-
-  /// Steps 1–2 and 8: far people out (shorter than `farShare` of the tallest), still people out (spectators, the
-  /// bench); nil when fewer than `minPeopleShare` of the samples keep someone.
-  static func filteredPeople(_ samples: [FocusSample], W: Double, H: Double, tuning t: FocusTuning) -> [[FocusBox]]? {
-    let n = samples.count
     // 1. Far people out.
     let near: [[FocusBox]] = samples.map { s in
       guard !s.boxes.isEmpty else { return [] }
@@ -142,14 +95,8 @@ public enum FocusPath {
       people.append(keep)
     }
     if Double(people.filter { !$0.isEmpty }.count) < t.minPeopleShare * Double(n) { return nil }
-    return people
-  }
 
-  /// Steps 3–4: per sample, the motion-weighted centre of the people and the spread of their x (10th–90th weighted
-  /// percentile); nil where nobody is left.
-  static func targets(_ people: [[FocusBox]], W: Double, H: Double, tuning t: FocusTuning)
-    -> (cx: [Double?], cy: [Double?], spread: [Double?]) {
-    let n = people.count
+    // 3–4. Weights and the target per sample.
     var cx = [Double?](repeating: nil, count: n), cy = cx, spread = cx
     var previous: [(x: Double, y: Double)] = []
     for i in 0..<n {
@@ -166,7 +113,26 @@ public enum FocusPath {
       spread[i] = weightedQuantile(xs, weights, t.spreadHigh) - weightedQuantile(xs, weights, t.spreadLow)
       previous = centres
     }
-    return (cx, cy, spread)
+
+    // 5. Smooth with look-ahead, then limit the pan speed.
+    var x = gaussian(fill(cx), sigma: t.sigmaXMs / step)
+    let y = gaussian(fill(cy), sigma: t.sigmaYMs / step)
+    let limit = t.maxPanPerSecond * step / 1000
+    for i in 1..<max(n, 1) { x[i] = x[i - 1] + min(max(x[i] - x[i - 1], -limit), limit) }
+
+    // 6–7. Size and placement.
+    let widths: [Double] = zoom
+      ? gaussian(fill(spread).map { min(max($0 * t.spreadScale + t.spreadMargin, 1 / maxZoom), 1) }, sigma: t.sigmaSizeMs / step)
+      : Array(repeating: 1, count: n)
+    let ratio = aspect.ratio
+    return (0..<n).map { i -> FocusRect in
+      var w = zoom ? widths[i] : min(1, ratio * H / W)
+      var h = w * W / (ratio * H)
+      if h > 1 { h = 1; w = ratio * H / W }
+      let left = min(max(x[i] - w / 2, 0), 1 - w)
+      let top = min(max(y[i] - t.lift * h - h / 2, 0), 1 - h)
+      return FocusRect(x: left, y: top, width: w, height: h)
+    }
   }
 
   static func median(_ values: [Double]) -> Double {

@@ -16,24 +16,6 @@ either — tiling is needed.
 
 Core ML vs ONNX check (`test_coreml_matches_onnx`): pending, macOS only.
 
-## Bench first look, YOLOX-S vs D-FINE-S (8-clip subset, 2026-10-25, no labels yet)
-
-| Clip | YOLOX people / ball cand. / seen | D-FINE people / ball cand. / seen |
-|---|---|---|
-| basket-v-corner-normal-01 | 2.5 / 0.17 / 11% | 4.0 / 7.02 / 60% |
-| basket-v-corner-normal-02 | 6.5 / 0.39 / 25% | 9.5 / 9.40 / 89% |
-| basket-v-corner-unavailable-01 | 5.4 / 0.50 / 13% | 7.1 / 7.74 / 56% |
-| basket-v-corner-unavailable-03 | 4.4 / 0.22 / 9% | 8.8 / 8.56 / 60% |
-| basket-h-corner-backlight-02 | 11.5 / 0.31 / 17% | 10.2 / 3.04 / 61% |
-| basket-h-side-low-normal-01 | 14.6 / 0.12 / 10% | 22.3 / 9.56 / 71% |
-| basket-h-side-low-normal-05 | 9.2 / 0.05 / 3% | 38.1 / 10.37 / 99% |
-| basket-h-side-low-unavailable-02 | 18.1 / 0.10 / 5% | 27.0 / 7.79 / 79% |
-
-Per sample, ball candidates ≥ 0.15; "seen" = tracker state SEEN. D-FINE finds more people and many more ball candidates,
-but a frame check (normal-02) shows many of them are scenery (yellow wall marks, feet, hands, floor reflections): its
-"seen" share is not a quality measure. Where the two agree it looks like the real ball. The labels decide (ball in
-crop); D-FINE may need a higher ball threshold (0.3+). CPU time per clip here: YOLOX ~4 min, D-FINE 6–12 min (tiled).
-
 ## Device timing (task 2)
 
 Pending.

@@ -6,8 +6,6 @@ The models return their raw heads; decoding and NMS live in decode.py (and later
 decoder. Input: 1×3×640×640 float, prepared by decode.preprocess for that model.
 """
 
-from __future__ import annotations
-
 import argparse
 import os
 import sys

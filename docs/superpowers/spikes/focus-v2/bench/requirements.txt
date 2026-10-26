@@ -1,5 +1,5 @@
-# Modo Foco v2 bench. Python 3.9+ (macOS's /usr/bin/python3 is 3.9); tested with 3.9.25 and 3.13.
+# Modo Foco v2 bench (tested 2026-10-24 on Python 3.13).
 numpy
-opencv-python>=4.8
-onnxruntime>=1.19
+opencv-python==5.0.0.93
+onnxruntime==1.29.0
 pytest
