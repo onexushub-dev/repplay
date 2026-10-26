@@ -58,9 +58,28 @@ public struct FocusTuning {
 
   public init() {}
   public static let standard = FocusTuning()
+
+  /// Players framing tuned for zoom (spec 2026-10-24 §13.1 decision 12; bench `TUNING_PLAYERS`): a tighter crop around
+  /// the players and a smoother pan, for the 3× cap of a 4K source. Every other value is `standard`'s.
+  public static let players: FocusTuning = {
+    var t = FocusTuning()
+    t.spreadScale = 1.1
+    t.spreadMargin = 0.10
+    t.sigmaXMs = 800
+    return t
+  }()
 }
 
 public enum FocusPath {
+  /// The crop keeps at least this many source pixels on its short side (spec decision 4).
+  public static let minCropShortSidePx = 720.0
+
+  /// The zoom cap for a source whose largest same-aspect crop has this short side in pixels: 1080 → 1.5×, 1440 → 2×,
+  /// 2160 → 3× (never above 3×, never below 1×).
+  public static func maxZoom(shortSidePx: Double) -> Double {
+    max(1, min(3, shortSidePx / minCropShortSidePx))
+  }
+
   /// One crop rect per sample, or nil when there are too few people for a framing. `zoom: false` gives the largest rect
   /// of `aspect` that fits, moved with the play (the track for the other shape).
   public static func compute(samples: [FocusSample], videoWidth: Double, videoHeight: Double, aspect: FocusAspect,

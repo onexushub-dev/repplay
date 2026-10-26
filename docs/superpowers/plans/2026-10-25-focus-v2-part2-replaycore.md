@@ -117,10 +117,10 @@
 - Produces: `public static let players: FocusTuning` = `.standard` with `spreadScale 1.1`, `spreadMargin 0.10`, `sigmaXMs 800`; `public static func maxZoom(shortSidePx: Double) -> Double` on `FocusPath` (= `max(1, min(3, shortSidePx / 720))`).
 
 - [x] **Step 1: Write the failing tests** `testPlayersPresetMatchesBench` (both basketball fixtures: `compute(..., aspect: clip's, zoom: true, maxZoom: fixture.maxZoom, tuning: .players)` equals `rects` within 1e-6) and `testMaxZoomByResolution` (`1080 → 1.5`, `1440 → 2`, `2160 → 3`, `607 → 1`, `1215 → 1215/720`).
-- [ ] **Step 2:** Run `swift test --filter FocusPathTests`. Expected: the new tests FAIL; existing v1 tests PASS.
+- [x] **Step 2:** Run `swift test --filter FocusPathTests`. Expected: the new tests FAIL; existing v1 tests PASS.
 - [x] **Step 3:** Implement. *(2026-10-26: `FocusTuning.players`, `FocusPath.maxZoom(shortSidePx:)` and `FocusPath.minCropShortSidePx`; extra test: the preset changes only its three values.)*
-- [ ] **Step 4:** Run. Expected: PASS (old and new).
-- [ ] **Step 5: Checkpoint** — "feat(replay-core): players framing preset and resolution zoom cap".
+- [x] **Step 4:** Run. Expected: PASS (old and new). *(2026-10-26, Victor's Mac: FocusPathTests 12/12.)*
+- [x] **Step 5: Checkpoint** — "feat(replay-core): players framing preset and resolution zoom cap".
 
 ### Task 5: Ball-led path
 
