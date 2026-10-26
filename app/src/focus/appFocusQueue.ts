@@ -10,9 +10,6 @@ export const focusQueue = createFocusQueue({
   cancel: camera.cancelFocus,
   supported: camera.isFocusSupported,
   repo,
-  // Task 9 (the sport picker) reads the recording's sport here; until then every clip frames the players.
-  sportOf: () => 'livre',
-  debug: __DEV__,
   deleteFile: (path) => {
     try {
       new File(`file://${path}`).delete();

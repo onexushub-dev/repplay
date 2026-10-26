@@ -47,8 +47,7 @@ export type Session = { id: string; sport: Sport; startedAt: number; endedAt?: n
 export const MAX_GAME_NAME = 40;
 export const MAX_CLIP_NAME = 40;
 
-/** `v`: the analysis that wrote it (1 = Vision people, 2 = Modo Foco v2); a v1 clip is analysed again when opened. */
-export type ClipFocus = { v: 1 | 2; status: 'pending' | 'ready' | 'none' | 'failed'; file?: string };
+export type ClipFocus = { v: 1; status: 'pending' | 'ready' | 'none' | 'failed'; file?: string };
 
 export type Clip = {
   id: string;

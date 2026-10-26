@@ -127,18 +127,16 @@ enum ClipExporter {
 
 private func cgRect(_ r: FocusRect) -> CGRect { CGRect(x: r.x, y: r.y, width: r.width, height: r.height) }
 
-/// Reads a Modo Foco file (`FocusAnalyzer`, v1 or v2). Anything unreadable, another version or an empty track gives no
-/// segments, and the export shows the whole video. `follow: "players"` on a ball-led v2 file uses its players framing
-/// for the recorded shape (the `Seguir` control); anything else, the file's own framing.
+/// Reads a Modo Foco file (`FocusAnalyzer`). Anything unreadable, another version or an empty track gives no segments,
+/// and the export shows the whole video.
 enum FocusFile {
-  static func segments(path: String, aspect: String, cutStartMs: Double, cutEndMs: Double, speed: Double,
-                       follow: String? = nil) -> [FocusSegment] {
+  static func segments(path: String, aspect: String, cutStartMs: Double, cutEndMs: Double, speed: Double) -> [FocusSegment] {
     guard let data = FileManager.default.contents(atPath: path),
           let file = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
-          let version = (file["v"] as? NSNumber)?.intValue, version == 1 || version == 2,
+          (file["v"] as? NSNumber)?.intValue == 1,
           let stepMs = (file["stepMs"] as? NSNumber)?.doubleValue,
           let startMs = (file["startMs"] as? NSNumber)?.doubleValue,
-          let rows = rowsFor(file, aspect: aspect, follow: follow, version: version)
+          let rows = file[aspect] as? [[NSNumber]]
     else {
       NSLog("[Repplay] Modo Foco file unreadable: %@", path)
       return []
@@ -148,16 +146,6 @@ enum FocusFile {
     }
     return FocusRamp.segments(rects: rects, startMs: startMs, stepMs: stepMs, cutStartMs: cutStartMs, cutEndMs: cutEndMs,
                               speed: speed)
-  }
-
-  private static func rowsFor(_ file: [String: Any], aspect: String, follow: String?, version: Int) -> [[NSNumber]]? {
-    if follow == "players", version == 2, (file["follow"] as? String) == "ball",
-       let size = file["size"] as? [NSNumber], size.count == 2,
-       aspect == (size[0].doubleValue >= size[1].doubleValue ? "landscape" : "portrait"),
-       let players = file["players"] as? [[NSNumber]], !players.isEmpty {
-      return players
-    }
-    return file[aspect] as? [[NSNumber]]
   }
 }
 
