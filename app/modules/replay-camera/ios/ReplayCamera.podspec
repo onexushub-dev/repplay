@@ -21,7 +21,4 @@ Pod::Spec.new do |s|
 
   s.source_files = "**/*.{h,m,mm,swift,hpp,cpp}"
   s.exclude_files = ["Core/Package.swift", "Core/Tests/**/*", "Core/.build/**/*"]
-
-  # Modo Foco v2 detector (D-FINE-S, compiled Core ML). See Models/NOTICE.md. Missing model = the v1 Vision analysis.
-  s.resource_bundles = { 'ReplayCameraModels' => ['Models/*.mlmodelc'] }
 end

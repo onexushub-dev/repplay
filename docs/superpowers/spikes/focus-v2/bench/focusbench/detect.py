@@ -46,21 +46,6 @@ def tiles(orientation: str) -> list[Box]:
     return [(x, y, w, h) for (y, h) in _axis(rows) for (x, w) in _axis(cols)]
 
 
-def tile_plan(short_side: int, orientation: str, ball_led: bool) -> dict:
-    """Part 3 plan defaults (until the device timing): the decode size and the tile grid by the source's short side.
-    Ball-led sports always tile; players-framed ones tile when `choose_tiling` says so."""
-    landscape = orientation == "landscape"
-    if short_side <= 1080:
-        cols, rows, decode = (3, 2, 1920) if landscape else (2, 3, 1920)
-    else:
-        cols, rows, decode = (4, 3, 2560) if landscape else (3, 4, 2560)
-    return {"decode_long_side": decode, "cols": cols, "rows": rows, "always": bool(ball_led)}
-
-
-def grid_tiles(cols: int, rows: int) -> list[Box]:
-    return [(x, y, w, h) for (y, h) in _axis(rows) for (x, w) in _axis(cols)]
-
-
 def choose_tiling(first_second: list[dict], scale_640: float) -> bool:
     """`scale_640`: pixels per unit of frame height at the model's 640 scale. No people at all → tile (look closer)."""
     heights = [p[3] for s in first_second for p in s["people"]]
