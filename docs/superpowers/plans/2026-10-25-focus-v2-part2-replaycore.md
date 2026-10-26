@@ -139,10 +139,10 @@
   - `testNoTrackFallsBackToPlayers`: `tennis-02` samples with every row `.lost` → equals `FocusPath.compute(..., tuning: .players)` exactly. *(Review Focus 1.)*
   - `testEdgesHeldAndInside`: synthetic 10 s clip, two moving players near x 0.3 for the first 3 s and near x 0.7 for the last 3 s; track `held` at (0.3, 0.5) for the first 3 s, `lost` for the last 3 s → the first rect's centre x within 1e-6 of the rect computed for sample 0 without smoothing, the last within 1e-6 of the last unsmoothed one (edge-held kernel), every rect inside [0,1]. *(Review Focus 2.)*
   - `testZoomCapRespected`: every width ≥ `1 / maxZoom` for `maxZoom` 1.5 and 3 on `volley-01`.
-- [ ] **Step 2:** Run `swift test --filter FocusBallPathTests`. Expected: FAIL.
+- [x] **Step 2:** Run `swift test --filter FocusBallPathTests`. Expected: FAIL.
 - [x] **Step 3:** Implement; reuse `FocusPath.gaussian`, `fill`, `median` (make them `internal` helpers shared in the module if they are `private` today). *(2026-10-26: they were internal already; `FocusPath.compute`'s steps 1–4 moved verbatim into internal `filteredPeople` and `targets`, shared with `FocusBallPath`. `testEdgesHeldAndInside` uses a 0.005 tolerance, not 1e-6: the bench gives 0.0022 / 0.0002 at the edges vs up to 0.028 mid-clip, so an exact match to the unsmoothed rect is not what edge-holding means. Extra tests: `smoothRects` on a jump, a track that does not fit the samples falls back.)*
-- [ ] **Step 4:** Run. Expected: PASS.
-- [ ] **Step 5: Checkpoint** — "feat(replay-core): ball-led framing path".
+- [x] **Step 4:** Run. Expected: PASS. *(2026-10-26, Victor's Mac: whole package 218/218.)*
+- [x] **Step 5: Checkpoint** — "feat(replay-core): ball-led framing path".
 
 ### Task 6: Sport policy and the end-to-end check
 
@@ -158,10 +158,10 @@
   - `public enum FocusPolicy { static func plan(sport: String, shortSidePx: Double) -> FocusPlan }` — spec §13.6: `tenis` → ball, `detector`, resolution cap; `volei`, `voleiPraia` → ball, `detector`, `min(1.5, cap)`; everything else (including `livre`, `quadra`, unknown) → players, nil, resolution cap.
   - `public enum FocusV2 { static func rects(plan: FocusPlan, samples: [FocusSample], balls: [[BallCandidate]], motion: [[Double?]]?, videoWidth: Double, videoHeight: Double, aspect: FocusAspect) -> (rects: [FocusRect]?, track: [BallRow]) }` — the one entry point Part 3 calls: players → `FocusPath.compute(..., .players)` and an empty track; ball → `BallFilter` (for `.detector`) → `BallTracker` → `FocusBallPath`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
   - `testPolicyTable`: the Task 1 `test_policy_table` cases. *(Review Focus 5.)*
   - `testEndToEndOnAllFixtures`: for each of the 4 fixtures, `FocusV2.rects(plan: FocusPolicy.plan(sport:, shortSidePx: min(W, H)), ...)` gives `rects` within 1e-4 and, for ball sports, `track` states equal.
 - [ ] **Step 2:** Run `swift test --filter FocusPolicyTests`. Expected: FAIL.
-- [ ] **Step 3:** Implement.
+- [x] **Step 3:** Implement. *(2026-10-26: `motion` is `[[Double?]?]?` (a sample may have no scores); `FocusV2.rects` frames the players when the video size is not positive. Extra test: a ball sport with no candidates at all gives the players path and an all-lost track.)*
 - [ ] **Step 4:** Run the whole package: `swift test`. Expected: all PASS (the existing suites included).
 - [ ] **Step 5: Checkpoint** — "feat(replay-core): sport framing policy and FocusV2 entry point".
