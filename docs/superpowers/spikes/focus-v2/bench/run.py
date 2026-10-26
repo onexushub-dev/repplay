@@ -4,6 +4,7 @@
     python run.py propose --model yolox_s [--clips <glob>]      # folders for label/index.html
     python run.py all     --model yolox_s [--clips <glob>] [--previews]   # v1 vs v2 report (+ side-by-side videos)
     python run.py compare --models yolox_s,dfine_s [--clips <glob>]       # detector comparison table
+    python run.py fixtures                                                 # ReplayCore v2 fixtures (+ their scores)
 
 The window of each clip is the part the app analyses: from `bounds_start_ms` to the trim end (or the file end).
 """
@@ -164,6 +165,17 @@ def cmd_compare(a: argparse.Namespace) -> None:
     print(report)
 
 
+def cmd_fixtures(a: argparse.Namespace) -> None:
+    from focusbench.fixtures import players_rects, score, write_all
+
+    fmt = lambda m: "unavailable" if not m.available else f"ball in crop {m.ball_in_crop:.1%} ({m.inside}/{m.labelled}) zoom {m.mean_zoom:.2f} jerk {m.jerk_p95:.2f}"
+    for path, size, fx in write_all():
+        line = f"{os.path.basename(path)} {size / 1e6:.2f} MB {fx['follow']} max {fx['maxZoom']:.2f}x | {fmt(score(fx, fx['rects']))}"
+        if fx["follow"] == "ball":
+            line += f" | players: {fmt(score(fx, players_rects(fx)))}"
+        print(line, flush=True)
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -182,8 +194,9 @@ def main() -> None:
     c = sub.add_parser("compare")
     c.add_argument("--models", required=True)
     c.add_argument("--clips", default="*")
+    sub.add_parser("fixtures")
     a = p.parse_args()
-    {"detect": cmd_detect, "propose": cmd_propose, "all": cmd_all, "compare": cmd_compare}[a.cmd](a)
+    {"detect": cmd_detect, "propose": cmd_propose, "all": cmd_all, "compare": cmd_compare, "fixtures": cmd_fixtures}[a.cmd](a)
 
 
 if __name__ == "__main__":

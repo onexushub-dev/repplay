@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-24-focus-ball-tracking-design.md`, §4.2–4.3 and **§13** (amendment 2026-10-25, wins where they disagree). Bench evidence: `docs/superpowers/spikes/focus-v2/TUNING.md`.
 
-**Plans after this one:** Part 3 — native analyzer v2 (detector + WASB/TrackNetV3 on device, motion score, tiling per resolution, file v2, sport picker and `Seguir` control); Part 4 — capture 4K (Pro), 2K/4K export, economy switch; Part 5 — vertical from landscape. Part 3 waits for Part 1 task 2 (device timing).
+**Plans after this one:** Part 3 — native analyzer v2 (detector + TrackNetV3 on device, motion score, tiling per resolution, file v2, sport picker and `Seguir` control); Part 4 — capture 4K (Pro), 2K/4K export, economy switch; Part 5 — vertical from landscape. Part 3 waits for Part 1 task 2 (device timing).
 
 ## Global Constraints
 
@@ -20,16 +20,16 @@
 - Ball candidate filters (§13.3): motion ≥ 4.0 vs previous and next sample (min of both); feet zone = bottom 15% of a person box → drop; body (inside a box, above the feet) → keep only conf ≥ 0.3; static filter `static_radius 0.02`, `static_share 0.5`, window ±2000 ms.
 - Tracker values (bench `TRACKER_TUNING`): `start_hits 3`, `start_window_ms 500`, `predict_max_ms 700`, `held_max_ms 3000`, `accel_std 3.0`, `meas_std 0.006`, `gate_base 0.08`, `gate_growth 0.05`, `gate_new 0.35`, `static_track_radius 0.015`, still person `0.012` / `0.8` / `3000 ms`.
 - Ball-led target (bench `TUNING_V2`): `ball_weight_x 0.7`, `ball_weight_y 0.3`, `near_players 2`, `lookahead_max_s 0.5`, `lookahead_full_speed 1.0`, `lead_s 0.5`, `lead_max 0.15`, `sigma_lead_ms 300`, `size_lookahead_s 0.8`, `spread_scale 1.3`, `spread_margin 0.15`, `sigma_size_ms 1200`, `sigma_x_ms 200`, `sigma_y_ms 800`; camera (decision 13): no dead zone, no speed/acceleration limits; Gaussian σ 600 ms on the placed rect's centre x, centre y, width and height, then clamped inside the video.
-- Volleyball zoom cap 1.5 (decision 14); tennis uses the resolution cap.
+- Ball source (decision 10, amended 2026-10-26): tennis and volleyball both use the general detector's candidates after the filters; no WASB. Volleyball zoom cap 1.5 (decision 14); tennis uses the resolution cap.
 - Sports and what they follow: spec §13.6 table, verbatim ids.
 - Swift: no new dependencies; ReplayCore stays Foundation-only. Docs and names in English.
 - Git: Victor commits. "Checkpoint" = stop, list changed files and the suggested commit message; never run git write commands.
 
 ## Review Focus
 
-1. **Ball-led sport with no ball track at all** (WASB silent, e.g. a far camera): must fall back to the players path, exactly, not a frozen crop. → test in Task 5.
+1. **Ball-led sport with no ball track at all** (no ball candidate survives, e.g. a far camera): must fall back to the players path, exactly, not a frozen crop. → test in Task 5.
 2. **A clip that starts or ends in `held`/`lost`**: the Gaussian camera must not drag the first/last crops off the play (edge samples are held, as v1's `gaussian` does). → test in Task 5.
-3. **Candidates without a motion score** (WASB/TrackNetV3 sources, or the first/last sample): the motion rule must not drop them. → test in Task 2.
+3. **Candidates without a motion score** (the first/last sample, a patch cut by the frame edge, or a later TrackNetV3 source): the motion rule must not drop them. → test in Task 2.
 4. **Landscape vs portrait clips**: `hw = H / W` differs (0.5625 vs 1.778); a port that measures in raw y units passes portrait fixtures and fails landscape ones. Fixtures include both. → Task 1 fixture set.
 5. **An unknown or old sport id** (`quadra`, `academia`, anything saved before 2026-10-25): policy gives players, never a crash. → test in Task 6.
 
@@ -49,21 +49,21 @@
   - `ball_rects(samples, track, W, H, aspect, max_zoom, tuning=None) -> list[Rect] | None` — `v2_rects` steps 1–4 and size, camera = target (no controller), `place`, then `smooth_rects(rects, 600, step)`; all rows `lost` → `v1_rects(..., TUNING_PLAYERS)`.
   - `smooth_rects(rects, sigma_ms, step_ms) -> list[Rect]` — Gaussian (v1's edge-held kernel) on centre x, centre y, w, h; then `x = clamp(cx - w/2, 0, 1 - w)`, same for y.
   - `TUNING_PLAYERS = dict(TUNING_V1, spreadScale=1.1, spreadMargin=0.10, sigmaXMs=800.0)`.
-  - `policy(sport: str, short_side_px: int) -> dict(follow='ball'|'players', ball_source='wasb_tennis'|'detector'|None, max_zoom=float)`.
-  - Fixture file: `{ "clip", "sport", "W", "H", "stepMs": 100, "startMs", "maxZoom", "samples": [{"t", "people": [[x,y,w,h,c]], "balls": [[x,y,r,c]], "motion": [m|null] | null}], "filtered": [[[x,y,r,c]]], "track": [[x,y,state,conf]], "rects": [[x,y,w,h]], "follow": "ball"|"players" }`. Sources: the two basketball clips from `bench-out/det/<clip>.yolox_s.json` (players; `track`/`filtered` empty lists), `tennis-02` from `refs4k/balls/tennis-02-wasb-2160-g2.json` + people from `refs4k/det4k/tennis-02-2160.dfine_s.json` (ball candidates with `r = 0.004`, `motion: null`), `volley-01` from `refs4k/det4k/volley-01-2160.dfine_s.json` with its motion scores (ball, cap 1.5).
+  - `policy(sport: str, short_side_px: int) -> dict(follow='ball'|'players', ball_source='detector'|None, max_zoom=float)`.
+  - Fixture file: `{ "clip", "sport", "W", "H", "stepMs": 100, "startMs", "maxZoom", "samples": [{"t", "people": [[x,y,w,h,c]], "balls": [[x,y,r,c]], "motion": [m|null] | null}], "filtered": [[[x,y,r,c]]], "track": [[x,y,state,conf]], "rects": [[x,y,w,h]], "follow": "ball"|"players", "ballSource": "detector"|null }`. Sources: the two basketball clips from `bench-out/det/<clip>.yolox_s.json` (players; `track`/`filtered` empty lists), `tennis-02` from `refs4k/seg/det/tennis-02-2160.dfine_s.json` with its motion scores (ball, resolution cap 3; *amended 2026-10-26: was WASB*), `volley-01` from `refs4k/seg/det/volley-01-2160.dfine_s.json` with its motion scores (ball, cap 1.5).
 - `python run.py fixtures` writes the 4 files; `focusbench/fixtures.py` holds the builder.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
   - `test_feet_zone_is_dropped`: person box (0.4, 0.2, 0.1, 0.4); ball at y = 0.2 + 0.4 × 0.9 → dropped; at 0.2 + 0.4 × 0.5 with conf 0.35 → kept, conf 0.25 → dropped; outside any box, conf 0.16 → kept.
   - `test_motion_rule_and_missing_scores`: motion `[3.9, 4.0, None]` → only the 2nd and 3rd stay; `motion=None` (whole list) → none dropped by motion. *(Review Focus 3.)*
-  - `test_policy_table`: `("tenis", 2160)` → `ball, wasb_tennis, 3.0`; `("volei", 2160)` → `ball, detector, 1.5`; `("voleiPraia", 1080)` → `ball, detector, 1.5`; `("basquete", 1080)` → `players, None, 1.5`; `("quadra", 2160)` and `("xyz", 2160)` → `players, None, 3.0`. *(Review Focus 5.)*
+  - `test_policy_table`: `("tenis", 2160)` → `ball, detector, 3.0`; `("tenis", 1440)` → `ball, detector, 2.0`; `("volei", 2160)` → `ball, detector, 1.5`; `("voleiPraia", 1080)` → `ball, detector, 1.5`; `("basquete", 1080)` → `players, None, 1.5`; `("quadra", 2160)` and `("xyz", 2160)` → `players, None, 3.0`. *(Review Focus 5.)*
   - `test_ball_rects_without_track_equal_players_path`: all rows `lost` → `ball_rects == v1_rects(..., TUNING_PLAYERS)` on a spike fixture. *(Review Focus 1.)*
   - `test_smooth_rects_holds_edges_and_stays_inside`: 40 rects of width 0.4, x 0 for samples 0–19 and 0.6 for 20–39 (step 100 ms, σ 600 ms) → first rect x within 1e-9 of 0, last within 1e-9 of 0.6, all rects inside [0,1].
-- [ ] **Step 2:** Run `pytest bench/tests -v`. Expected: the new tests FAIL, the rest PASS.
-- [ ] **Step 3:** Implement `filters.py`, `policy.py`, `ball_rects`/`smooth_rects`/`TUNING_PLAYERS` (lift the motion/feet logic from the round's scratch script into `filter_balls`). Set `TRACKER_TUNING` `static_radius 0.02`, `static_share 0.5` (the round's values), so the fixtures' `track` and the Swift defaults agree; re-run `test_tracker.py`.
-- [ ] **Step 4:** Run the tests. Expected: PASS. Then re-run the round's numbers with the frozen code: `tennis-02` ball-led at 3× ball in crop ≥ 95%, `volley-01` at 1.5× ≥ 95%; append the two lines to `TUNING.md`.
-- [ ] **Step 5:** `python run.py fixtures` writes the 4 files (each < 2 MB; round to 6 decimals).
-- [ ] **Step 6: Checkpoint** — "bench(focus-v2): frozen ball-led path, filters, policy; ReplayCore v2 fixtures".
+- [x] **Step 2:** Run `pytest bench/tests -v`. Expected: the new tests FAIL, the rest PASS.
+- [x] **Step 3:** Implement `filters.py`, `policy.py`, `ball_rects`/`smooth_rects`/`TUNING_PLAYERS` (lift the motion/feet logic from the round's scratch script into `filter_balls`). Set `TRACKER_TUNING` `static_radius 0.02`, `static_share 0.5` (the round's values), so the fixtures' `track` and the Swift defaults agree; re-run `test_tracker.py`.
+- [x] **Step 4:** Run the tests. Expected: PASS. Then re-run the round's numbers with the frozen code: `tennis-02` ball-led at 3× ball in crop ≥ 95%, `volley-01` at 1.5× ≥ 95%; append the two lines to `TUNING.md`. *(Done 2026-10-26: tennis-02 98.3%, volley-01 94.7% — one point under; see TUNING.md, "Part 2 task 1".)*
+- [x] **Step 5:** `python run.py fixtures` writes the 4 files (each < 2 MB; round to 6 decimals).
+- [x] **Step 6: Checkpoint** — "bench(focus-v2): frozen ball-led path, filters, policy; ReplayCore v2 fixtures".
 
 ### Task 2: `BallFilter`
 
@@ -103,7 +103,7 @@
   - The 7 synthetic cases of Part 1 Task 6 (`parabola`, `straight pass`, `static dropped`, `0.5 s gap predicted`, `1.5 s gap held by the nearest moving player`, `4 s lost`, `moving beats static`), same inputs and assertions.
   - `testMatchesBenchOnTennisAndVolley`: for `tennis-02.json` and `volley-01.json`, `track(...)` equals `track` rows: same states everywhere, x and y within 1e-4.
 - [ ] **Step 2:** Run `swift test --filter BallTrackerTests`. Expected: FAIL.
-- [ ] **Step 3:** Implement. The 4×4 Kalman matrices as fixed-size arrays with small helpers (multiply, transpose, 2×2 inverse); same operation order as the numpy code so the fixtures match.
+- [ ] **Step 3:** Implement. The 4×4 Kalman matrices as fixed-size arrays with small helpers (multiply, transpose, 2×2 inverse); same operation order as the numpy code so the fixtures match. Python's `sorted` is stable and Swift's `sorted(by:)` is not guaranteed to be: sort candidates by (confidence descending, index ascending) and pick the main track by (seen, score) with the earliest track winning ties, as Python's `max` does. One candidate on tennis-02 sits at conf 0.29997, so ties and thresholds do decide tracks.
 - [ ] **Step 4:** Run. Expected: PASS.
 - [ ] **Step 5: Checkpoint** — "feat(replay-core): ball tracker".
 
@@ -153,10 +153,10 @@
 **Interfaces:**
 - Consumes: Tasks 2–5.
 - Produces:
-  - `public enum FocusFollow: String { case ball, players }`, `public enum BallSource: String { case wasbTennis, detector }`
+  - `public enum FocusFollow: String { case ball, players }`, `public enum BallSource: String { case detector }` (one case today; TrackNetV3 would be the next)
   - `public struct FocusPlan: Equatable { follow: FocusFollow; ballSource: BallSource?; maxZoom: Double }`
-  - `public enum FocusPolicy { static func plan(sport: String, shortSidePx: Double) -> FocusPlan }` — spec §13.6: `tenis` → ball, `wasbTennis`, resolution cap; `volei`, `voleiPraia` → ball, `detector`, `min(1.5, cap)`; everything else (including `livre`, `quadra`, unknown) → players, nil, resolution cap.
-  - `public enum FocusV2 { static func rects(plan: FocusPlan, samples: [FocusSample], balls: [[BallCandidate]], motion: [[Double?]]?, videoWidth: Double, videoHeight: Double, aspect: FocusAspect) -> (rects: [FocusRect]?, track: [BallRow]) }` — the one entry point Part 3 calls: players → `FocusPath.compute(..., .players)` and an empty track; ball → `BallFilter` (only for `.detector`) → `BallTracker` → `FocusBallPath`.
+  - `public enum FocusPolicy { static func plan(sport: String, shortSidePx: Double) -> FocusPlan }` — spec §13.6: `tenis` → ball, `detector`, resolution cap; `volei`, `voleiPraia` → ball, `detector`, `min(1.5, cap)`; everything else (including `livre`, `quadra`, unknown) → players, nil, resolution cap.
+  - `public enum FocusV2 { static func rects(plan: FocusPlan, samples: [FocusSample], balls: [[BallCandidate]], motion: [[Double?]]?, videoWidth: Double, videoHeight: Double, aspect: FocusAspect) -> (rects: [FocusRect]?, track: [BallRow]) }` — the one entry point Part 3 calls: players → `FocusPath.compute(..., .players)` and an empty track; ball → `BallFilter` (for `.detector`) → `BallTracker` → `FocusBallPath`.
 
 - [ ] **Step 1: Write the failing tests**
   - `testPolicyTable`: the Task 1 `test_policy_table` cases. *(Review Focus 5.)*

@@ -273,7 +273,7 @@ Where this section and §1–12 disagree, this section wins.
 |---|---|---|
 | 8 | Framing follows the sport | Each recording has a sport. Tennis and volleyball (indoor and beach) follow the ball; every other sport, and "Livre", frames the players. A clip can switch between the two in the Foco panel. |
 | 9 | Sport picked when a recording starts | The setup screen asks the sport, with "Livre" (not informed) as the default. Stored in `Session.sport` (already there; today it always holds `quadra`). |
-| 10 | Ball sources by sport | Tennis: WASB tennis weights (MIT). Volleyball: the general detector's ball candidates after the motion and feet filters (13.3), with TrackNetV3 beach-volley weights (MIT) as a second source if the device budget allows. No ball model runs for players-framed sports. |
+| 10 | Ball sources by sport | Tennis and volleyball: the general detector's ball candidates after the motion and feet filters (13.3); for volleyball, TrackNetV3 beach-volley weights (MIT) as a second source if the device budget allows. No ball model runs for players-framed sports. *(Amended 2026-10-26: tennis used WASB tennis weights; on tennis-02 the filtered detector scored 98.3% ball in crop at 3× vs WASB's 93.1%, and the approved video used it. TUNING.md, Part 2 task 1.)* |
 | 11 | Capture: Full HD free, 4K Pro | 2K capture is dropped (iPhones have no native 2560×1440 format, and 2K gave no visible gain). Free: 1080p60. Pro: 1080p60 or 4K. 2K stays as an export size (Pro only). Replaces decision 3 and §4.7's 2K. |
 | 12 | Players framing tuned for zoom | With the new person detector, players framing keeps the ball in the crop 97% of the time at a mean zoom of 2.0× when the source allows 3×: `spreadScale 1.3 → 1.1`, `spreadMargin 0.15 → 0.10`, `sigmaXMs 500 → 800`, max zoom by resolution (decision 4). |
 | 13 | Camera when following the ball | The dead-zone, speed- and acceleration-limited controller of §4.3 steps 5 and 7 is replaced by an offline Gaussian smoothing (σ 600 ms) of the ball-led target's centre and size, clamped inside the video. Bench jerk fell from 1.5–3 to 0.3–1.0 crop widths/s². |
@@ -290,7 +290,8 @@ Where this section and §1–12 disagree, this section wins.
   difference; 1080p was picked first in 2 of 3 clips. 4K's value is the zoom it allows (3×), not sharpness at 2×.
 - Ball models: WASB tennis finds the ball in 95% of tennis samples (93% precise, 4K with 2×2 tiles; 84% on the full
   frame). TrackNetV3 beach-volley: 45% on volleyball at 100% precision. Neither works on beach tennis or basketball.
-- Ball-led framing at the resolution cap: tennis 98% ball in crop (players framing: 62%); volleyball 95–97% at 1.5×.
+- Ball-led framing at the resolution cap: tennis 98% ball in crop with the filtered detector (WASB: 93%; players framing:
+  62%); volleyball 95% at 1.5× with the filtered detector (TrackNetV3: 97%, but at a mean zoom of 1.07×).
 
 ### 13.3 Ball candidate filters (general detector)
 
@@ -303,19 +304,21 @@ Applied to the general detector's ball candidates before the tracker (volleyball
 
 ### 13.4 What is still open (before Parts 3–4 are built)
 
-- Device cost (Part 1, task 2): WASB and TrackNetV3 per frame; the person detector at 3×2 and 4×3 grids; on the XR and
-  the 16 Pro Max. Decides the grid per resolution and whether TrackNetV3 ships.
+- Device cost (Part 1, task 2): TrackNetV3 per frame; the person detector at 3×2 and 4×3 grids (and 6×4 at 4K); on the
+  XR and the 16 Pro Max. Decides the grid per resolution and whether TrackNetV3 ships. The grid matters for tennis now
+  that its ball comes from the detector: 4K with the 6×4 grid 98%, with 3×2 95%; 1440p with 4×3 98% at 2× (one clip).
 - The person detector (YOLOX-S or D-FINE-S): device timing decides; D-FINE-S found more on the 4K clips.
 - Beach tennis has no working ball source yet: it is players-framed until one is found (spec step C or a new model).
 - Confirmation on footage recorded by the app (YouTube re-compresses): one tennis or volleyball game in 4K.
-- The training data behind the WASB and TrackNetV3 weights (code is MIT): license check before release, like COCO (§9).
+- The training data behind the TrackNetV3 weights (code is MIT): license check before release, like COCO (§9). WASB no
+  longer ships (decision 10, amended 2026-10-26).
 
 ### 13.5 Changes to earlier sections
 
 - §1 success: "ball inside the crop ≥ 95%" applies to ball-led sports; players-framed sports keep ≥ 95% at a mean zoom
   above v1's. Jerk target unchanged.
 - §2 decision 1: B stays; C becomes "a ball source for beach tennis" (13.4).
-- §4.1: the detector runs people (all sports) and ball candidates (volleyball); WASB runs for tennis. Grid per
+- §4.1: the detector runs people (all sports) and ball candidates (tennis and volleyball); no WASB. Grid per
   resolution pending device timing; decoding no longer always at 1920 px (4×3 needs ~2560 px).
 - §4.3: steps 5 and 7 replaced by decision 13; step 1 applies only to ball-led sports; players-framed sports use v1's
   path with decision 12's values.
@@ -329,7 +332,7 @@ Applied to the general detector's ball candidates before the tracker (volleyball
 | Id | pt-BR | en | Follows |
 |---|---|---|---|
 | `livre` (default) | Livre | Free play | players |
-| `tenis` | Tênis | Tennis | ball (WASB tennis) |
+| `tenis` | Tênis | Tennis | ball (detector) |
 | `volei` | Vôlei | Volleyball | ball (≤ 1.5×) |
 | `voleiPraia` | Vôlei de praia | Beach volleyball | ball (≤ 1.5×) |
 | `beachTennis` | Beach tennis | Beach tennis | players |

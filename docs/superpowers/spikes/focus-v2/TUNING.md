@@ -96,3 +96,34 @@ of these 155 points, and the wrong tracks cost more than they recover.
 Verdict: the filters are worth keeping (they turn the tracker from mostly wrong to mostly right), but on basketball
 the ball still does not beat players-only framing. Ball tracking has to prove itself on sports where the ball leaves
 the players (beach tennis, table tennis) — the 4K round.
+
+## Part 2 task 1 — frozen code on the 4K clips (2026-10-26)
+
+`focusbench` now holds the final logic: `filters.filter_balls` (§13.3 rules 1–3; a candidate without a motion score is
+kept), `path_v2.ball_rects` (camera = target, then `smooth_rects`, σ 600 ms), `path_v2.TUNING_PLAYERS`,
+`policy.policy`, and `TRACKER_TUNING` static values 0.02 / 0.5. `python run.py fixtures` writes the ReplayCore v2
+fixtures and prints these scores. `ball_rects` matches the round's `v2_rects(FREE)` + `smooth` exactly.
+
+Ball source per clip (ball-led, `ball_rects`; 2160 D-FINE-S, 6×4 grid unless noted):
+
+| Clip | Source | Cap | Ball in crop | Mean zoom | Jerk p95 |
+|---|---|---|---|---|---|
+| tennis-02 | **detector, §13.3 filters** | 3× | **98.3% (57/58)** | 2.11× | 0.63 |
+| tennis-02 | detector, §13.3 filters, 4K with the 3×2 grid | 3× | 94.8% | 2.16× | 0.50 |
+| tennis-02 | detector, §13.3 filters, 1440p (4×3) | 2× | 98.3% | 1.91× | 0.37 |
+| tennis-02 | WASB tennis, 2×2 tiles | 3× | 93.1% | 2.25× | 0.53 |
+| tennis-02 | WASB tennis, full frame + detector | 3× | 96.6% | 2.20× | 0.52 |
+| tennis-02 | players (`TUNING_PLAYERS`) | 3× | 62.1% | 2.25× | 0.28 |
+| volley-01 | **detector, §13.3 filters** | 1.5× | **94.7% (36/38)** | 1.50× | 0.30 |
+| volley-01 | detector, §13.3 filters, 1080p (3×2) | 1.5× | 97.4% | 1.36× | 0.35 |
+| volley-01 | TrackNetV3 beach-volley | 1.5× | 97.4% | 1.07× | 0.07 |
+| volley-01 | players (`TUNING_PLAYERS`) | 1.5× | 89.5% | 1.20× | 0.08 |
+
+- The tennis 98% in spec §13.2 and the video Victor approved came from the filtered detector, not WASB. Victor's
+  decision (2026-10-26): tennis uses the filtered detector (spec §13.1 decision 10 amended); no WASB on the device.
+- Fragile: on tennis-02 one candidate (t 13.1 s, conf 0.29997, inside a player) decides between 98.3% and 94.8%;
+  rounding its confidence to 0.3 lets it through the body rule and the tracker takes another path. One clip, 58 points:
+  read the 3–4 point gaps above as noise. The fixtures keep confidences at 6 decimals for this reason.
+- volley-01 at 4K is 94.7%, one point under the plan's 95% bar; TrackNetV3's 97.4% comes with almost no zoom (1.07×).
+- Basketball fixtures (players, 1.5× cap on these 1080×1920 clips): 100% (6/6 points each) — too few labels to score;
+  they are there to check the players preset.

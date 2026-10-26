@@ -25,7 +25,7 @@ import numpy as np
 SEEN, PREDICTED, HELD, LOST = 0, 1, 2, 3
 
 TRACKER_TUNING = dict(
-    static_share=0.70, static_window_ms=2000.0, static_radius=0.01,
+    static_share=0.5, static_window_ms=2000.0, static_radius=0.02,  # spec §13.3 rule 4 (round 2; was 0.70 / 0.01)
     start_hits=3, start_window_ms=500.0, predict_max_ms=700.0, held_max_ms=3000.0,
     accel_std=3.0,  # frame widths / s², process noise of the constant-velocity model
     meas_std=0.006,  # frame widths

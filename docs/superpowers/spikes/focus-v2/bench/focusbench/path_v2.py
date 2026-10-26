@@ -12,6 +12,11 @@ Per sample, from the tracker rows and the people (v1's far/still filters):
    target is outside the middle 70%; acceleration ≤ 1.5 crop widths/s².
 7. y smoothed as v1 (0.8 s); placement as v1 (lift, clamped inside the video); None as v1 (< 20% samples with people).
 A clip whose track never finds the ball gets exactly v1's rects.
+
+`ball_rects` is the frozen ball-led path (spec §13.1 decision 13; ReplayCore `FocusBallPath` ports it): steps 1-5 and
+7 as above, but no controller (step 6): the camera is the target, placed as v1, then a Gaussian (σ `camera_sigma_ms`,
+v1's edge-held kernel) on the rects' centre x, centre y, width and height, clamped inside the video. A clip whose
+track never finds the ball gets exactly the players path (`v1_rects` with `TUNING_PLAYERS`).
 """
 
 from __future__ import annotations
@@ -34,7 +39,11 @@ TUNING_V2 = dict(
     pan_base=0.35,  # frame widths / s
     pan_fast=0.8, fast_when_outside=0.70,  # crop widths / s when the target is outside the middle 70%
     accel_max=1.5,  # crop widths / s²
+    camera_sigma_ms=600.0,  # ball_rects: Gaussian on the placed rects (decision 13)
 )
+
+# Players framing tuned for zoom (spec §13.1 decision 12).
+TUNING_PLAYERS = dict(TUNING_V1, spreadScale=1.1, spreadMargin=0.10, sigmaXMs=800.0)
 
 MIN_CROP_PX = 720  # the crop keeps at least this many source pixels on its short side (spec decision 4)
 
@@ -48,15 +57,10 @@ def _centre(b) -> tuple[float, float]:
     return b[0] + b[2] / 2, b[1] + b[3] / 2
 
 
-def v2_rects(samples: list[dict], track: list[tuple], W: float, H: float, aspect: str, zoom: bool,
-             max_zoom: float, tuning: dict | None = None) -> list | None:
-    t = dict(TUNING_V2, **(tuning or {}))
+def _targets(samples: list[dict], boxes: list, track: list[tuple], W: float, H: float, aspect: str, zoom: bool,
+             max_zoom: float, t: dict) -> tuple | None:
+    """Steps 1-5 and the y smoothing of 7: (tx with lead room, ty, widths, step, dt); None as v1 (too few people)."""
     n = len(samples)
-    if n == 0 or W <= 0 or H <= 0:
-        return None
-    boxes = [(s["t"], [tuple(p[:4]) for p in s["people"]]) for s in samples]
-    if all(r[2] == LOST for r in track):
-        return v1_rects(boxes, W, H, aspect, zoom, max_zoom, TUNING_V1)
     step = (samples[-1]["t"] - samples[0]["t"]) / (n - 1) if n > 1 else 100.0
     dt = step / 1000
     hw = H / W
@@ -123,6 +127,23 @@ def v2_rects(samples: list[dict], track: list[tuple], W: float, H: float, aspect
     vx = gaussian(vx, t["sigma_lead_ms"] / step)
     for i in range(n):  # lead room
         tx[i] += max(-t["lead_max"] * widths[i], min(t["lead_max"] * widths[i], vx[i] * t["lead_s"]))
+    return tx, ty, widths, step, dt
+
+
+def v2_rects(samples: list[dict], track: list[tuple], W: float, H: float, aspect: str, zoom: bool,
+             max_zoom: float, tuning: dict | None = None) -> list | None:
+    """The round-1 prototype: steps 1-7 with the dead-zone controller (kept for the round's numbers and tests)."""
+    t = dict(TUNING_V2, **(tuning or {}))
+    n = len(samples)
+    if n == 0 or W <= 0 or H <= 0:
+        return None
+    boxes = [(s["t"], [tuple(p[:4]) for p in s["people"]]) for s in samples]
+    if all(r[2] == LOST for r in track):
+        return v1_rects(boxes, W, H, aspect, zoom, max_zoom, TUNING_V1)
+    got = _targets(samples, boxes, track, W, H, aspect, zoom, max_zoom, t)
+    if got is None:
+        return None
+    tx, ty, widths, step, dt = got
     tv = [0.0] + [(tx[i] - tx[i - 1]) / dt for i in range(1, n)]  # the target's own speed
 
     # Camera: dead zone with hysteresis, speed and acceleration limits.
@@ -144,3 +165,33 @@ def v2_rects(samples: list[dict], track: list[tuple], W: float, H: float, aspect
         c = c + v * dt
         cam[i] = c
     return place(cam, ty, widths, W, H, aspect, zoom, TUNING_V1)
+
+
+def smooth_rects(rects: list, sigma_ms: float, step_ms: float) -> list:
+    """Gaussian (v1's edge-held kernel) on centre x, centre y, width and height; then clamped inside the video."""
+    sigma = sigma_ms / step_ms
+    xs = gaussian([r[0] + r[2] / 2 for r in rects], sigma)
+    ys = gaussian([r[1] + r[3] / 2 for r in rects], sigma)
+    ws = gaussian([r[2] for r in rects], sigma)
+    hs = gaussian([r[3] for r in rects], sigma)
+    out = []
+    for cx, cy, w, h in zip(xs, ys, ws, hs):
+        out.append((min(max(cx - w / 2, 0), 1 - w), min(max(cy - h / 2, 0), 1 - h), w, h))
+    return out
+
+
+def ball_rects(samples: list[dict], track: list[tuple], W: float, H: float, aspect: str, max_zoom: float,
+               tuning: dict | None = None) -> list | None:
+    """The frozen ball-led path (decision 13): camera = target, placed, then `smooth_rects`. Always zooms."""
+    t = dict(TUNING_V2, **(tuning or {}))
+    n = len(samples)
+    if n == 0 or W <= 0 or H <= 0:
+        return None
+    boxes = [(s["t"], [tuple(p[:4]) for p in s["people"]]) for s in samples]
+    if all(r[2] == LOST for r in track):
+        return v1_rects(boxes, W, H, aspect, True, max_zoom, TUNING_PLAYERS)
+    got = _targets(samples, boxes, track, W, H, aspect, True, max_zoom, t)
+    if got is None:
+        return None
+    tx, ty, widths, step, _ = got
+    return smooth_rects(place(tx, ty, widths, W, H, aspect, True, TUNING_V1), t["camera_sigma_ms"], step)

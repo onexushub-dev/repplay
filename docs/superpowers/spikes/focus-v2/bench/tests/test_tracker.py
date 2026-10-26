@@ -91,7 +91,7 @@ def test_height_is_measured_in_frame_widths():
 
 
 def test_intermittent_static_candidate_is_dropped():
-    """A low-confidence blob in the same place every other sample (below the 70% share of rule 1) is scenery too."""
+    """A low-confidence blob in the same place every other sample (about the 50% share of rule 1) is scenery too."""
     rows = track_ball(samples(40, lambda k: (0.964, 0.883) if k % 2 == 0 else None))
     assert all(r[2] == LOST for r in rows)
 

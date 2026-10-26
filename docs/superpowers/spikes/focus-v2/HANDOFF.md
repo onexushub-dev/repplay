@@ -45,5 +45,6 @@ Read in this order: this file → `NEXT.md` (open items) → spec `docs/superpow
 
 - Basketball app clips: ball framing never beat players framing; players framing at 3× cap: 97% ball in crop, zoom 2.0.
 - Resolution only helps detection with a denser grid; blind test: no visible sharpness difference at ≤ 2.25× zoom.
-- Tennis: WASB 95% recall (4K, 2×2), ball-led 98% in crop at zoom 2.1 vs players 62%; Victor approved the ball-led video.
+- Tennis: ball-led 98% in crop at zoom 2.1 vs players 62%, ball from the filtered detector (WASB: 95% recall but 93%
+  in crop); Victor approved the ball-led video and, on 2026-10-26, the detector as tennis's ball source.
 - Volleyball: ball-led 95–97% at ≤ 1.5×. Beach tennis: no ball source works (≤ 13%).

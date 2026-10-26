@@ -5,9 +5,10 @@ State: spec §13 (amendment 2026-10-25) approved in conversation; Part 1 plan ta
 
 ## Waiting for Victor
 
-1. Review the Part 2 plan; on approval, start Part 2 task 1 (execution: native, in session).
+1. Part 2 task 1 done 2026-10-26 (awaiting Victor's commit); next: Part 2 task 2 (`BallFilter`, Swift).
 2. Part 1 task 2 on the XR and the 16 Pro Max (needs the spike branch and both phones): timing of the person
-   detector (YOLOX-S / D-FINE-S, 3×2 and 4×3 grids), WASB tennis (full / 2×2), TrackNetV3 beach-volley; 4K30/60 heat
+   detector (YOLOX-S / D-FINE-S, 3×2, 4×3 and 6×4 grids; tennis's ball now depends on the grid), TrackNetV3
+   beach-volley; 4K30/60 heat
    over 20 min; the 9:16 export check.
 3. One tennis or volleyball game recorded by the app in 4K (YouTube re-compresses; confirms the bench on real footage).
 
@@ -16,9 +17,10 @@ State: spec §13 (amendment 2026-10-25) approved in conversation; Part 1 plan ta
 - Person detector: YOLOX-S or D-FINE-S (device timing).
 - Detector grid per resolution (3×2 vs 4×3) and decode size (1920 vs 2560 px).
 - Whether TrackNetV3 ships as volleyball's second ball source.
-- WASB on 4K tennis: full frame or 2×2 tiles (95% vs 84% recall; 4× the cost).
+- ~~WASB on 4K tennis~~: settled 2026-10-26 — tennis uses the filtered detector (98.3% vs WASB 93.1% ball in crop;
+  TUNING.md, "Part 2 task 1"). WASB does not ship.
 - Beach tennis: no ball source works yet (≤ 13%); players-framed until one does.
-- License check of the data behind the WASB and TrackNetV3 weights (code is MIT), like COCO.
+- License check of the data behind the TrackNetV3 weights (code is MIT), like COCO.
 
 ## Not tested yet (ideas with room to improve)
 
@@ -39,3 +41,10 @@ State: spec §13 (amendment 2026-10-25) approved in conversation; Part 1 plan ta
 Ball labels on 37 app clips + 6 YouTube 4K clips; tuning round; motion/feet filters (test D); resolution round;
 WASB and TrackNetV3 converted (safe load) to ONNX; blind sharpness test (no visible difference at ≤ 2.25×); tennis
 players-vs-ball video approved by Victor; spec §13; plans updated.
+
+## Done 2026-10-26
+
+Part 2 task 1: bench frozen (`filters.py`, `policy.py`, `ball_rects`/`smooth_rects`/`TUNING_PLAYERS`, tracker static
+0.02 / 0.5), 4 ReplayCore v2 fixtures (`Fixtures/v2/`). Found that the tennis 98% came from the filtered detector, not
+WASB; Victor chose the detector for tennis (spec §13.1 decision 10 amended). volley-01 scores 94.7% (one point under
+the plan's bar). The tennis result hangs on one candidate at conf 0.29997 (TUNING.md).

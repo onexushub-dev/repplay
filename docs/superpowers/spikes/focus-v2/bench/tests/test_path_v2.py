@@ -97,3 +97,46 @@ def test_none_when_too_few_people():
         if k % 7:  # people in about 15% of the samples
             samples[k]["people"] = []
     assert v2_rects(samples, track, W, H, "landscape", True, 1.5) is None
+
+
+# --- Frozen ball-led path (spec §13.1 decision 13) and players preset (decision 12) ---
+
+from focusbench.path_v2 import TUNING_PLAYERS, ball_rects, smooth_rects  # noqa: E402
+
+
+@pytest.mark.parametrize("name", NAMES[:2] + NAMES[3:4])
+def test_ball_rects_without_track_equal_players_path(name):
+    samples_v1, w, h = load(name)
+    samples = [{"t": t, "people": [(*b, 0.9) for b in boxes], "balls": []} for t, boxes in samples_v1]
+    track = [(0.0, 0.0, LOST, 0.0)] * len(samples)
+    aspect = "landscape" if name.startswith("landscape") else "portrait"
+    assert ball_rects(samples, track, w, h, aspect, 3.0) == v1_rects(samples_v1, w, h, aspect, True, 3.0,
+                                                                      TUNING_PLAYERS)
+
+
+def test_players_preset_values():
+    assert (TUNING_PLAYERS["spreadScale"], TUNING_PLAYERS["spreadMargin"], TUNING_PLAYERS["sigmaXMs"]) == (1.1, 0.10, 800.0)
+
+
+def test_smooth_rects_holds_edges_and_stays_inside():
+    rects = [(0.0 if k < 20 else 0.6, 0.3, 0.4, 0.4) for k in range(40)]
+    out = smooth_rects(rects, 600, 100)
+    assert abs(out[0][0]) < 1e-9 and abs(out[-1][0] - 0.6) < 1e-9
+    for x, y, w, h in out:
+        assert -1e-9 <= x and x + w <= 1 + 1e-9 and -1e-9 <= y and y + h <= 1 + 1e-9
+
+
+def test_ball_rects_follow_the_ball_without_controller_limits():
+    """No dead zone: a ball that moves inside the middle of the crop still moves the camera."""
+    samples, track = scene(30, lambda k: (0.5 + 0.05 * (1 if (k // 5) % 2 else -1), 0.5))
+    c = centres(ball_rects(samples, track, W, H, "landscape", 1.5))
+    assert max(c) - min(c) > 0.01
+
+
+def test_ball_rects_respect_the_zoom_cap_and_stay_inside():
+    rnd = random.Random(3)
+    samples, track = scene(80, lambda k: (rnd.random(), rnd.random()), around=lambda k: rnd.random())
+    for mz in (1.5, 3.0):
+        for x, y, w, h in ball_rects(samples, track, W, H, "landscape", mz):
+            assert w >= 1 / mz - 1e-9
+            assert -1e-9 <= x and x + w <= 1 + 1e-9 and -1e-9 <= y and y + h <= 1 + 1e-9
