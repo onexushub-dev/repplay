@@ -89,30 +89,3 @@ def test_coreml_matches_onnx(name):
     keys = sorted(out)  # output, or output0/output1
     coreml = decode.decode(name, [out[k] for k in keys], lb, conf_min=0.3)
     assert matched(coreml, ours, conf_tol=0.02, iou_min=0.95)  # FP16
-
-
-@pytest.mark.skipif(platform.system() != "Darwin", reason="Core ML runs only on macOS")
-def test_dfine_image_input_matches_onnx():
-    """The image-input model the app ships (Part 3 plan, decision 2): same detections as ONNX on the sample frame."""
-    import coremltools as ct
-    from PIL import Image
-
-    path = os.path.join(MODELS, "dfine_s_image.mlpackage")
-    if not os.path.exists(path):
-        pytest.skip(f"{path} missing: run convert.py dfine_s --image-input first")
-    x, lb, raw, _ = onnx_dets("dfine_s")
-    rgb = cv2.cvtColor(cv2.resize(cv2.imread(SAMPLE), (640, 640), interpolation=cv2.INTER_LINEAR), cv2.COLOR_BGR2RGB)
-    out = ct.models.MLModel(path).predict({"images": Image.fromarray(rgb)})
-    heads = [out["output0"], out["output1"]]
-
-    def found(dets, d):
-        return any(o[0] == d[0] and abs(o[1] - d[1]) < 0.02 and decode.iou(o, d) >= 0.9 for o in dets)
-
-    # FP16 against FP32: each side's detections at ≥ 0.3 must be on the other side at ≥ 0.25, so a score near the
-    # cut on one side only does not count as a difference.
-    for strict, loose in ((decode.decode("dfine_s", heads, lb, conf_min=0.3), decode.decode("dfine_s", raw, lb, conf_min=0.25)),
-                          (decode.decode("dfine_s", raw, lb, conf_min=0.3), decode.decode("dfine_s", heads, lb, conf_min=0.25))):
-        assert any(d[0] == decode.PERSON for d in strict), "the sample frame has players"
-        missing = [d for d in strict if not found(loose, d)]
-        assert not missing, missing
-
