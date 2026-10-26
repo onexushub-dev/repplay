@@ -1,5 +1,7 @@
 """Clips of docs/focus-refs/clips: names, manifest, and frames on the 100 ms grid the app's analysis uses."""
 
+from __future__ import annotations
+
 import csv
 import re
 from dataclasses import dataclass
