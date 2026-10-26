@@ -4,6 +4,8 @@ The converted models return raw heads; this file is the decoder spec the Swift s
 Every detection is returned in the source image, normalized 0..1, origin top-left: (cls, conf, x, y, w, h).
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 import cv2
