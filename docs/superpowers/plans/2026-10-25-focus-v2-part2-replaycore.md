@@ -134,13 +134,13 @@
   - `public struct FocusBallTuning` with the Global Constraints ball-led target values and `cameraSigmaMs 600`; `static let standard`.
   - `public enum FocusBallPath { static func compute(samples: [FocusSample], track: [BallRow], videoWidth: Double, videoHeight: Double, aspect: FocusAspect, maxZoom: Double, tuning: FocusBallTuning = .standard) -> [FocusRect]? }` — v1 people filters (far, still), subject per row (ball for seen/predicted, the row's position for held, v1's weighted players' centre for lost), target x/y with the 2 nearest players, look-ahead, smoothed lead, size with the 0.8 s look-ahead window and v1's clamp/smoothing, v1 placement (lift 0.1), then Gaussian σ 600 ms on the rects and clamping. All rows `lost` → `FocusPath.compute(..., zoom: true, maxZoom:, tuning: .players)`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
   - `testMatchesBenchOnTennisAndVolley`: with each fixture's own `track` (not the Swift tracker, so a tracker drift does not hide here), `compute` equals `rects` within 1e-4.
   - `testNoTrackFallsBackToPlayers`: `tennis-02` samples with every row `.lost` → equals `FocusPath.compute(..., tuning: .players)` exactly. *(Review Focus 1.)*
   - `testEdgesHeldAndInside`: synthetic 10 s clip, two moving players near x 0.3 for the first 3 s and near x 0.7 for the last 3 s; track `held` at (0.3, 0.5) for the first 3 s, `lost` for the last 3 s → the first rect's centre x within 1e-6 of the rect computed for sample 0 without smoothing, the last within 1e-6 of the last unsmoothed one (edge-held kernel), every rect inside [0,1]. *(Review Focus 2.)*
   - `testZoomCapRespected`: every width ≥ `1 / maxZoom` for `maxZoom` 1.5 and 3 on `volley-01`.
 - [ ] **Step 2:** Run `swift test --filter FocusBallPathTests`. Expected: FAIL.
-- [ ] **Step 3:** Implement; reuse `FocusPath.gaussian`, `fill`, `median` (make them `internal` helpers shared in the module if they are `private` today).
+- [x] **Step 3:** Implement; reuse `FocusPath.gaussian`, `fill`, `median` (make them `internal` helpers shared in the module if they are `private` today). *(2026-10-26: they were internal already; `FocusPath.compute`'s steps 1–4 moved verbatim into internal `filteredPeople` and `targets`, shared with `FocusBallPath`. `testEdgesHeldAndInside` uses a 0.005 tolerance, not 1e-6: the bench gives 0.0022 / 0.0002 at the edges vs up to 0.028 mid-clip, so an exact match to the unsmoothed rect is not what edge-holding means. Extra tests: `smoothRects` on a jump, a track that does not fit the samples falls back.)*
 - [ ] **Step 4:** Run. Expected: PASS.
 - [ ] **Step 5: Checkpoint** — "feat(replay-core): ball-led framing path".
 
