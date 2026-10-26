@@ -6,11 +6,13 @@ State: spec §13 (amendment 2026-10-25) approved in conversation; Part 1 plan ta
 ## Waiting for Victor
 
 1. Part 2 task 1 done 2026-10-26 (awaiting Victor's commit); next: Part 2 task 2 (`BallFilter`, Swift).
-2. Part 1 task 2 on the XR and the 16 Pro Max (needs the spike branch and both phones): timing of the person
+2. *(Not blocking, Victor 2026-10-26: work goes on; tune after the field tests.)* Part 1 task 2 on the XR and the 16 Pro Max (needs the spike branch and both phones): timing of the person
    detector (YOLOX-S / D-FINE-S, 3×2, 4×3 and 6×4 grids; tennis's ball now depends on the grid), TrackNetV3
    beach-volley; 4K30/60 heat
    over 20 min; the 9:16 export check.
 3. One tennis or volleyball game recorded by the app in 4K (YouTube re-compresses; confirms the bench on real footage).
+4. Victor records beach tennis and society (football) clips with the app on the evening of 2026-10-26: label them and
+   use them as examples (both are players-framed today: §13.6).
 
 ## Open decisions (spec §13.4)
 

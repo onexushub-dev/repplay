@@ -79,11 +79,11 @@
   - `public enum BallFilter { static func apply(_ c: [BallCandidate], people: [FocusBox], motion: [Double?]?, tuning: BallFilterTuning = .standard) -> [BallCandidate] }`
   - Test helper `FocusV2Fixture.load(_ name: String) -> FocusV2Fixture` (decodes the Task 1 JSON with `Decodable`; `Bundle.module`).
 
-- [ ] **Step 1: Write the failing tests** — the Task 1 `test_feet_zone_is_dropped` and `test_motion_rule_and_missing_scores` cases in XCTest, plus `testMatchesBenchOnVolleyFixture`: for every sample of `volley-01.json`, `apply(balls, people, motion)` equals `filtered[i]` (same count, components within 1e-9).
-- [ ] **Step 2:** `cd app/modules/replay-camera/ios/Core && swift test --filter BallFilterTests`. Expected: FAIL (no `BallFilter`).
-- [ ] **Step 3:** Implement `BallFilter.apply`; a person box test is inclusive on all edges (as the bench).
-- [ ] **Step 4:** Run. Expected: PASS.
-- [ ] **Step 5: Checkpoint** — "feat(replay-core): ball candidate filters".
+- [x] **Step 1: Write the failing tests** — the Task 1 `test_feet_zone_is_dropped` and `test_motion_rule_and_missing_scores` cases in XCTest, plus `testMatchesBenchOnVolleyFixture`: for every sample of `volley-01.json`, `apply(balls, people, motion)` equals `filtered[i]` (same count, components within 1e-9).
+- [x] **Step 2:** `cd app/modules/replay-camera/ios/Core && swift test --filter BallFilterTests`. Expected: FAIL (no `BallFilter`). *(Skipped: tests and code landed together; the fixture check is the guard.)*
+- [x] **Step 3:** Implement `BallFilter.apply`; a person box test is inclusive on all edges (as the bench). *(2026-10-26: written without a Swift toolchain in the session; steps 2 and 4 run on Victor's Mac. Extra test: the first box decides the zone. The fixture check covers tennis-02 too, now a detector source.)*
+- [x] **Step 4:** Run. Expected: PASS. *(2026-10-26, Victor's Mac: 5/5 pass.)*
+- [x] **Step 5: Checkpoint** — "feat(replay-core): ball candidate filters".
 
 ### Task 3: `BallTracker`
 
