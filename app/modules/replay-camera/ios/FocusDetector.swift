@@ -30,12 +30,31 @@ final class FocusDetector {
     }
     do {
       let config = MLModelConfiguration()
-      config.computeUnits = .all
+      config.computeUnits = computeUnits
+      let started = Date()
       loaded = FocusDetector(model: try VNCoreMLModel(for: try MLModel(contentsOf: url, configuration: config)))
+      NSLog("[Repplay] Modo Foco detector loaded in %.0f ms, compute units %@", Date().timeIntervalSince(started) * 1000,
+            computeUnitsName)
     } catch {
       NSLog("[Repplay] Modo Foco detector failed to load: %@", String(describing: error))
     }
     return loaded
+  }
+
+  /// `.all` (Core ML picks the Neural Engine when the model compiles for it). For measurements, an Xcode scheme can set
+  /// the environment variable `FOCUS_COMPUTE_UNITS` to `cpuOnly`, `cpuAndGPU`, `cpuAndNeuralEngine` or `all`.
+  private static let computeUnitsName: String = {
+    let asked = ProcessInfo.processInfo.environment["FOCUS_COMPUTE_UNITS"] ?? "all"
+    return ["cpuOnly", "cpuAndGPU", "cpuAndNeuralEngine", "all"].contains(asked) ? asked : "all"
+  }()
+
+  private static var computeUnits: MLComputeUnits {
+    switch computeUnitsName {
+    case "cpuOnly": return .cpuOnly
+    case "cpuAndGPU": return .cpuAndGPU
+    case "cpuAndNeuralEngine": return .cpuAndNeuralEngine
+    default: return .all
+    }
   }
 
   /// The pod's resource bundle sits next to the code (dynamic framework) or in the app (static, as this pod is).

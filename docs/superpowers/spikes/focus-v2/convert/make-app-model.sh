@@ -43,11 +43,17 @@ if [ ! -d "$WORK/venv" ]; then
 fi
 
 "$WORK/venv/bin/python" "$HERE/convert.py" dfine_s --image-input --src "$WORK/src" --weights "$WORK/weights" --out "$MODELS"
-FOCUS_V2_MODELS="$MODELS" FOCUS_V2_SRC="$WORK/src" \
-  "$WORK/venv/bin/python" -m pytest "$HERE/tests/test_decode.py" -k "image_input" -v
 
 rm -rf "$WORK/compiled" && mkdir -p "$WORK/compiled"
 xcrun coremlcompiler compile "$MODELS/dfine_s_image.mlpackage" "$WORK/compiled"
+echo "--- compute plan (this Mac) ---"
+"$WORK/venv/bin/python" "$HERE/ane_report.py" "$WORK/compiled/dfine_s_image.mlmodelc" || echo "(compute plan unavailable)"
+echo "--- each compute unit vs ONNX ---"
+"$WORK/venv/bin/python" "$HERE/diag_units.py" "$MODELS/dfine_s_image.mlpackage" "$MODELS/dfine_s.onnx" || true
+
+# The app's copy is only replaced when the model matches the bench.
+FOCUS_V2_MODELS="$MODELS" FOCUS_V2_SRC="$WORK/src" \
+  "$WORK/venv/bin/python" -m pytest "$HERE/tests/test_decode.py" -k "image_input" -v
 rm -rf "$APP_MODELS/FocusDetector.mlmodelc"
 cp -R "$WORK/compiled/dfine_s_image.mlmodelc" "$APP_MODELS/FocusDetector.mlmodelc"
 du -sh "$APP_MODELS/FocusDetector.mlmodelc"

@@ -71,6 +71,8 @@ struct AnalyzeFocusOptions: Record {
   @Field var endMs: Double = 0
   @Field var outPath: String = ""
   @Field var debug: Bool = false
+  /// The recording's sport id (spec §13.6); older callers send none → players.
+  @Field var sport: String = "livre"
 }
 
 /// Kept out of `definition()`: the module's result builder is big enough that a do/catch inside it makes the type
@@ -199,9 +201,10 @@ public class ReplayCameraModule: Module {
     AsyncFunction("analyzeFocus") { (o: AnalyzeFocusOptions) async throws -> [String: Any] in
       do {
         let r = try await FocusAnalyzer.analyze(clipPath: o.clipPath, startMs: o.startMs, endMs: o.endMs,
-                                                outPath: o.outPath, debug: o.debug)
+                                                sport: o.sport, outPath: o.outPath, debug: o.debug)
         return ["status": r.ready ? "ready" : "none", "frames": r.frames, "framesWithPeople": r.framesWithPeople,
-                "meanPeople": r.meanPeople, "elapsedMs": r.elapsedMs]
+                "meanPeople": r.meanPeople, "elapsedMs": r.elapsedMs, "follow": r.follow, "ballShare": r.ballShare,
+                "model": r.model]
       } catch FocusAnalyzer.Failure.cancelled {
         throw ReplayException("CANCELLED", "Focus analysis cancelled")
       } catch FocusAnalyzer.Failure.interrupted {

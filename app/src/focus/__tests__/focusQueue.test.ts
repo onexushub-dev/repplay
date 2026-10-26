@@ -3,22 +3,25 @@ import type { Clip } from '../../data/schema';
 import { createFocusQueue, focusHold } from '../focusQueue';
 
 type Analysis = { status: 'ready' | 'none'; frames: number; framesWithPeople: number; meanPeople: number; elapsedMs: number };
+type Opts = { clipPath: string; startMs: number; endMs: number; outPath: string; sport?: string; debug?: boolean };
 
-function setup(opts: { supported?: boolean } = {}) {
+function setup(opts: { supported?: boolean; sport?: string; debug?: boolean } = {}) {
   const map = new Map<string, string>();
   const kv: KV = { getString: (k) => map.get(k), set: (k, v) => void map.set(k, v), delete: (k) => void map.delete(k) };
   let n = 0;
   const repo = createRepo(kv, { exists: () => true, sizeBytes: () => 1 }, () => `id-${++n}`);
-  const runs: { opts: { clipPath: string; startMs: number; endMs: number; outPath: string }; resolve: (a: Analysis) => void; reject: (e: unknown) => void }[] = [];
+  const runs: { opts: Opts; resolve: (a: Analysis) => void; reject: (e: unknown) => void }[] = [];
   const deps = {
     analyze: jest.fn(
-      (o: { clipPath: string; startMs: number; endMs: number; outPath: string }) =>
+      (o: Opts) =>
         new Promise<Analysis>((resolve, reject) => void runs.push({ opts: o, resolve, reject })),
     ),
     cancel: jest.fn(),
     supported: () => (opts.supported === undefined ? true : opts.supported),
     repo,
     deleteFile: jest.fn(),
+    ...(opts.sport !== undefined ? { sportOf: () => opts.sport as string } : {}),
+    ...(opts.debug ? { debug: true } : {}),
   };
   const queue = createFocusQueue(deps);
   const addClip = (path: string) => repo.addClip({ sessionId: 's', createdAt: 1, source: 'screen', path, durationMs: 60000 }, 30000);
@@ -38,8 +41,8 @@ test('a saved clip is marked pending and analysed over its own part of the file'
   const { repo, queue, runs, addClip } = setup();
   const clip = addClip('/c/1.mp4');
   queue.enqueue(clip.id);
-  expect(repo.getClip(clip.id)!.focus).toEqual({ v: 1, status: 'pending' });
-  expect(runs[0].opts).toEqual({ clipPath: '/c/1.mp4', startMs: 30000, endMs: 60000, outPath: '/c/1.focus.json' });
+  expect(repo.getClip(clip.id)!.focus).toEqual({ v: 2, status: 'pending' });
+  expect(runs[0].opts).toEqual({ clipPath: '/c/1.mp4', startMs: 30000, endMs: 60000, outPath: '/c/1.focus.json', sport: 'livre' });
 });
 
 test('analyses run one at a time, in order', async () => {
@@ -63,8 +66,8 @@ test('the result is stored with its file: ready, or none when nobody was found',
   await flush();
   runs[1].resolve(done('none'));
   await flush();
-  expect(repo.getClip(a.id)!.focus).toEqual({ v: 1, status: 'ready', file: '/c/1.focus.json' });
-  expect(repo.getClip(b.id)!.focus).toEqual({ v: 1, status: 'none', file: '/c/2.focus.json' });
+  expect(repo.getClip(a.id)!.focus).toEqual({ v: 2, status: 'ready', file: '/c/1.focus.json' });
+  expect(repo.getClip(b.id)!.focus).toEqual({ v: 2, status: 'none', file: '/c/2.focus.json' });
 });
 
 test('a broken analysis is marked failed and the next one still runs', async () => {
@@ -74,7 +77,7 @@ test('a broken analysis is marked failed and the next one still runs', async () 
   queue.enqueue(addClip('/c/2.mp4').id);
   runs[0].reject(Object.assign(new Error('boom'), { code: 'FOCUS_FAILED' }));
   await flush();
-  expect(repo.getClip(a.id)!.focus).toEqual({ v: 1, status: 'failed' });
+  expect(repo.getClip(a.id)!.focus).toEqual({ v: 2, status: 'failed' });
   expect(runs).toHaveLength(2);
 });
 
@@ -121,7 +124,7 @@ test('ensure queues a clip never analysed and a pending one left by a closed app
   const { repo, queue, runs, addClip } = setup();
   const fresh = addClip('/c/1.mp4');
   const stale = repo.updateClip(addClip('/c/2.mp4').id, { focus: { v: 1, status: 'pending' } }) as Clip;
-  const ready = repo.updateClip(addClip('/c/3.mp4').id, { focus: { v: 1, status: 'ready', file: '/c/3.focus.json' } }) as Clip;
+  const ready = repo.updateClip(addClip('/c/3.mp4').id, { focus: { v: 2, status: 'ready', file: '/c/3.focus.json' } }) as Clip;
   queue.setPaused(true);
   queue.ensure(fresh);
   queue.ensure(stale);
@@ -153,7 +156,7 @@ test('an analysis interrupted (app sent to the background) stays pending and is 
   queue.enqueue(clip.id);
   runs[0].reject(Object.assign(new Error('interrupted'), { code: 'FOCUS_INTERRUPTED' }));
   await flush();
-  expect(repo.getClip(clip.id)!.focus).toEqual({ v: 1, status: 'pending' });
+  expect(repo.getClip(clip.id)!.focus).toEqual({ v: 2, status: 'pending' });
   queue.ensure(repo.getClip(clip.id)!);
   expect(runs).toHaveLength(2);
 });
@@ -212,3 +215,51 @@ describe('hold while recording (thermal spec item 1)', () => {
     expect(runs[0].opts.clipPath).toBe('/c/2.mp4');
   });
 });
+
+// --- Modo Foco v2 (Part 3 plan, task 7) ---
+
+test('the recording\'s sport goes to the analysis, and dev builds ask for the samples', () => {
+  const { queue, runs, addClip } = setup({ sport: 'tenis', debug: true });
+  queue.enqueue(addClip('/c/1.mp4').id);
+  expect(runs[0].opts).toMatchObject({ sport: 'tenis', debug: true });
+});
+
+test('a clip analysed by v1 is redone once when opened, last, keeping its framing until the new one lands', async () => {
+  const { repo, queue, runs, addClip, done, flush } = setup();
+  const first = addClip('/c/1.mp4');
+  const old = repo.updateClip(addClip('/c/2.mp4').id, { focus: { v: 1, status: 'ready', file: '/c/2.focus.json' } }) as Clip;
+  queue.enqueue(first.id);
+  queue.ensure(old);
+  queue.ensure(old); // already waiting
+  expect(repo.getClip(old.id)!.focus).toEqual({ v: 1, status: 'ready', file: '/c/2.focus.json' });
+  runs[0].resolve(done());
+  await flush();
+  expect(runs.map((r) => r.opts.clipPath)).toEqual(['/c/1.mp4', '/c/2.mp4']);
+  runs[1].resolve(done());
+  await flush();
+  expect(repo.getClip(old.id)!.focus).toEqual({ v: 2, status: 'ready', file: '/c/2.focus.json' });
+  queue.ensure(repo.getClip(old.id)!);
+  expect(runs).toHaveLength(2);
+});
+
+test('a v1 redo waits for the recording to end, even for a clip being opened', () => {
+  const { repo, queue, runs, addClip } = setup();
+  const old = repo.updateClip(addClip('/c/1.mp4').id, { focus: { v: 1, status: 'none', file: '/c/1.focus.json' } }) as Clip;
+  queue.setHold('openedOnly');
+  queue.ensure(old);
+  expect(runs).toHaveLength(0);
+  queue.setHold('none');
+  expect(runs).toHaveLength(1);
+});
+
+test('a v1 redo that breaks keeps the v1 framing and is not retried', async () => {
+  const { repo, queue, runs, addClip, flush } = setup();
+  const old = repo.updateClip(addClip('/c/1.mp4').id, { focus: { v: 1, status: 'ready', file: '/c/1.focus.json' } }) as Clip;
+  queue.ensure(old);
+  runs[0].reject(Object.assign(new Error('boom'), { code: 'FOCUS_FAILED' }));
+  await flush();
+  expect(repo.getClip(old.id)!.focus).toEqual({ v: 2, status: 'ready', file: '/c/1.focus.json' });
+  queue.ensure(repo.getClip(old.id)!);
+  expect(runs).toHaveLength(1);
+});
+

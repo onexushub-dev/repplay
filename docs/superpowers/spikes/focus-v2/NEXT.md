@@ -26,6 +26,16 @@ State: spec §13 (amendment 2026-10-25) approved in conversation; Part 1 plan ta
   and the ms per pass. If the ANE is out and the GPU too slow: keep that op in FP32 (`op_selector` in
   `ct.precision`), or try `computeUnits = .cpuAndGPU` explicitly, or YOLOX-S for players-framed sports.
 
+- **First device run (2026-10-26, iPhone 16 Pro Max, Release build):** a 30 s 1080p clip, `livre`, tiled (6 tiles):
+  50 samples in 89 s (model load and the first-second pass included) → ~1.7 s per sample, ~250 ms per detector pass,
+  ~8–9 min per clip. The ANE compile fails on the phone too: `Invalid dimension … CONCAT inter_ref_bbox_1_cast_fp16`
+  (D-FINE's `distance2bbox` / `box_xyxy_to_cxcywh` stack four 1-wide slices). Fixes in flight: `convert.py` writes
+  that maths as constant 4×4 matmuls (same values, 4e-16), `ane_report.py` prints where each op runs, and
+  `FOCUS_COMPUTE_UNITS` (Xcode scheme env) picks `cpuOnly` / `cpuAndGPU` / `cpuAndNeuralEngine` / `all` to measure.
+- Debug builds do not link with the prebuilt React Native core (`RCTReconnectingWebSocket`, then `Sealable`);
+  `EX_DEV_CLIENT_NETWORK_INSPECTOR=false` fixes the first only. Test in Release for now; the fix is
+  `ios.buildReactNativeFromSource` (slower builds) — not a Modo Foco issue.
+
 ## Open decisions (spec §13.4)
 
 - Person detector: YOLOX-S or D-FINE-S (device timing).

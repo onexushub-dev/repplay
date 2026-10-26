@@ -31,7 +31,7 @@ def build_yolox_s(src: str, weights: str) -> nn.Module:
     return model
 
 
-def build_dfine_s(src: str, weights: str) -> nn.Module:
+def build_dfine_s(src: str, weights: str, box_patch: bool = True) -> nn.Module:
     root = os.path.join(src, "D-FINE")
     sys.path.insert(0, root)
     from src.core import YAMLConfig  # noqa: E402
@@ -45,6 +45,23 @@ def build_dfine_s(src: str, weights: str) -> nn.Module:
         return x.reshape(list(shape[:-1]) + [-1])
 
     dfine_decoder.Integral.forward = integral
+
+    def distance2bbox(points, distance, reg_scale):
+        # Same maths as upstream `distance2bbox` + `box_xyxy_to_cxcywh` (two `torch.stack`s of four 1-wide slices,
+        # which the Neural Engine compiler rejects: "Invalid dimension … CONCAT inter_ref_bbox"), written as products
+        # with constant 4×4 matrices. points = [cx, cy, w, h], distance = [l, t, r, b], s = |reg_scale|:
+        # cx' = cx + (r − l)/2 · w/s, cy' = cy + (b − t)/2 · h/s, w' = (s + l + r) · w/s, h' = (s + t + b) · h/s.
+        s = torch.abs(reg_scale).reshape(())
+        dt = points.dtype
+        centre = torch.tensor([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=dt, device=points.device)
+        edges = torch.tensor([[-0.5, 0, 1, 0], [0, -0.5, 0, 1], [0.5, 0, 1, 0], [0, 0.5, 0, 1]], dtype=dt,
+                             device=points.device)
+        sizes = torch.tensor([[0, 0, 0, 0], [0, 0, 0, 0], [1, 0, 1, 0], [0, 1, 0, 1]], dtype=dt, device=points.device)
+        offset = torch.tensor([0, 0, 1, 1], dtype=dt, device=points.device) * s
+        return points @ centre + (distance @ edges + offset) * (points @ sizes) / s
+
+    if box_patch:
+        dfine_decoder.distance2bbox = distance2bbox  # the decoder calls it through its own import
 
     cfg = YAMLConfig(os.path.join(root, "configs/dfine/dfine_hgnetv2_s_coco.yml"))
     if "HGNetv2" in cfg.yaml_cfg:
@@ -95,12 +112,16 @@ def main() -> None:
     p.add_argument("--no-coreml", action="store_true")
     p.add_argument("--image-input", action="store_true",
                    help="Core ML input as an RGB image scaled 1/255 (D-FINE's own normalisation); skips the ONNX export")
+    p.add_argument("--fp32", action="store_true", help="Core ML in float32 (diagnosis: is FP16 the error?); <name>_fp32")
+    p.add_argument("--no-box-patch", action="store_true",
+                   help="dfine_s: keep upstream distance2bbox (its stacks do not compile for the Neural Engine)")
     a = p.parse_args()
     if a.image_input and a.name != "dfine_s":
         p.error("--image-input is for dfine_s (YOLOX expects BGR 0..255 with grey padding)")
     os.makedirs(a.out, exist_ok=True)
 
-    model = BUILDERS[a.name](a.src, a.weights)
+    model = BUILDERS[a.name](a.src, a.weights, box_patch=not a.no_box_patch) if a.name == "dfine_s" \
+        else BUILDERS[a.name](a.src, a.weights)
     example = torch.rand(1, 3, 640, 640)
     with torch.no_grad():
         outputs = model(example)
@@ -129,11 +150,12 @@ def main() -> None:
         inputs=[model_input],
         outputs=[ct.TensorType(name=n) for n in names],
         convert_to="mlprogram",
-        compute_precision=ct.precision.FLOAT16,
+        compute_precision=ct.precision.FLOAT32 if a.fp32 else ct.precision.FLOAT16,
         compute_units=ct.ComputeUnit.ALL,
         minimum_deployment_target=ct.target.iOS16,
     )
-    ml_path = os.path.join(a.out, f"{a.name}{'_image' if a.image_input else ''}.mlpackage")
+    suffix = ("_image" if a.image_input else "") + ("_fp32" if a.fp32 else "") + ("_nopatch" if a.no_box_patch else "")
+    ml_path = os.path.join(a.out, f"{a.name}{suffix}.mlpackage")
     ml.save(ml_path)
     print("coreml:", ml_path)
 

@@ -153,8 +153,8 @@
   8. Failures: more than 10% of frames failing in Vision or Core ML → `interrupted` (as today).
 - Result: `{ status, frames, framesWithPeople, meanPeople, elapsedMs, follow, ballShare }` (`ballShare`: share of samples `seen` or `predicted`).
 
-- [ ] **Step 1:** Implement.
-- [ ] **Step 2:** Build the app; analyse one saved clip with `debug: true` from the test screen (`src/app/spike.tsx`, which already passes `debug`). Expected: a v2 file with `samples`; the log line `[Repplay] focus v2 <clip> <ms> ms follow=<…>`.
+- [x] **Step 1:** Implement. *(2026-10-26: written. Players-framed clips read their first second twice (full frame only, to decide tiling) so no pixel buffer is held; luma is kept only for ball-led sports and only three frames at a time; motion neighbours must be ≤ 1.5 steps apart.)*
+- [ ] **Step 2:** Build the app; analyse one saved clip in a dev build (Task 7 makes the queue pass `debug: __DEV__`; no screen passes it today) and copy the file out with Xcode's Devices window → the app → Download Container. Expected: a v2 file with `samples`; the log line `[Repplay] focus v2 <clip> <ms> ms follow=<…>`.
 - [ ] **Step 3: Checkpoint** — "feat(focus-v2): analyzer v2 (Core ML, motion, FocusV2, file v2)".
 
 ### Task 7: Readers, queue and re-analysis (TypeScript + native export)
@@ -168,9 +168,9 @@
 - Queue: `start` passes `sport` (`repo.getSession(clip.sessionId)` → `focusSport`, else `'livre'`; Task 9 adds the field; until then always `'livre'`) and stores `focus.v: 2`. `ensure(clip)` also re-queues a clip whose `focus.v === 1` (any status but `pending`), at the back of the queue, keeping `status`/`file` so v1 framing shows until v2 lands; never during a `openedOnly`/`all` hold beyond what holds allow today.
 - `FocusFile.segments(path:, aspect:, follow:)` reads v1 or v2 with the same choice (`follow` default `"default"`).
 
-- [ ] **Step 1: Write the failing tests**: v2 parse (default rows, `players` rows, a v2 players-only file asked for `players` gives the default rows); v1 still parses; `ensure` re-queues a v1 `ready` clip once, keeps its file until the new result, and a v2 clip is not re-queued; `start` passes `sport: 'livre'` for a session without `focusSport`.
+- [x] **Step 1: Write the failing tests**: v2 parse (default rows, `players` rows, a v2 players-only file asked for `players` gives the default rows); v1 still parses; `ensure` re-queues a v1 `ready` clip once, keeps its file until the new result, and a v2 clip is not re-queued; `start` passes `sport: 'livre'` for a session without `focusSport`.
 - [ ] **Step 2:** `npx jest src/data src/focus`. Expected: FAIL.
-- [ ] **Step 3:** Implement (no `?.`).
+- [x] **Step 3:** Implement (no `?.`). *(2026-10-26: done together with Task 6, since v2 files would otherwise show no framing. A v1 redo that fails keeps its v1 file and is marked v2 so it is not retried forever; the queue gets `sportOf` (always `livre` until Task 9) and `debug: __DEV__`. `tsc --noEmit` passes; jest runs on the Mac (the jest-expo preset does not load in the Linux VM).)*
 - [ ] **Step 4:** Run `npx jest` and `npx tsc --noEmit`. Expected: PASS.
 - [ ] **Step 5: Checkpoint** — "feat(focus-v2): file v2 readers and v1 re-analysis".
 
@@ -180,7 +180,7 @@
 - Create: `docs/superpowers/spikes/focus-v2/bench/focusbench/device.py` (reads a v2 debug file as a detections file), `bench/run.py` (`device-compare` command)
 - Modify: `docs/superpowers/spikes/focus-v2/TUNING.md` (results)
 
-- [ ] **Step 1 (phone):** with `debug: true`, analyse `basket-v-corner-unavailable-01` (portrait), one landscape app clip and one of the 2026-10-26 field clips (beach tennis or society); copy the three `.focus.json` files out (AirDrop/Files).
+- [ ] **Step 1 (phone):** in a dev build (`debug: __DEV__`), analyse `basket-v-corner-unavailable-01` (portrait), one landscape app clip and one of the 2026-10-26 field clips (beach tennis or society); copy the three `.focus.json` files out (Xcode → Devices → the app → Download Container).
 - [ ] **Step 2 (bench):** `python run.py device-compare <file> <clip>`: people per sample and ball candidates vs the ONNX bench on the same clip (match = IoU ≥ 0.5 / centre within 0.01), and the rects the bench computes from the device samples vs the device rects (must match within 1e-4: same ReplayCore logic). Expected: ≥ 90% of bench people and ≥ 80% of bench ball candidates found on the device; the rects match.
 - [ ] **Step 3:** Record time per clip (`elapsedMs`) for each phone used, next to Part 1 task 2's open items in `NEXT.md`.
 - [ ] **Step 4: Checkpoint** — "bench(focus-v2): device analyzer vs bench".
