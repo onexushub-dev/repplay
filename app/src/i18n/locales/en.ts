@@ -36,6 +36,11 @@ export const en = {
     watchReady: 'Ready',
     watchNotInstalled: 'Install the app on your Apple Watch',
     watchNone: 'No paired watch',
+    watchHelpTitle: 'Using the Apple Watch',
+    watchHelpPair:
+      'Pair an Apple Watch with this iPhone in the Watch app. Then, in the Watch app, find Repplay under "Available Apps" and tap Install. With the app open on the watch, one tap saves the play.',
+    watchHelpInstall:
+      'On the iPhone, open the Watch app, find Repplay under "Available Apps" and tap Install. With the app open on the watch, one tap saves the play.',
     watchProBadge: 'Pro',
     watchProOnly: 'Available with Pro',
     watchIosOnly: 'Only available on iPhone',

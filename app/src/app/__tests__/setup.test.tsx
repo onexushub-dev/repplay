@@ -120,6 +120,7 @@ beforeEach(() => {
   clearRemotePress();
   const module = jest.requireMock('../../../modules/replay-camera');
   module.isRemoteSupported.mockReturnValue(false);
+  module.getWatchStatus.mockReturnValue('unsupported');
   module.getZoomRange.mockReturnValue({ min: 0.5, max: 5, continuous: true });
   module.remoteHostPeers.mockReturnValue([]);
   module.getDeviceUpright.mockReturnValue('portrait');
@@ -515,7 +516,7 @@ test.each([
   ['notInstalled', 'Instale o app no Apple Watch'],
   ['ready', 'Pronto'],
 ])('the Relógio tile says %s as "%s"', async (status, text) => {
-  camera().getWatchStatus.mockReturnValueOnce(status);
+  camera().getWatchStatus.mockReturnValue(status);
   session({});
   await render(<Setup />);
   await openSettings();
@@ -528,6 +529,7 @@ test('a watch status event updates the tile', async () => {
   await openSettings();
   expect(screen.getByLabelText('Relógio, Sem relógio pareado')).toBeTruthy();
   const listener = camera().addReplayListener.mock.calls.find((c: any[]) => c[0] === 'onWatchStatus')[1];
+  camera().getWatchStatus.mockReturnValue('ready');
   await act(async () => listener({ status: 'ready' }));
   expect(screen.getByLabelText('Relógio, Pronto')).toBeTruthy();
 });
@@ -537,6 +539,7 @@ test('the collapsed summary mentions a ready watch, and only then', async () => 
   const view = await render(<Setup />);
   expect(screen.getByRole('button', { name: /^Ajustes:/ }).props.accessibilityLabel).not.toMatch(/relógio/);
   const listener = camera().addReplayListener.mock.calls.find((c: any[]) => c[0] === 'onWatchStatus')[1];
+  camera().getWatchStatus.mockReturnValue('ready');
   await act(async () => listener({ status: 'ready' }));
   expect(screen.getByRole('button', { name: /relógio pronto$/ })).toBeTruthy();
   view.unmount();
@@ -612,9 +615,34 @@ test('the settings sheet no longer has its own battery row', async () => {
   expect(screen.queryByText('BATERIA')).toBeNull();
 });
 
+test.each([
+  ['unsupported', 'Sem relógio pareado', /Pareie um Apple Watch/],
+  ['notInstalled', 'Instale o app no Apple Watch', /^No iPhone, abra o app Watch/],
+])('a %s watch is not greyed out: the tile explains how to set it up', async (status, text, help) => {
+  camera().getWatchStatus.mockReturnValue(status);
+  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  session({});
+  await render(<Setup />);
+  await openSettings();
+  const tile = screen.getByRole('button', { name: `Relógio, ${text}` });
+  expect(tile).toBeEnabled();
+  await fireEvent.press(tile);
+  expect(alert).toHaveBeenCalledWith('Usar o Apple Watch', expect.stringMatching(help));
+  expect(openPaywall).not.toHaveBeenCalled();
+  alert.mockRestore();
+});
+
+test('the watch status is read again on the next render: an activation that finished unheard still shows', async () => {
+  session({});
+  await render(<Setup />);
+  camera().getWatchStatus.mockReturnValue('ready'); // no event: it fired before the screen listened
+  await openSettings();
+  expect(screen.getByLabelText('Relógio, Pronto')).toBeTruthy();
+});
+
 test('on the free tier the Relógio tile shows a Pro badge and opens the paywall', async () => {
   freeTier();
-  camera().getWatchStatus.mockReturnValueOnce('ready');
+  camera().getWatchStatus.mockReturnValue('ready');
   session({});
   await render(<Setup />);
   await openSettings();
@@ -681,14 +709,14 @@ test('on the free tier the Bluetooth remote tile is Pro: badge, paywall, and not
 
 test('on the free tier a locked watch is not counted as ready in the summary', async () => {
   freeTier();
-  camera().getWatchStatus.mockReturnValueOnce('ready');
+  camera().getWatchStatus.mockReturnValue('ready');
   session({});
   await render(<Setup />);
   expect(screen.getByRole('button', { name: /^Ajustes:/ }).props.accessibilityLabel).not.toMatch(/relógio/);
 });
 
 test('on Pro the Relógio tile has no badge and no paywall', async () => {
-  camera().getWatchStatus.mockReturnValueOnce('ready');
+  camera().getWatchStatus.mockReturnValue('ready');
   session({});
   await render(<Setup />);
   await openSettings();

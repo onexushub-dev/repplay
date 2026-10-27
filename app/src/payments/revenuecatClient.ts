@@ -34,11 +34,16 @@ export function createRevenueCatClient(): PaymentsClient {
       attempted = true;
       const keys = (Constants.expoConfig?.extra?.revenueCat ?? {}) as RevenueCatKeys;
       const apiKey = pickApiKey(keys, Platform.OS, __DEV__);
-      if (!apiKey) return; // no key: the app runs as free
+      if (!apiKey) {
+        // In a development build, say why the paywall will fail.
+        if (__DEV__) console.warn(`[payments] no RevenueCat key in this build (keys set: ${Object.keys(keys).filter((k) => keys[k as keyof RevenueCatKeys]).join(', ') || 'none'})`);
+        return; // no key: the app runs as free
+      }
       try {
         Purchases.configure({ apiKey });
         configured = true;
-      } catch {
+      } catch (e) {
+        if (__DEV__) console.warn('[payments] RevenueCat configure failed', e);
         // a failing SDK must not crash launch: stay unconfigured, the app runs as free
       }
     },
@@ -56,10 +61,16 @@ export function createRevenueCatClient(): PaymentsClient {
     },
 
     async showPaywall() {
-      if (!configured) return 'error';
+      if (!configured) {
+        if (__DEV__) console.warn('[payments] paywall: RevenueCat is not configured in this build');
+        return 'error';
+      }
       try {
-        return outcomeFor(await RevenueCatUI.presentPaywall({ displayCloseButton: true }));
-      } catch {
+        const result = await RevenueCatUI.presentPaywall({ displayCloseButton: true });
+        if (__DEV__ && result === RevenueCatUI.PAYWALL_RESULT.ERROR) console.warn('[payments] paywall returned ERROR (see the [RevenueCat] logs)');
+        return outcomeFor(result);
+      } catch (e) {
+        if (__DEV__) console.warn('[payments] paywall failed', e);
         return 'error';
       }
     },

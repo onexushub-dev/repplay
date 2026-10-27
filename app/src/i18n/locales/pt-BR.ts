@@ -34,6 +34,11 @@ export const ptBR: Messages = {
     watchReady: 'Pronto',
     watchNotInstalled: 'Instale o app no Apple Watch',
     watchNone: 'Sem relógio pareado',
+    watchHelpTitle: 'Usar o Apple Watch',
+    watchHelpPair:
+      'Pareie um Apple Watch com este iPhone pelo app Watch. Depois, no app Watch, encontre o Repplay em "Apps Disponíveis" e toque em Instalar.',
+    watchHelpInstall:
+      'No iPhone, abra o app Watch, encontre o Repplay em "Apps Disponíveis" e toque em Instalar.',
     watchProBadge: 'Pro',
     watchProOnly: 'Disponível no Pro',
     watchIosOnly: 'Disponível apenas no iPhone',

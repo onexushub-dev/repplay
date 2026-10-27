@@ -1,6 +1,6 @@
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { router, useIsFocused } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { ActivityIndicator, Alert, AppState, PanResponder, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -62,6 +62,13 @@ const START_ERRORS: Partial<Record<ReplayErrorCode, MessageKey>> = {
 };
 
 /** Under "Conectar um celular controle": how many remotes are linked right now. Nothing when none is. */
+/** The watch link as the native side sees it now. Read on every render, not only on events: WatchConnectivity
+ * activates when the module loads, and an activation that finishes before this screen listens is never heard. */
+function subscribeWatch(onChange: () => void): () => void {
+  const sub = addReplayListener('onWatchStatus', onChange);
+  return () => sub.remove();
+}
+
 function controllersStatus(t: TFunction, linked: number): string | undefined {
   if (linked <= 0) return undefined;
   return linked === 1 ? t('setup.controllerLinkedOne') : t('setup.controllerLinkedMany', { count: linked });
@@ -157,11 +164,7 @@ export default function Setup() {
   const speechGranted = speech === 'granted';
   const mode = modeById(modeId);
   // The watch link: paired watch with the app → ready. Informational: the watch itself starts a save.
-  const [watch, setWatch] = useState(() => getWatchStatus());
-  useEffect(() => {
-    const sub = addReplayListener('onWatchStatus', (e) => setWatch(e.status));
-    return () => sub.remove();
-  }, []);
+  const watch = useSyncExternalStore(subscribeWatch, getWatchStatus);
   const watchStatus =
     watch === 'ready' ? t('setup.watchReady') : watch === 'notInstalled' ? t('setup.watchNotInstalled') : t('setup.watchNone');
   // Before a game the next start's plan decides. Two questions: what the screen shows (the plan as it is: on the free
@@ -175,6 +178,11 @@ export default function Setup() {
   const watchAllowed = triggerAllowed('watch', plan);
   const watchOn = watchSupported && watchAllowed && watch === 'ready';
   const watchLocked = watchSupported && !watchAllowed;
+  // Without a paired watch, or without the app on it, the tile explains how to set it up instead of going grey.
+  const watchHelp =
+    watchSupported && watchAllowed && watch !== 'ready'
+      ? () => Alert.alert(t('setup.watchHelpTitle'), watch === 'notInstalled' ? t('setup.watchHelpInstall') : t('setup.watchHelpPair'))
+      : undefined;
   // The paid triggers are the watch and the Bluetooth remote; the phone remote is free for every plan.
   const remoteAllowed = triggerAllowed('remote', plan);
   // The free plan cuts clips at 15 s: a longer pick is paid, and what the screen shows is what the game will get.
@@ -515,9 +523,9 @@ export default function Setup() {
               title={sourceLabel('watch', locale)}
               status={watchSupported ? watchStatus : t('setup.watchIosOnly')}
               active={watchOn}
-              disabled={!watchSupported || (watchAllowed && watch === 'unsupported')}
+              disabled={!watchSupported}
               lockedHint={watchLocked ? t('setup.watchProOnly') : undefined}
-              onPress={watchLocked ? () => void openPaywall(t) : undefined}
+              onPress={watchLocked ? () => void openPaywall(t) : watchHelp}
             />
           </View>
           {showPro ? <ProBadge label={t('setup.proBadge')} top={-9} right={6} /> : null}
