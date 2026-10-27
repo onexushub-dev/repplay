@@ -858,10 +858,10 @@ describe('start decision', () => {
     expect(f.view.result.current.state.phase).toBe('recording');
   });
 
-  test('the Bluetooth remote is on in a free game too', async () => {
+  test('the Bluetooth remote is a Pro trigger: off in a free game, on in a paid one', async () => {
     const free = await setup();
     await startResult(free);
-    expect(free.useRemote).toHaveBeenLastCalledWith(true, expect.any(Function));
+    expect(free.useRemote).toHaveBeenLastCalledWith(false, expect.any(Function));
     const paid = await setup();
     paid.startDecision.mockResolvedValue({ kind: 'pro' });
     await startResult(paid);

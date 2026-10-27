@@ -184,7 +184,8 @@ export const en = {
     emptyTitle: 'No recordings yet',
     emptyMessage: 'Start a recording and the plays you save show up here.',
     proTitle: 'Unlock every feature with PRO',
-    proMessage: 'Sound, Focus Mode, speed and no watermark on every recording, the ones you already made and the next ones.',
+    proMessage:
+      'Clips up to 60 seconds, 4K, Apple Watch and the Bluetooth remote. And sound, Focus Mode, speed and no watermark on every recording, the ones you already made and the next ones.',
     proAction: 'See plans',
     detail: '%{clips} · %{time}',
     deleteRecording: 'Delete recording',

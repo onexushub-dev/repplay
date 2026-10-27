@@ -182,7 +182,8 @@ export const ptBR: Messages = {
     emptyTitle: 'Nenhuma gravação ainda',
     emptyMessage: 'Comece uma gravação e os lances que você salvar aparecem aqui.',
     proTitle: 'Desbloqueie todos os recursos com o PRO',
-    proMessage: 'Som, Modo Foco, velocidade e sem marca d’água em todas as gravações, as que você já fez e as próximas.',
+    proMessage:
+      'Clipes de até 60 segundos, 4K, Apple Watch e controle Bluetooth. E som, Modo Foco, velocidade e sem marca d’água em todas as gravações, as que você já fez e as próximas.',
     proAction: 'Ver planos',
     detail: '%{clips} · %{time}',
     deleteRecording: 'Apagar gravação',

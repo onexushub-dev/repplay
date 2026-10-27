@@ -39,6 +39,7 @@ import { repo } from '../data/mmkv';
 import { useStartPreview } from '../payments/useStartPreview';
 import { openPaywall } from '../payments/feedback';
 import { FREE_MAX_SECONDS, qualityAllowed, triggerAllowed } from '../payments/limits';
+import { accessPlan } from '../payments/rules';
 import { usePlan } from '../share/entitlement';
 import { type MessageKey, type TFunction, VOICE_WORDS, voiceLocale } from '../i18n';
 import { useT } from '../i18n/useT';
@@ -163,18 +164,23 @@ export default function Setup() {
   }, []);
   const watchStatus =
     watch === 'ready' ? t('setup.watchReady') : watch === 'notInstalled' ? t('setup.watchNotInstalled') : t('setup.watchNone');
-  // The watch trigger is paid: before a game the next start's plan decides; the lock opens the paywall.
+  // Before a game the next start's plan decides. Two questions: what the screen shows (the plan as it is: on the free
+  // plan every Pro option carries its badge, the release layout) and what works (`accessPlan`: everything while the
+  // field test unlocks it; a locked option opens the paywall).
   const plan = usePlan();
+  const showPro = plan === 'free';
+  const paidAccess = accessPlan(plan) === 'paid';
   // Apple Watch only: no Android smartwatch was tested, so the tile stays visible but disabled there.
   const watchSupported = Platform.OS === 'ios';
   const watchAllowed = triggerAllowed('watch', plan);
   const watchOn = watchSupported && watchAllowed && watch === 'ready';
-  // Only the watch is paid; the Bluetooth remote and the phone remote are free for every plan.
   const watchLocked = watchSupported && !watchAllowed;
+  // The paid triggers are the watch and the Bluetooth remote; the phone remote is free for every plan.
+  const remoteAllowed = triggerAllowed('remote', plan);
   // The free plan cuts clips at 15 s: a longer pick is paid, and what the screen shows is what the game will get.
-  const isAllowed = (seconds: number) => plan === 'paid' || seconds <= FREE_MAX_SECONDS;
-  const lockedSeconds = CLIP_SECONDS_OPTIONS.filter((seconds) => !isAllowed(seconds));
-  const clipSeconds = plan === 'paid' ? settings.cutSeconds : Math.min(settings.cutSeconds, FREE_MAX_SECONDS);
+  const isAllowed = (seconds: number) => paidAccess || seconds <= FREE_MAX_SECONDS;
+  const proSeconds = CLIP_SECONDS_OPTIONS.filter((seconds) => seconds > FREE_MAX_SECONDS);
+  const clipSeconds = isAllowed(settings.cutSeconds) ? settings.cutSeconds : Math.min(settings.cutSeconds, FREE_MAX_SECONDS);
   // 4K (30 fps) is paid and needs a camera that has it; the free plan records Full HD (60 fps) whatever was picked.
   const [has4k] = useState(() => supportsQuality('2160p30'));
   const fourKAllowed = qualityAllowed('2160p30', plan);
@@ -255,7 +261,9 @@ export default function Setup() {
       t(voiceOn ? 'setup.summaryVoiceOn' : 'setup.summaryVoiceOff'),
       t(settings.gestureEnabled ? 'setup.summaryGestureOn' : 'setup.summaryGestureOff'),
       t(
-        remoteView.state === 'connected'
+        !remoteAllowed
+          ? 'setup.summaryRemoteNotConnected'
+          : remoteView.state === 'connected'
           ? 'setup.summaryRemoteConnected'
           : remoteView.state === 'offline'
             ? 'setup.summaryRemotePaired'
@@ -281,7 +289,7 @@ export default function Setup() {
   }, [focused]);
 
   // A press of the Bluetooth remote here proves it is paired and reaching the app.
-  useVolumeRemote(live && phase === 'idle', remoteTest.press);
+  useVolumeRemote(live && phase === 'idle' && remoteAllowed, remoteTest.press);
 
   // Coming back from another app, whether the remote is still on is unknown: until it is pressed again it shows as paired.
   useEffect(() => {
@@ -413,7 +421,7 @@ export default function Setup() {
         <View style={styles.summaryIcons}>
           <MicIcon color={iconColor(voiceOn)} size={32} />
           <ArmsUpIcon color={iconColor(settings.gestureEnabled)} size={32} />
-          <RemoteIcon color={iconColor(remoteReady)} size={32} />
+          <RemoteIcon color={iconColor(remoteReady && remoteAllowed)} size={32} />
           <WatchIcon color={iconColor(watchOn)} size={32} />
           {remoteSupported ? <QrIcon color={iconColor(remoteLinked > 0)} size={32} /> : null}
         </View>
@@ -427,7 +435,7 @@ export default function Setup() {
         <View style={styles.clipLength}>
           <Text style={styles.section}>{t('setup.clipLength')}</Text>
           <View style={styles.chips}>
-            {CLIP_SECONDS_OPTIONS.filter(isAllowed).map((seconds) => (
+            {CLIP_SECONDS_OPTIONS.filter((seconds) => !showPro || seconds <= FREE_MAX_SECONDS).map((seconds) => (
               <Chip
                 key={seconds}
                 label={`${seconds}s`}
@@ -435,21 +443,31 @@ export default function Setup() {
                 onPress={() => updateMode({ cutSeconds: seconds })}
               />
             ))}
-            {lockedSeconds.length === 0 ? null : (
+            {showPro ? (
               // The paid lengths share one outline and one "Pro" badge instead of one each.
               <View style={styles.proGroup}>
-                {lockedSeconds.map((seconds) => (
-                  <Chip
-                    key={seconds}
-                    label={`${seconds}s`}
-                    grouped
-                    lockedHint={t('setup.proOnly')}
-                    onPress={() => void openPaywall(t)}
-                  />
-                ))}
+                {proSeconds.map((seconds) =>
+                  isAllowed(seconds) ? (
+                    <Chip
+                      key={seconds}
+                      label={`${seconds}s`}
+                      grouped
+                      selected={clipSeconds === seconds}
+                      onPress={() => updateMode({ cutSeconds: seconds })}
+                    />
+                  ) : (
+                    <Chip
+                      key={seconds}
+                      label={`${seconds}s`}
+                      grouped
+                      lockedHint={t('setup.proOnly')}
+                      onPress={() => void openPaywall(t)}
+                    />
+                  ),
+                )}
                 <ProBadge label={t('setup.proBadge')} right={6} />
               </View>
-            )}
+            ) : null}
           </View>
         </View>
 
@@ -458,11 +476,15 @@ export default function Setup() {
             <Text style={styles.section}>{t('setup.quality')}</Text>
             <View style={styles.chips}>
               <Chip label={t('setup.qualityFullHd')} selected={!is4k} onPress={() => updateMode({ quality: '1080p60' })} />
-              {fourKAllowed ? (
+              {!showPro ? (
                 <Chip label={t('setup.quality4k')} selected={is4k} onPress={() => updateMode({ quality: '2160p30' })} />
               ) : (
                 <View style={styles.proGroup}>
-                  <Chip label={t('setup.quality4k')} grouped lockedHint={t('setup.proOnly')} onPress={() => void openPaywall(t)} />
+                  {fourKAllowed ? (
+                    <Chip label={t('setup.quality4k')} grouped selected={is4k} onPress={() => updateMode({ quality: '2160p30' })} />
+                  ) : (
+                    <Chip label={t('setup.quality4k')} grouped lockedHint={t('setup.proOnly')} onPress={() => void openPaywall(t)} />
+                  )}
                   <ProBadge label={t('setup.proBadge')} right={6} />
                 </View>
               )}
@@ -472,6 +494,34 @@ export default function Setup() {
         ) : null}
 
         <Text style={styles.section}>{t('setup.triggers')}</Text>
+        {/* The paid triggers (Bluetooth remote and watch) share one outline and one "Pro" badge on the free plan. */}
+        <View style={styles.proTriggers}>
+          {showPro ? <View pointerEvents="none" style={styles.proOutline} /> : null}
+          <View style={styles.gridRow}>
+            <TriggerTile
+              icon={<RemoteIcon />}
+              title={t('setup.bluetoothRemote')}
+              status={remoteView.statusText}
+              active={remoteReady && remoteAllowed}
+              lockedHint={remoteAllowed ? undefined : t('setup.proOnly')}
+              onPress={
+                remoteAllowed
+                  ? () => router.push({ pathname: '/devices', params: { kind: 'remote' } })
+                  : () => void openPaywall(t)
+              }
+            />
+            <TriggerTile
+              icon={<WatchIcon />}
+              title={sourceLabel('watch', locale)}
+              status={watchSupported ? watchStatus : t('setup.watchIosOnly')}
+              active={watchOn}
+              disabled={!watchSupported || (watchAllowed && watch === 'unsupported')}
+              lockedHint={watchLocked ? t('setup.watchProOnly') : undefined}
+              onPress={watchLocked ? () => void openPaywall(t) : undefined}
+            />
+          </View>
+          {showPro ? <ProBadge label={t('setup.proBadge')} top={-9} right={6} /> : null}
+        </View>
         <View style={styles.grid}>
           <View style={styles.gridRow}>
             <TriggerTile
@@ -493,31 +543,6 @@ export default function Setup() {
         </View>
 
         <View style={styles.triggerPlain}>
-          <View style={styles.gridRow}>
-            <View style={styles.tileSlot}>
-              <TriggerTile
-                icon={<RemoteIcon />}
-                title={t('setup.bluetoothRemote')}
-                status={remoteView.statusText}
-                active={remoteReady}
-                onPress={() => router.push({ pathname: '/devices', params: { kind: 'remote' } })}
-              />
-            </View>
-            {/* The watch is the one paid trigger: it carries its own outline and "Pro" badge. */}
-            <View style={styles.tileSlot}>
-              {watchLocked ? <View pointerEvents="none" style={styles.watchOutline} /> : null}
-              <TriggerTile
-                icon={<WatchIcon />}
-                title={sourceLabel('watch', locale)}
-                status={watchSupported ? watchStatus : t('setup.watchIosOnly')}
-                active={watchOn}
-                disabled={!watchSupported || (watchAllowed && watch === 'unsupported')}
-                lockedHint={watchLocked ? t('setup.watchProOnly') : undefined}
-                onPress={watchLocked ? () => void openPaywall(t) : undefined}
-              />
-              {watchLocked ? <ProBadge label={t('setup.proBadge')} top={-9} right={6} /> : null}
-            </View>
-          </View>
           {remoteSupported ? (
             <>
               <View style={styles.gridRow}>
@@ -652,8 +677,8 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   // The outline is drawn around the tiles, out in the sheet's side padding, so the tiles keep the width of the free ones.
-  tileSlot: { flex: 1, minWidth: 0, flexDirection: 'row' },
-  watchOutline: { position: 'absolute', top: -3, left: -3, right: -3, bottom: -3, borderWidth: 1, borderColor: colors.accent, borderRadius: 14 },
+  proTriggers: { marginTop: 8, marginBottom: 4 }, // room for the badge under the section title
+  proOutline: { position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderWidth: 1, borderColor: colors.accent, borderRadius: 15 },
   triggerPlain: { gap: 8 },
   grid: { gap: 8 },
   gridRow: { flexDirection: 'row', gap: 8 },

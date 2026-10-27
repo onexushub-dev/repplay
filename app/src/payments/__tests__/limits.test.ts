@@ -21,13 +21,15 @@ test('captureConfig paid: what the player chose', () => {
   expect(captureConfig({ ...court, quality: '720p30' }, 'paid').quality).toBe('720p30');
 });
 
-test('triggerAllowed: only the watch is paid; every other trigger is free', () => {
-  for (const s of ['screen', 'gesture', 'voice', 'remote', 'phone'] as const) {
+test('triggerAllowed: the watch and the Bluetooth remote are paid; every other trigger is free', () => {
+  for (const s of ['screen', 'gesture', 'voice', 'phone'] as const) {
     expect(triggerAllowed(s, 'free')).toBe(true);
     expect(triggerAllowed(s, 'paid')).toBe(true);
   }
-  expect(triggerAllowed('watch', 'free')).toBe(false);
-  expect(triggerAllowed('watch', 'paid')).toBe(true);
+  for (const s of ['watch', 'remote'] as const) {
+    expect(triggerAllowed(s, 'free')).toBe(false);
+    expect(triggerAllowed(s, 'paid')).toBe(true);
+  }
 });
 
 test('captureConfig free: a clip length shorter than 15 s is kept', () => {

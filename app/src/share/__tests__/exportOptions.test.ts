@@ -14,11 +14,11 @@ test('pro exports 1080x1920', () => {
   });
 });
 
-test('for now every export carries the app mark, on every plan', () => {
-  expect(WATERMARK_ON_EVERY_PLAN).toBe(true);
+test('the app mark goes on free exports only, never on Pro or a Pass', () => {
+  expect(WATERMARK_ON_EVERY_PLAN).toBe(false);
   expect(exportOptions('free', undefined, trim).watermark).toBe(true);
-  expect(exportOptions('pass', undefined, trim).watermark).toBe(true);
-  expect(exportOptions('pro', undefined, trim).watermark).toBe(true);
+  expect(exportOptions('pass', undefined, trim).watermark).toBe(false);
+  expect(exportOptions('pro', undefined, trim).watermark).toBe(false);
 });
 
 test('a free export keeps 1x speed whatever the clip says', () => {

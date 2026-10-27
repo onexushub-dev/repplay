@@ -7,6 +7,7 @@ import { addReplayListener, setScreenEconomy } from '../../modules/replay-camera
 import { VOICE_WORDS } from '../i18n';
 import { useT } from '../i18n/useT';
 import { removeFile, repo } from '../data/mmkv';
+import { triggerAllowed } from '../payments/limits';
 import { useSession } from '../session/SessionContext';
 import { useScreenEconomy } from '../session/useScreenEconomy';
 import { diag, diagFlags } from '../diag/diagLog'; // TEMP(diag-remote)
@@ -55,6 +56,8 @@ type Props = {
 
 export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false }: Props) {
   const { state, trigger, undoLast, stop, reset } = useSession();
+  // The Bluetooth remote is paid: it saves only in a game whose plan may use it.
+  const remoteOn = triggerAllowed('remote', state.paid ? 'paid' : 'free');
   const { t, locale } = useT();
   const [now, setNow] = useState(() => Date.now());
   const [dismissed, setDismissed] = useState<string>();
@@ -162,7 +165,7 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
     t('recording.lastReady', { seconds: clipSeconds }),
     ...(voice ? [t('recording.orSay', { word: VOICE_WORDS[locale][0] })] : []),
     ...(gesture ? [t('recording.orWave')] : []),
-    t('recording.orRemote'),
+    ...(remoteOn ? [t('recording.orRemote')] : []),
   ].join(' · ');
   const clips = t('summary.clips', { count: state.clipCount });
 
@@ -234,7 +237,7 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
               <View style={styles.icons}>
                 {voice ? <MicIcon color={colors.accent} size={20} /> : null}
                 {gesture ? <ArmsUpIcon color={colors.accent} size={20} /> : null}
-                <RemoteIcon color={colors.accent} size={20} />
+                <RemoteIcon color={remoteOn ? colors.accent : colors.muted} size={20} />
                 <WatchIcon color={colors.muted} size={20} />
               </View>
             </View>
