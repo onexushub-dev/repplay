@@ -96,9 +96,13 @@ final class FocusPathTests: XCTestCase {
 
   func test_spectatorsInTheStandsDoNotPullTheFraming() throws {
     // The stands are on the right of this video: without the still filter the mean centre is ~0.50, with it ~0.46.
+    // The width hold is off here: it opens this wide play to ~98% of the frame, and a crop that wide is centred
+    // whoever pulls it, so it would hide what this test checks. The hold of vanished people stays on (~0.47).
     let f = try loadFixture("landscape-basketball-stream")
+    var t = FocusTuning.standard
+    t.widthHoldMs = 0
     let rects = try XCTUnwrap(FocusPath.compute(samples: f.samples, videoWidth: f.width, videoHeight: f.height,
-                                                aspect: .landscape, zoom: true))
+                                                aspect: .landscape, zoom: true, tuning: t))
     let mean = rects.map { $0.x + $0.width / 2 }.reduce(0, +) / Double(rects.count)
     XCTAssertLessThan(mean, 0.48)
   }
@@ -139,5 +143,76 @@ final class FocusPathTests: XCTestCase {
     let rects = try XCTUnwrap(FocusPath.compute(samples: f.samples, videoWidth: f.width, videoHeight: f.height,
                                                 aspect: .portrait, zoom: false))
     for r in rects { XCTAssertEqual(r.height, 1, accuracy: 1e-9) }
+  }
+
+  // MARK: - Since 2026-10-27 (v13): hold of vanished people, width hold, lift 0, pan smoothing 600 ms
+
+  /// The Python port the framings were chosen with (docs/focus-refs/tools/focus_variant.py) wrote
+  /// Fixtures/focus-parity.json from these fixtures: the Swift must give the same rects.
+  func test_matchesThePortTheTuningWasChosenWith() throws {
+    let url = try XCTUnwrap(Bundle.module.url(forResource: "focus-parity", withExtension: "json", subdirectory: "Fixtures"))
+    let expected = try JSONDecoder().decode([String: [String: [[Double]]]].self, from: Data(contentsOf: url))
+    for name in fixtureNames {
+      let f = try loadFixture(name)
+      let want = try XCTUnwrap(expected[name], name)
+      for (aspect, zoom, rects) in try tracks(f) {
+        let rows = try XCTUnwrap(want[zoom ? "main" : "other"], "\(name) \(aspect)")
+        XCTAssertEqual(rects.count, rows.count, "\(name) \(aspect)")
+        for (i, (r, w)) in zip(rects, rows).enumerated() {
+          XCTAssertEqual(r.x, w[0], accuracy: 1e-9, "\(name) \(aspect) x at \(i)")
+          XCTAssertEqual(r.y, w[1], accuracy: 1e-9, "\(name) \(aspect) y at \(i)")
+          XCTAssertEqual(r.width, w[2], accuracy: 1e-9, "\(name) \(aspect) width at \(i)")
+          XCTAssertEqual(r.height, w[3], accuracy: 1e-9, "\(name) \(aspect) height at \(i)")
+        }
+      }
+    }
+  }
+
+  private func covers(_ r: FocusRect, _ cx: Double) -> Bool { r.x <= cx - 0.03 && r.x + r.width >= cx + 0.03 }
+
+  func test_somebodyTheDetectorKeepsLosingAtTheEdgeStaysInTheFrame() throws {
+    // A player walks around the middle; another, at the right edge, is found only every other half second.
+    let samples: [FocusSample] = (0..<80).map { (i: Int) -> FocusSample in
+      let walkerX: Double = 0.35 + 0.05 * sin(Double(i) / 8)
+      var boxes: [FocusBox] = [person(walkerX, 0.5)]
+      if (i / 5) % 2 == 0 { boxes.append(person(0.9, 0.5)) }
+      return FocusSample(tMs: Double(i) * 100, boxes: boxes)
+    }
+    let held = try XCTUnwrap(FocusPath.compute(samples: samples, videoWidth: 1920, videoHeight: 1080,
+                                               aspect: .landscape, zoom: true))
+    for i in 10..<70 { XCTAssertTrue(covers(held[i], 0.9), "at \(i)") }
+    // Without the hold the framing keeps dropping them (24 of these 60 samples).
+    var t = FocusTuning.standard
+    t.holdMs = 0
+    let dropped = try XCTUnwrap(FocusPath.compute(samples: samples, videoWidth: 1920, videoHeight: 1080,
+                                                  aspect: .landscape, zoom: true, tuning: t))
+    let droppedCount: Int = (10..<70).filter { (i: Int) -> Bool in !covers(dropped[i], 0.9) }.count
+    XCTAssertGreaterThan(droppedCount, 10)
+  }
+
+  func test_theCropOpensBeforeSomebodyArrivesAtTheEdge() throws {
+    // One player near the middle; at 5 s another comes in at the right edge and stays.
+    let samples: [FocusSample] = (0..<100).map { (i: Int) -> FocusSample in
+      let playerX: Double = 0.4 + 0.02 * sin(Double(i) / 6)
+      var boxes: [FocusBox] = [person(playerX, 0.5)]
+      if i >= 50 { boxes.append(person(0.9, 0.5)) }
+      return FocusSample(tMs: Double(i) * 100, boxes: boxes)
+    }
+    let rects = try XCTUnwrap(FocusPath.compute(samples: samples, videoWidth: 1920, videoHeight: 1080,
+                                                aspect: .landscape, zoom: true))
+    XCTAssertTrue(covers(rects[50], 0.9))
+    var t = FocusTuning.standard
+    t.widthHoldMs = 0
+    let late = try XCTUnwrap(FocusPath.compute(samples: samples, videoWidth: 1920, videoHeight: 1080,
+                                               aspect: .landscape, zoom: true, tuning: t))
+    XCTAssertFalse(covers(late[50], 0.9))
+  }
+
+  func test_theNewDefaults() {
+    let t = FocusTuning.standard
+    XCTAssertEqual(t.holdMs, 1000)
+    XCTAssertEqual(t.widthHoldMs, 1000)
+    XCTAssertEqual(t.lift, 0)
+    XCTAssertEqual(t.sigmaXMs, 600)
   }
 }

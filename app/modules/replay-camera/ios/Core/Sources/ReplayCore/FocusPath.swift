@@ -44,17 +44,24 @@ public struct FocusTuning {
   public var moveCap = 4.0
   public var spreadLow = 0.1
   public var spreadHigh = 0.9
-  public var sigmaXMs = 500.0
+  public var sigmaXMs = 600.0
   public var sigmaYMs = 800.0
   public var sigmaSizeMs = 1200.0
   /// Max pan: share of the frame width per second.
   public var maxPanPerSecond = 0.35
   public var spreadScale = 1.3
   public var spreadMargin = 0.15
-  /// The rect's centre sits this share of its height above the players' centre.
-  public var lift = 0.1
+  /// The rect's centre sits this share of its height above the players' centre. 0 since 2026-10-27: near players are
+  /// big in the frame and a lift cut their feet.
+  public var lift = 0.0
   /// Fewer samples with someone than this share: no framing.
   public var minPeopleShare = 0.2
+  /// Someone who vanished (the detector often misses a player at the edge of the picture) still counts where last seen
+  /// for this long, unless someone is found there again. 0 = off.
+  public var holdMs = 1000.0
+  /// The crop width is the widest needed within ± this window: it opens before someone reaches the edge and closes
+  /// only once the play has settled. 0 = off.
+  public var widthHoldMs = 1000.0
 
   public init() {}
   public static let standard = FocusTuning()
@@ -95,6 +102,7 @@ public enum FocusPath {
       people.append(keep)
     }
     if Double(people.filter { !$0.isEmpty }.count) < t.minPeopleShare * Double(n) { return nil }
+    if t.holdMs > 0 { people = held(people, samples: samples, W: W, H: H, holdMs: t.holdMs) }
 
     // 3–4. Weights and the target per sample.
     var cx = [Double?](repeating: nil, count: n), cy = cx, spread = cx
@@ -121,9 +129,9 @@ public enum FocusPath {
     for i in 1..<max(n, 1) { x[i] = x[i - 1] + min(max(x[i] - x[i - 1], -limit), limit) }
 
     // 6–7. Size and placement.
-    let widths: [Double] = zoom
-      ? gaussian(fill(spread).map { min(max($0 * t.spreadScale + t.spreadMargin, 1 / maxZoom), 1) }, sigma: t.sigmaSizeMs / step)
-      : Array(repeating: 1, count: n)
+    var wanted = fill(spread).map { min(max($0 * t.spreadScale + t.spreadMargin, 1 / maxZoom), 1) }
+    if zoom && t.widthHoldMs > 0 { wanted = windowMax(wanted, radius: Int((t.widthHoldMs / step).rounded())) }
+    let widths: [Double] = zoom ? gaussian(wanted, sigma: t.sigmaSizeMs / step) : Array(repeating: 1, count: n)
     let ratio = aspect.ratio
     return (0..<n).map { i -> FocusRect in
       var w = zoom ? widths[i] : min(1, ratio * H / W)
@@ -133,6 +141,33 @@ public enum FocusPath {
       let top = min(max(y[i] - t.lift * h - h / 2, 0), 1 - h)
       return FocusRect(x: left, y: top, width: w, height: h)
     }
+  }
+
+  /// People who vanished kept where last seen for `holdMs`, unless someone is found within a body length of them.
+  static func held(_ people: [[FocusBox]], samples: [FocusSample], W: Double, H: Double, holdMs: Double) -> [[FocusBox]] {
+    var out = people
+    var memory: [(box: FocusBox, seen: Double)] = []
+    for i in people.indices {
+      let now = samples[i].tMs
+      let centres = people[i].map { (x: $0.x + $0.width / 2, y: $0.y + $0.height / 2) }
+      var kept: [(box: FocusBox, seen: Double)] = []
+      for m in memory where now - m.seen <= holdMs {
+        let c = (x: m.box.x + m.box.width / 2, y: m.box.y + m.box.height / 2)
+        let reach = max(m.box.width * W, m.box.height * H)
+        if centres.contains(where: { hypot((c.x - $0.x) * W, (c.y - $0.y) * H) < reach }) { continue }
+        kept.append(m)
+        out[i].append(m.box)
+      }
+      memory = kept + people[i].map { (box: $0, seen: now) }
+    }
+    return out
+  }
+
+  /// Each value replaced by the largest within ± `radius` samples.
+  static func windowMax(_ values: [Double], radius: Int) -> [Double] {
+    guard radius > 0 else { return values }
+    let n = values.count
+    return (0..<n).map { i in values[max(0, i - radius)...min(n - 1, i + radius)].max()! }
   }
 
   static func median(_ values: [Double]) -> Double {
