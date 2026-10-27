@@ -1,13 +1,9 @@
-# Videos and dumps stay local (large); keep manifests, notes and tools.
-*.mp4
-*.mov
-*.webm
-*.png
-*.jpg
-raw-dump/
-bench-out/
-# Derived from the local clips (useless without them)
-*.focus.json
-*.probe.json
-# Scratch: contact sheets, exports, excluded clips
-misc/
+# Modo Foco test references. Videos, device dumps and anything derived from them stay local (GBs).
+# Allow-list: only this file, the clip manifests and the tools go to git; any new folder or file is ignored by default.
+*
+!.gitignore
+!clips/
+!clips/manifest.csv
+!clips/horizontal-app-export.json
+!tools/
+!tools/*
