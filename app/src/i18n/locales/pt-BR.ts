@@ -438,6 +438,7 @@ export const ptBR: Messages = {
     note: 'Nada ainda? Confira se o controle aparece como Conectado em Ajustes > Bluetooth. Funciona com controles de selfie (tecla de volume).',
     paired: 'Controle pareado',
     forgetA11y: 'Esquecer controle',
+    diagnostics: 'Diagnóstico', // TEMP(diag-remote)
     done: 'Pronto',
     statusConnected: 'Conectado',
     statusPaired: 'Pareado · aperte um botão',

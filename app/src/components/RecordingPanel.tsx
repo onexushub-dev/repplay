@@ -9,6 +9,7 @@ import { useT } from '../i18n/useT';
 import { removeFile, repo } from '../data/mmkv';
 import { useSession } from '../session/SessionContext';
 import { useScreenEconomy } from '../session/useScreenEconomy';
+import { diag, diagFlags } from '../diag/diagLog'; // TEMP(diag-remote)
 import { colors, fonts } from '../theme/tokens';
 import { Button } from './Button';
 import { HoldButton } from './HoldButton';
@@ -24,6 +25,12 @@ function qualityLabel(quality: string | undefined): string {
   if (quality === undefined) return '720p/30';
   const at = quality.indexOf('p');
   return at > 0 ? `${quality.slice(0, at + 1)}/${quality.slice(at + 1)}` : quality;
+}
+
+/** TEMP(diag-remote): the native screen economy, logged. */
+function setEconomy(on: boolean): void {
+  diag(on ? 'tela: escureceu (economia)' : 'tela: acendeu');
+  setScreenEconomy(on);
 }
 
 function clock(ms: number): string {
@@ -52,7 +59,9 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
   const last = state.lastSaved;
   // Screen economy (thermal work, item 2): dark after a while without a touch; any touch brings it back. The tap that
   // wakes the screen only wakes it (the player checking it still records), so it saves no clip; the triggers keep saving.
-  const economy = useScreenEconomy(state.phase === 'recording', state.thermal.level, setScreenEconomy);
+  // TEMP(diag-remote): the Diagnóstico screen can turn it off, to compare the remote with and without it.
+  const economyOn = state.phase === 'recording' && !diagFlags().economyOff;
+  const economy = useScreenEconomy(economyOn, state.thermal.level, setEconomy);
   const wakingTap = useRef(false);
   function onAnyTouch() {
     wakingTap.current = economy.asleep; // decided as the touch starts, before the screen wakes

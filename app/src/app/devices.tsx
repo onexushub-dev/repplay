@@ -95,6 +95,11 @@ export default function Devices() {
         ) : null}
 
         <Button label={t('devices.done')} variant={view.state === 'connected' ? 'primary' : 'secondary'} onPress={() => router.back()} />
+
+        {/* TEMP(diag-remote): link to the in-app diagnostic log. */}
+        <Pressable accessibilityRole="button" hitSlop={8} onPress={() => router.push('/diag')} style={styles.diag}>
+          <Text style={styles.diagText}>{t('devices.diagnostics')}</Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -130,4 +135,7 @@ const styles = StyleSheet.create({
   rowName: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text, flexShrink: 1 },
   forget: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'flex-end' },
   forgetText: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.warning },
+  // TEMP(diag-remote)
+  diag: { minHeight: 44, justifyContent: 'center', alignItems: 'center' },
+  diagText: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.soft, textDecorationLine: 'underline' },
 });

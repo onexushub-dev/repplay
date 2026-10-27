@@ -62,6 +62,12 @@ export function setScreenEconomy(on: boolean): void {
   if (typeof set === 'function') set.call(ReplayCameraModule, on);
 }
 
+/** TEMP(diag-remote): the audio session the Bluetooth remote depends on, in one line; empty where unsupported. */
+export function diagAudioState(): string {
+  const get = ReplayCameraModule.diagAudioState;
+  return typeof get === 'function' ? get.call(ReplayCameraModule) : '';
+}
+
 /** Short "saved" chime and/or two blinks of the rear torch, so a player far from the phone knows. */
 export function signalSaved({ sound, flash }: { sound: boolean; flash: boolean }): void {
   ReplayCameraModule.signalSaved(sound, flash);

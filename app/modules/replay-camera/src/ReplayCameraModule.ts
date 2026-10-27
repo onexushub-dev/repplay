@@ -29,6 +29,8 @@ declare class ReplayCameraModule extends NativeModule<ReplayCameraModuleEvents> 
   setZoom?(factor: number, animated: boolean): void;
   // Screen economy while recording (iOS only: missing on Android and in older builds).
   setScreenEconomy?(on: boolean): void;
+  // TEMP(diag-remote) (iOS only: missing on Android and in older builds).
+  diagAudioState?(): string;
   requestPermissions(): Promise<boolean>;
   signalSaved(sound: boolean, flash: boolean): void;
   signalSaveFailed(sound: boolean): void;

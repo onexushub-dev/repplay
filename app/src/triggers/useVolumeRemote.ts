@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
 import { VolumeManager } from 'react-native-volume-manager';
 
+import { diag } from '../diag/diagLog'; // TEMP(diag-remote): every diag() call in this file
+
 /** Where the volume is parked: room above and below, so any remote press changes it. */
 const PARK = 0.5;
 const TOLERANCE = 0.01;
@@ -47,21 +49,25 @@ export function useVolumeRemote(enabled: boolean, onPress: () => void): void {
 
     const listener = VolumeManager.addVolumeListener(({ volume }) => {
       if (!active) return;
+      const level = volume.toFixed(2);
       const away = AppState.currentState === 'background' || AppState.currentState === 'inactive';
       if (Date.now() < armedAt || away) {
+        diag(`controle: volume ${level} ignorado (${away ? 'app fora da tela' : 'armando'})`);
         parked = volume;
         return;
       }
       const echo = Date.now() - lastOwnSet < ECHO_MS || Math.abs(volume - parked) < TOLERANCE;
       if (echo) return;
+      diag(`controle: CLIQUE (volume ${level})`);
       onPressRef.current();
-      park().catch(() => {});
+      park().catch(() => diag('controle: FALHOU ao devolver o volume'));
     });
 
     const appState = AppState.addEventListener('change', (next) => {
       if (next === 'active') armedAt = Date.now() + ARM_MS;
     });
 
+    diag('controle: escutando');
     VolumeManager.showNativeVolumeUI({ enabled: false }).catch(() => {});
     VolumeManager.getVolume()
       .then(({ volume }) => {
@@ -73,6 +79,7 @@ export function useVolumeRemote(enabled: boolean, onPress: () => void): void {
       .catch(() => {});
 
     return () => {
+      diag('controle: parou de escutar');
       active = false;
       listener.remove();
       appState.remove();

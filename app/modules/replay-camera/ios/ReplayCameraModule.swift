@@ -96,7 +96,7 @@ public class ReplayCameraModule: Module {
 
     Events("onTrigger", "onThermalChange", "onInterrupted", "onResumed", "onError", "onGestureDebug", "onWatchStatus",
            "onRemoteStatus", "onRemoteState", "onRemoteResult", "onRemotePairing", "onRemoteStop",
-           "onRemoteStart", "onRemoteFrame", "onRemoteCheck")
+           "onRemoteStart", "onRemoteFrame", "onRemoteCheck", "onDiag") // onDiag: TEMP(diag-remote)
 
     OnCreate {
       self.engine.emit = { [weak self] name, body in self?.sendEvent(name, body) }
@@ -144,6 +144,9 @@ public class ReplayCameraModule: Module {
     Function("setScreenEconomy") { (on: Bool) in
       DispatchQueue.main.async { MainActor.assumeIsolated { ScreenEconomy.set(on) } }
     }
+
+    // TEMP(diag-remote): the audio session the volume remote depends on.
+    Function("diagAudioState") { () -> String in ReplayEngine.audioState() }
 
     Function("setGestureEnabled") { (enabled: Bool) in
       self.engine.gesture.enabled = enabled

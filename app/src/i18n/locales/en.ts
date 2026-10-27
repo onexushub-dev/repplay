@@ -440,6 +440,7 @@ export const en = {
     note: 'Nothing yet? Check that the remote shows as Connected in Settings > Bluetooth. Works with selfie remotes (volume key).',
     paired: 'Paired remote',
     forgetA11y: 'Forget remote',
+    diagnostics: 'Diagnostics', // TEMP(diag-remote)
     done: 'Done',
     statusConnected: 'Connected',
     statusPaired: 'Paired · press a button',

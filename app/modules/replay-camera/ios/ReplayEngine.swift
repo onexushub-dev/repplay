@@ -244,6 +244,57 @@ final class ReplayEngine {
     observers.append(center.addObserver(forName: AVCaptureSession.interruptionEndedNotification, object: capture.session, queue: nil) {
       [weak self] _ in self?.emit?("onResumed", [:])
     })
+    observeAudioForDiag(center) // TEMP(diag-remote)
+  }
+
+  // MARK: - TEMP(diag-remote): Bluetooth remote investigation, remove with its commit
+
+  /// One line for the in-app diagnostic log (`src/diag`), also in the device console as `[replay] diag`.
+  func diag(_ message: String) {
+    NSLog("[replay] diag %@", message)
+    emit?("onDiag", ["message": message])
+  }
+
+  /// The audio session as the volume remote depends on it: the remote is read through `outputVolume`.
+  static func audioState() -> String {
+    let s = AVAudioSession.sharedInstance()
+    let outputs = s.currentRoute.outputs.map { $0.portType.rawValue }.joined(separator: ",")
+    let inputs = s.currentRoute.inputs.map { $0.portType.rawValue }.joined(separator: ",")
+    let category = s.category.rawValue.replacingOccurrences(of: "AVAudioSessionCategory", with: "")
+    let mode = s.mode.rawValue.replacingOccurrences(of: "AVAudioSessionMode", with: "")
+    return String(format: "categoria %@, modo %@, volume %.2f, saída %@, entrada %@", category, mode, s.outputVolume,
+                  outputs.isEmpty ? "-" : outputs, inputs.isEmpty ? "-" : inputs)
+  }
+
+  private func observeAudioForDiag(_ center: NotificationCenter) {
+    observers.append(center.addObserver(forName: AVAudioSession.routeChangeNotification, object: nil, queue: nil) {
+      [weak self] note in
+      let raw = (note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? NSNumber)?.uintValue ?? 0
+      let reason = AVAudioSession.RouteChangeReason(rawValue: raw).map(Self.reasonName) ?? "\(raw)"
+      self?.diag("áudio: rota mudou (\(reason)) — \(Self.audioState())")
+    })
+    observers.append(center.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: nil) {
+      [weak self] note in
+      let raw = (note.userInfo?[AVAudioSessionInterruptionTypeKey] as? NSNumber)?.uintValue ?? 0
+      let began = AVAudioSession.InterruptionType(rawValue: raw) == .began
+      self?.diag("áudio: interrupção \(began ? "COMEÇOU" : "terminou") — \(Self.audioState())")
+    })
+    observers.append(center.addObserver(forName: AVAudioSession.mediaServicesWereResetNotification, object: nil, queue: nil) {
+      [weak self] _ in self?.diag("áudio: serviços de mídia REINICIADOS pelo iOS")
+    })
+  }
+
+  private static func reasonName(_ r: AVAudioSession.RouteChangeReason) -> String {
+    switch r {
+    case .newDeviceAvailable: return "novo dispositivo"
+    case .oldDeviceUnavailable: return "dispositivo saiu"
+    case .categoryChange: return "categoria mudou"
+    case .override: return "override"
+    case .wakeFromSleep: return "acordou"
+    case .noSuitableRouteForCategory: return "sem rota"
+    case .routeConfigurationChange: return "configuração"
+    default: return "desconhecido"
+    }
   }
 
   private static func thermalLevel() -> ThermalLevel {
@@ -290,6 +341,7 @@ final class ReplayEngine {
 
   /// Closes the writer and reopens the camera at `quality`; saves waiting on the old writer fail (the UI says so).
   private func restartCapture(quality: String) {
+    diag("câmera: reiniciando em \(quality) (calor) — \(Self.audioState())") // TEMP(diag-remote)
     capture.stop()
     capture.queue.async {
       self.failPendingSaves(.noSession)
@@ -301,6 +353,7 @@ final class ReplayEngine {
         }
         self.startWriter()
         self.capture.start()
+        self.diag("câmera: reiniciada em \(quality) — \(Self.audioState())") // TEMP(diag-remote)
       }
     }
   }

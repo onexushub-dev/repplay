@@ -92,6 +92,8 @@ export type ReplayCameraModuleEvents = {
   onThermalChange: (e: { level: ThermalLevel; degraded: boolean; quality?: string }) => void;
   onInterrupted: () => void;
   onResumed: () => void;
+  /** TEMP(diag-remote): one line for the in-app diagnostic log. iOS only. */
+  onDiag: (e: { message: string }) => void;
   onError: (e: { code: ReplayErrorCode; message: string }) => void;
   /** Diagnostic (Etapa 0): what the gesture detector saw in the last second. iOS only for now. */
   onGestureDebug: (e: GestureDebug) => void;

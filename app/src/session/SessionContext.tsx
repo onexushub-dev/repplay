@@ -9,6 +9,9 @@ import { triggerAllowed } from '../payments/limits';
 import { usePlan } from '../share/entitlement';
 import { focusQueue } from '../focus/appFocusQueue';
 import { focusHold } from '../focus/focusQueue';
+// TEMP(diag-remote)
+import { diag } from '../diag/diagLog';
+import { useSessionDiag } from '../diag/useSessionDiag';
 import { useVolumeRemote } from '../triggers/useVolumeRemote';
 import { type ReplaySession, type SessionDeps, useReplaySession } from './useReplaySession';
 import { useWatchTriggerGate } from './useWatchTriggerGate';
@@ -22,7 +25,11 @@ const appDeps: SessionDeps = {
   locale: currentLocale,
   startDecision: payments.startDecision,
   useRemote: useVolumeRemote,
-  onClipSaved: (clipId) => focusQueue.enqueue(clipId),
+  onClipSaved: (clipId) => {
+    const clip = repo.getClip(clipId);
+    diag(`clipe salvo (${clip ? clip.source : '?'})`); // TEMP(diag-remote)
+    focusQueue.enqueue(clipId);
+  },
 };
 
 const SessionContext = createContext<ReplaySession | null>(null);
@@ -30,6 +37,8 @@ const SessionContext = createContext<ReplaySession | null>(null);
 /** One game at a time, shared by setup, recording and end-of-game screens. */
 export function SessionProvider({ children }: { children: ReactNode }) {
   const session = useReplaySession(appDeps);
+  // TEMP(diag-remote): what each recording goes through, for the Diagnóstico screen.
+  useSessionDiag(session);
   // The watch trigger is paid: the recording's own plan decides (the next start's outside one), held for the whole of a
   // recording that has started.
   const recording = session.state.phase === 'recording';

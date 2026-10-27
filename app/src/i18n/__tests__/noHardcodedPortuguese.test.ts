@@ -12,6 +12,10 @@ const SKIP_DIRS = new Set(['__tests__', 'locales']);
 const ALLOWLIST = new Set([
   // Developer field-test screen for the camera module ("Not the product UI"), never linked from the app.
   'app/spike.tsx',
+  // TEMP(diag-remote) (for the team only): the diagnostic log and its screen.
+  'app/diag.tsx',
+  'diag/diagLog.ts',
+  'diag/useSessionDiag.ts',
 ]);
 const ACCENTED = /[À-ÿ]/;
 
