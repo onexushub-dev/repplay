@@ -8,6 +8,9 @@ final class SegmentWriter: NSObject, AVAssetWriterDelegate {
 
   let generation: Int
   let initSegmentURL: URL
+  /// The encoded picture, as the sensor delivers it (landscape): its short side is the clip's resolution.
+  let width: Int
+  let height: Int
   var onSegment: ((Segment, Int) -> Void)?
   var onFailure: ((Error?) -> Void)?
   /// Read once, at the first frame: the rotation players apply to this writer's video.
@@ -24,6 +27,8 @@ final class SegmentWriter: NSObject, AVAssetWriterDelegate {
   /// an input that never receives samples stalls the writer.
   init(width: Int, height: Int, fps: Int, withAudio: Bool, generation: Int) {
     self.generation = generation
+    self.width = width
+    self.height = height
     initSegmentURL = ReplayPaths.buffer.appendingPathComponent("init-\(generation).mp4")
     writer = AVAssetWriter(contentType: UTType(AVFileType.mp4.rawValue)!)
     writer.outputFileTypeProfile = .mpeg4AppleHLS
@@ -34,7 +39,7 @@ final class SegmentWriter: NSObject, AVAssetWriterDelegate {
       AVVideoWidthKey: width,
       AVVideoHeightKey: height,
       AVVideoCompressionPropertiesKey: [
-        AVVideoAverageBitRateKey: fps >= 60 ? 10_000_000 : 6_000_000,
+        AVVideoAverageBitRateKey: BufferPlan.videoBitRate(width: width, height: height, fps: fps),
         AVVideoMaxKeyFrameIntervalDurationKey: Self.segmentSeconds,
         AVVideoAllowFrameReorderingKey: false,
         AVVideoExpectedSourceFrameRateKey: fps,

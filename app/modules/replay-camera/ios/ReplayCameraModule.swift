@@ -124,7 +124,8 @@ public class ReplayCameraModule: Module {
     AsyncFunction("saveClip") { (o: SaveClipOptions, promise: Promise) in
       self.engine.saveClip(keepSeconds: o.keepMs / 1000) { result in
         switch result {
-        case .success(let clip): promise.resolve(["clipPath": clip.path, "durationMs": clip.durationMs])
+        case .success(let clip):
+          promise.resolve(["clipPath": clip.path, "durationMs": clip.durationMs, "shortSide": clip.shortSide])
         case .failure(let failure): promise.reject(ReplayException.from(failure))
         }
       }
@@ -147,6 +148,9 @@ public class ReplayCameraModule: Module {
 
     // TEMP(diag-remote): the audio session the volume remote depends on.
     Function("diagAudioState") { () -> String in ReplayEngine.audioState() }
+
+    // Whether this phone records a quality ("2160p30" = 4K) with the camera the app opens; asked before a game starts.
+    Function("supportsQuality") { (quality: String) -> Bool in CaptureController.supports(quality: quality) }
 
     Function("setGestureEnabled") { (enabled: Bool) in
       self.engine.gesture.enabled = enabled

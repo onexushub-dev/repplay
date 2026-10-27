@@ -35,7 +35,12 @@ final class CaptureController: NSObject, AVCaptureVideoDataOutputSampleBufferDel
     guard session.canAddInput(input) else { throw Failure.cannotAddInput }
     session.addInput(input)
     let target = Self.target(for: maxQuality)
-    try applyFormat(camera, width: target.width, fps: target.fps)
+    // A camera without that size (4K on an older phone or lens) records Full HD at the same rate instead.
+    if Self.has(camera, width: target.width, fps: target.fps) {
+      try applyFormat(camera, width: target.width, fps: target.fps)
+    } else {
+      try applyFormat(camera, width: 1920, fps: target.fps)
+    }
     applyZoom(animated: false) // a new format starts at factor 1, so the zoom goes on after it
 
     hasAudio = false
@@ -117,13 +122,29 @@ final class CaptureController: NSObject, AVCaptureVideoDataOutputSampleBufferDel
     }
   }
 
-  /// "1080p60" | "1080p30" | "720p30" (the hot-phone fallback) → frame width and rate.
+  /// "2160p30" (4K) | "1080p60" | "1080p30" | "720p30" (the hot-phone fallback) → frame width and rate.
   static func target(for quality: String) -> (width: Int32, fps: Double) {
     switch quality {
+    case "2160p30": return (3840, 30)
     case "1080p60": return (1920, 60)
     case "1080p30": return (1920, 30)
     default: return (1280, 30)
     }
+  }
+
+  /// A 16:9 format `width` wide that reaches `fps`.
+  private static func has(_ device: AVCaptureDevice, width: Int32, fps: Double) -> Bool {
+    device.formats.contains { f in
+      let d = CMVideoFormatDescriptionGetDimensions(f.formatDescription)
+      return d.width == width && d.height == width * 9 / 16 && f.videoSupportedFrameRateRanges.contains { $0.maxFrameRate >= fps }
+    }
+  }
+
+  /// Whether this phone records `quality` with the camera the app opens by default (the zoom camera); needs no session.
+  static func supports(quality: String) -> Bool {
+    let target = target(for: quality)
+    guard let device = camera(lens: "ultraWide", continuousZoom: true) else { return false }
+    return has(device, width: target.width, fps: target.fps)
   }
 
   /// The 16:9 format of `width` at `fps` when supported, else the best rate that format offers.

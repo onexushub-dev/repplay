@@ -108,3 +108,9 @@ test('freeLosses: what a free export drops, only if the clip had it', () => {
   expect(losses({ muted: false }, { v: 1, status: 'pending' } as Clip['focus']).focus).toBe(false);
   expect(freeLosses({ edit: { muted: false }, focus: undefined }).focus).toBe(false);
 });
+
+test('the export size: Full HD by default, 4K or 2K when picked, in the frame orientation', () => {
+  expect(exportOptions('pro', undefined, trim, true)).toMatchObject({ width: 1920, height: 1080 });
+  expect(exportOptions('pro', undefined, trim, true, undefined, 2160)).toMatchObject({ width: 3840, height: 2160 });
+  expect(exportOptions('pro', undefined, trim, false, undefined, 1440)).toMatchObject({ width: 1440, height: 2560 });
+});

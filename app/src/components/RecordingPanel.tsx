@@ -17,6 +17,8 @@ import { ArmsUpIcon, MicIcon, RemoteIcon, TapIcon, WatchIcon } from './icons';
 import { SavedOverlay } from './SavedOverlay';
 
 const OVERLAY_MS = 2000;
+/** How long the battery-saving notice stays up when a recording starts with it on. */
+const ECONOMY_NOTICE_MS = 5000;
 /** How long the heat tip stays up (thermal work, item 5). */
 const HEAT_TIP_MS = 8000;
 
@@ -60,7 +62,8 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
   // Screen economy (thermal work, item 2): dark after a while without a touch; any touch brings it back. The tap that
   // wakes the screen only wakes it (the player checking it still records), so it saves no clip; the triggers keep saving.
   // TEMP(diag-remote): the Diagnóstico screen can turn it off, to compare the remote with and without it.
-  const economyOn = state.phase === 'recording' && !diagFlags().economyOff;
+  // The player's choice on the setup screen (Economia de bateria); the Diagnóstico screen can also turn it off.
+  const economyOn = state.phase === 'recording' && repo.getPrefs().screenEconomy && !diagFlags().economyOff;
   const economy = useScreenEconomy(economyOn, state.thermal.level, setEconomy);
   const wakingTap = useRef(false);
   function onAnyTouch() {
@@ -72,6 +75,18 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
     const tick = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(tick);
   }, []);
+
+  // Battery saving on: say so when the recording starts, so a dark screen later is no surprise; gone by itself.
+  const [noticeFor, setNoticeFor] = useState<string>();
+  const [noticeGone, setNoticeGone] = useState<string>();
+  if (economyOn && state.sessionId !== undefined && noticeFor !== state.sessionId) setNoticeFor(state.sessionId);
+  useEffect(() => {
+    if (noticeFor === undefined) return;
+    const hide = setTimeout(() => setNoticeGone(noticeFor), ECONOMY_NOTICE_MS);
+    return () => clearTimeout(hide);
+  }, [noticeFor]);
+  const showEconomyNotice =
+    economyOn && !economy.asleep && noticeFor !== undefined && noticeFor === state.sessionId && noticeGone !== noticeFor;
 
   // Heat tip: the first time the phone gets warm in this recording, a few words on what helps; gone by itself.
   const warm = state.phase === 'recording' && state.thermal.level === 'fair' && !state.thermal.degraded;
@@ -185,6 +200,12 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
             </Text>
           </View>
         ) : null}
+        {showEconomyNotice ? (
+          <View pointerEvents="none" accessibilityRole="alert" testID="economy-notice" style={styles.notice}>
+            <Text style={styles.noticeTitle}>{t('recording.economyOnTitle')}</Text>
+            <Text style={styles.noticeBody}>{t('recording.economyOnBody')}</Text>
+          </View>
+        ) : null}
         {showTip ? (
           <View pointerEvents="none" style={styles.banner}>
             <Text style={styles.bannerText}>{t('recording.heatTip')}</Text>
@@ -260,6 +281,9 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   bannerText: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.text },
+  notice: { backgroundColor: 'rgba(15,16,13,0.82)', borderRadius: 14, paddingVertical: 10, paddingHorizontal: 14, alignItems: 'center', gap: 2 },
+  noticeTitle: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.text, textAlign: 'center' },
+  noticeBody: { fontFamily: fonts.body, fontSize: 12, lineHeight: 17, color: colors.soft, textAlign: 'center' },
   bold: { fontFamily: fonts.bodyBold },
   bottom: { marginTop: 'auto', gap: 8, marginBottom: 12 },
   hintCard: {

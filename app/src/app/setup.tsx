@@ -16,6 +16,7 @@ import {
   remoteHostControllers,
   ReplayCameraView,
   requestSpeechPermission,
+  supportsQuality,
 } from '../../modules/replay-camera';
 import type { RemotePeer, ReplayErrorCode } from '../../modules/replay-camera/src/ReplayCamera.types';
 import { useCameraPinch } from '../camera/useCameraPinch';
@@ -23,6 +24,8 @@ import { useDeviceLandscape } from '../camera/useDeviceLandscape';
 import { Button } from '../components/Button';
 import { Chip } from '../components/Chip';
 import { CompactDock } from '../components/CompactDock';
+import { EconomyButton } from '../components/EconomyButton';
+import { EconomyToast } from '../components/EconomyToast';
 import { modeTip } from '../components/format';
 import { sourceLabel } from '../components/sourceLabel';
 import { PositionGuide } from '../components/PositionGuide';
@@ -35,7 +38,7 @@ import { ZoomButton } from '../components/ZoomButton';
 import { repo } from '../data/mmkv';
 import { useStartPreview } from '../payments/useStartPreview';
 import { openPaywall } from '../payments/feedback';
-import { FREE_MAX_SECONDS, triggerAllowed } from '../payments/limits';
+import { FREE_MAX_SECONDS, qualityAllowed, triggerAllowed } from '../payments/limits';
 import { usePlan } from '../share/entitlement';
 import { type MessageKey, type TFunction, VOICE_WORDS, voiceLocale } from '../i18n';
 import { useT } from '../i18n/useT';
@@ -71,6 +74,9 @@ function cameraStatus(t: TFunction, host: { name: string } | null): string | und
   if (host === null) return undefined;
   return host.name.length > 0 ? t('setup.pairedWith', { name: host.name }) : t('setup.paired');
 }
+
+/** How long the battery-saving notice stays after a tap on its button. */
+const ECONOMY_TOAST_MS = 3000;
 
 export default function Setup() {
   const session = useSession();
@@ -169,6 +175,21 @@ export default function Setup() {
   const isAllowed = (seconds: number) => plan === 'paid' || seconds <= FREE_MAX_SECONDS;
   const lockedSeconds = CLIP_SECONDS_OPTIONS.filter((seconds) => !isAllowed(seconds));
   const clipSeconds = plan === 'paid' ? settings.cutSeconds : Math.min(settings.cutSeconds, FREE_MAX_SECONDS);
+  // 4K (30 fps) is paid and needs a camera that has it; the free plan records Full HD (60 fps) whatever was picked.
+  const [has4k] = useState(() => supportsQuality('2160p30'));
+  const fourKAllowed = qualityAllowed('2160p30', plan);
+  const is4k = has4k && fourKAllowed && settings.quality === '2160p30';
+  // Battery saving: the round button beside the zoom; each tap says for a moment what it now does.
+  const [economyToast, setEconomyToast] = useState(0);
+  useEffect(() => {
+    if (economyToast === 0) return;
+    const hide = setTimeout(() => setEconomyToast(0), ECONOMY_TOAST_MS);
+    return () => clearTimeout(hide);
+  }, [economyToast]);
+  const toggleEconomy = () => {
+    update({ screenEconomy: !prefs.screenEconomy });
+    setEconomyToast((n) => n + 1);
+  };
   // The phone remote (a second iPhone that taps Salvar for this one). The camera phone waits for its paired remotes for
   // as long as the app is open (see the root layout); pairing happens on its own sheet (/pairing).
   const [remoteSupported] = useState(() => isRemoteSupported());
@@ -230,6 +251,7 @@ export default function Setup() {
   const summary = t('setup.summary', {
     items: [
       t('setup.summaryClip', { seconds: clipSeconds }),
+      ...(is4k ? [t('setup.summary4k')] : []),
       t(voiceOn ? 'setup.summaryVoiceOn' : 'setup.summaryVoiceOff'),
       t(settings.gestureEnabled ? 'setup.summaryGestureOn' : 'setup.summaryGestureOff'),
       t(
@@ -314,6 +336,9 @@ export default function Setup() {
       <>
         {zoomRange.continuous ? <View testID="zoom-pinch" style={StyleSheet.absoluteFill} {...pinch} /> : null}
         {bubble ? <ZoomBubble value={zoom} bottom={(compact ? 72 : sheetHeight) + 16} /> : null}
+        {economyToast > 0 && !bubble ? (
+          <EconomyToast on={prefs.screenEconomy} bottom={(compact ? 72 : sheetHeight) + 16} />
+        ) : null}
         <View testID="guide-area" pointerEvents="none" style={[styles.guideArea, { bottom: compact ? 72 : sheetHeight }]}>
           <PositionGuide guide={mode.guide} />
         </View>
@@ -327,7 +352,10 @@ export default function Setup() {
               style={[styles.pill, styles.pillButton]}>
               <Text style={styles.pillText}>{t('setup.myRecordings')}</Text>
             </Pressable>
-            <ZoomButton value={zoom} onPress={cycleZoom} />
+            <View style={styles.cameraButtons}>
+              <EconomyButton on={prefs.screenEconomy} onPress={toggleEconomy} />
+              <ZoomButton value={zoom} onPress={cycleZoom} />
+            </View>
           </View>
           {mode.tip && !compact ? (
             <View style={styles.tip}>
@@ -424,6 +452,24 @@ export default function Setup() {
             )}
           </View>
         </View>
+
+        {has4k ? (
+          <View style={styles.clipLength}>
+            <Text style={styles.section}>{t('setup.quality')}</Text>
+            <View style={styles.chips}>
+              <Chip label={t('setup.qualityFullHd')} selected={!is4k} onPress={() => updateMode({ quality: '1080p60' })} />
+              {fourKAllowed ? (
+                <Chip label={t('setup.quality4k')} selected={is4k} onPress={() => updateMode({ quality: '2160p30' })} />
+              ) : (
+                <View style={styles.proGroup}>
+                  <Chip label={t('setup.quality4k')} grouped lockedHint={t('setup.proOnly')} onPress={() => void openPaywall(t)} />
+                  <ProBadge label={t('setup.proBadge')} right={6} />
+                </View>
+              )}
+            </View>
+            <Text style={styles.clipLengthHint}>{t(is4k ? 'setup.quality4kHint' : 'setup.qualityFullHdHint')}</Text>
+          </View>
+        ) : null}
 
         <Text style={styles.section}>{t('setup.triggers')}</Text>
         <View style={styles.grid}>
@@ -613,6 +659,7 @@ const styles = StyleSheet.create({
   gridRow: { flexDirection: 'row', gap: 8 },
   error: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.warning },
   startNote: { fontFamily: fonts.body, fontSize: 13, color: colors.soft, textAlign: 'center' },
+  cameraButtons: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   feedbackRow: {
     flexDirection: 'row',
     alignItems: 'center',

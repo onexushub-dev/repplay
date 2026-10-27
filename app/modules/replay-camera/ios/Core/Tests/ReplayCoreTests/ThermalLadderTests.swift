@@ -35,6 +35,12 @@ final class ThermalLadderTests: XCTestCase {
     XCTAssertEqual(ladder.update(state: .serious, now: 200 + ThermalLadder.holdBeforeNextStep), .reconfigure("720p30"))
   }
 
+  func test_4KStepsDownToFullHD30First() {
+    var ladder = ThermalLadder(requested: "2160p30", state: .nominal, now: 0)
+    XCTAssertEqual(ladder.update(state: .serious, now: 100), .reconfigure("1080p30"))
+    XCTAssertEqual(ladder.quality, "1080p30")
+  }
+
   func test_criticalStops() {
     var ladder = ThermalLadder(requested: "1080p60", state: .nominal, now: 0)
     XCTAssertEqual(ladder.update(state: .critical, now: 5), .stop)

@@ -316,6 +316,37 @@ test('a vertical clip is exported in a vertical frame', async () => {
   expect(camera.exportClip).toHaveBeenCalledWith(expect.objectContaining({ width: 1080, height: 1920 }));
 });
 
+test('a 4K clip asks how to leave: 2K exports at 2560 × 1440', async () => {
+  __setClip({ ...base, shortSide: 2160 });
+  await open();
+  await pressAction('Compartilhar');
+  expect(screen.getByText('Qualidade do vídeo')).toBeTruthy();
+  expect(camera.exportClip).not.toHaveBeenCalled();
+  // 30 s with no sound change: rough sizes per option.
+  expect(screen.getByRole('button', { name: '4K, original, 3840 × 2160, ≈ 150 MB' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Full HD, 1920 × 1080, ≈ 38 MB' })).toBeTruthy();
+  await pressAction('2K, 2560 × 1440, ≈ 68 MB');
+  // The overlay is redrawn at the new size (a frame later) before it is captured.
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
+  expect(camera.exportClip).toHaveBeenCalledWith(expect.objectContaining({ width: 2560, height: 1440 }));
+});
+
+test('Cancelar on the quality sheet exports nothing', async () => {
+  __setClip({ ...base, shortSide: 2160 });
+  await open();
+  await pressAction('Salvar na galeria');
+  await act(async () => fireEvent.press(screen.getAllByRole('button', { name: 'Cancelar' }).at(-1)!));
+  expect(camera.exportClip).not.toHaveBeenCalled();
+});
+
+test('a Full HD clip goes out as Full HD without asking', async () => {
+  __setClip({ ...base, shortSide: 1080 });
+  await open();
+  await pressAction('Compartilhar');
+  expect(screen.queryByText('Qualidade do vídeo')).toBeNull();
+  expect(camera.exportClip).toHaveBeenCalledWith(expect.objectContaining({ width: 1920, height: 1080 }));
+});
+
 test('Salvar na galeria asks for photo access and saves the export', async () => {
   await open();
   await pressAction('Salvar na galeria');

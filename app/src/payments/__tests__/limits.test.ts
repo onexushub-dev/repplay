@@ -1,6 +1,6 @@
 import type { ModeSettings } from '../../data/schema';
 import { modeById } from '../../modes/registry';
-import { canCompile, captureConfig, triggerAllowed } from '../limits';
+import { canCompile, captureConfig, qualityAllowed, triggerAllowed } from '../limits';
 
 const court = modeById('quadra').defaults;
 const gym: ModeSettings = { zoom: 1, gestureEnabled: false, voiceEnabled: true, bufferSeconds: 60, cutSeconds: 60, quality: '1080p30', audio: true };
@@ -37,4 +37,13 @@ test('captureConfig free: a clip length shorter than 15 s is kept', () => {
 test('compiling clips is paid', () => {
   expect(canCompile('free')).toBe(false);
   expect(canCompile('paid')).toBe(true);
+});
+
+test('4K is paid: the free plan records Full HD at 60 fps instead', () => {
+  const fourK: ModeSettings = { ...court, quality: '2160p30' };
+  expect(captureConfig(fourK, 'paid').quality).toBe('2160p30');
+  expect(captureConfig(fourK, 'free').quality).toBe('1080p60');
+  expect(qualityAllowed('2160p30', 'paid')).toBe(true);
+  expect(qualityAllowed('2160p30', 'free')).toBe(false);
+  expect(qualityAllowed('1080p60', 'free')).toBe(true);
 });

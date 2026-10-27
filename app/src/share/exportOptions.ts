@@ -1,6 +1,7 @@
 import type { Clip } from '../data/schema';
 import type { Plan } from '../payments/types';
 import { cropRect, readEdit } from './editing';
+import { type ShortSide, sideSize } from './exportSize';
 
 export type ExportOptions = {
   width: number;
@@ -40,10 +41,13 @@ export function exportOptions(
   trim: Clip['trim'],
   landscape = false,
   focus?: { path: string; ready: boolean },
+  /** The export's resolution (short side): Full HD unless a 4K clip is exported as 4K or 2K. */
+  side: ShortSide = 1080,
 ): ExportOptions {
   const paid = tier !== 'free';
-  const short = 1080;
-  const long = 1920;
+  const { width: frameWidth, height: frameHeight } = sideSize(side, true);
+  const short = frameHeight;
+  const long = frameWidth;
   const { speed: chosenSpeed, muted, zoom, rotation, focus: focusOn } = readEdit(edit);
   const speed = paid ? chosenSpeed : 1;
   const manualZoom = zoom !== undefined && zoom.scale > 1;

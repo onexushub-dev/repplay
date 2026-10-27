@@ -14,6 +14,7 @@ import type {
   VoiceLocale,
   WatchStatus,
   ZoomRange,
+  Quality,
 } from './ReplayCamera.types';
 
 // Native rejections carry `code` (a ReplayErrorCode), so callers can branch on it.
@@ -139,6 +140,13 @@ export function exportClip(opts: ExportClipOptions): Promise<ExportedClip> {
 // ---- Modo Foco (iOS only). Without the native functions there is no analysis.
 
 /** Whether this phone can analyse clips for Modo Foco. False on Android and web. */
+/** Whether this phone records `quality` (4K needs a camera that has it); Full HD always. */
+export function supportsQuality(quality: Quality): boolean {
+  if (quality !== '2160p30') return true;
+  const check = ReplayCameraModule.supportsQuality;
+  return typeof check === 'function' ? check.call(ReplayCameraModule, quality) : false;
+}
+
 export function isFocusSupported(): boolean {
   return typeof ReplayCameraModule.analyzeFocus === 'function';
 }

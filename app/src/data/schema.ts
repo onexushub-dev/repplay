@@ -57,6 +57,8 @@ export type Clip = {
   path: string;
   durationMs: number;
   trim: { startMs: number; endMs: number };
+  /** The video's resolution in pixels, its short side (2160 = 4K). Absent on Android and older clips: Full HD. */
+  shortSide?: number;
   /** Its place in the recording when saved; kept when earlier clips are deleted. Absent on older clips (their place in the list is used). */
   number?: number;
   /**
@@ -103,6 +105,8 @@ export type Prefs = {
   remoteTestedAt?: number;
   /** The Modo Foco introduction (the first framed clip) was shown. */
   focusIntroSeen?: boolean;
+  /** Battery saving while recording: the screen goes dark after a while without a touch (the recording goes on). */
+  screenEconomy: boolean;
   /** The player's changes to a mode's defaults, kept per mode. */
   modeSettings?: Partial<Record<ModeId, StoredModeSettings>>;
 };
@@ -115,6 +119,7 @@ export const DEFAULT_PREFS: Prefs = {
   soundOnSave: true,
   flashOnSave: true,
   voiceEnabled: false,
+  screenEconomy: true,
 };
 
 /** Default cut: the last 30s of the saved 60s window (spec 3.3). */

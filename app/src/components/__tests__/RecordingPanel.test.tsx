@@ -4,7 +4,11 @@ import { RecordingPanel as Recording } from '../RecordingPanel';
 
 jest.mock('expo-router', () => ({ router: { replace: jest.fn(), push: jest.fn() } }));
 jest.mock('../../data/mmkv', () => ({
-  repo: { listClips: jest.fn(() => [{ id: 'c1' }]), deleteSession: jest.fn(() => []) },
+  repo: {
+    listClips: jest.fn(() => [{ id: 'c1' }]),
+    deleteSession: jest.fn(() => []),
+    getPrefs: jest.fn(() => ({ screenEconomy: true })),
+  },
   removeFile: jest.fn(),
 }));
 jest.mock('../../../modules/replay-camera', () => ({
@@ -209,6 +213,38 @@ describe('screen economy', () => {
     expect(screen.queryByText('Toque na tela para salvar o clipe')).toBeNull();
     expect(setScreenEconomy).toHaveBeenLastCalledWith(true);
     jest.useRealTimers();
+  });
+
+  test('a recording that starts with battery saving on says so for a few seconds', async () => {
+    session({});
+    jest.useFakeTimers();
+    await render(<Recording />);
+    expect(screen.getByTestId('economy-notice')).toBeTruthy();
+    expect(screen.getByText('Economia de bateria ligada')).toBeTruthy();
+    expect(screen.getByText('A tela escurece depois de 20 segundos sem toque. Toque para acender.')).toBeTruthy();
+    await act(async () => jest.advanceTimersByTime(5000));
+    expect(screen.queryByTestId('economy-notice')).toBeNull();
+    jest.useRealTimers();
+  });
+
+  test('with battery saving off there is no notice', async () => {
+    session({});
+    repo.getPrefs.mockReturnValue({ screenEconomy: false });
+    await render(<Recording />);
+    expect(screen.queryByTestId('economy-notice')).toBeNull();
+    repo.getPrefs.mockReturnValue({ screenEconomy: true });
+  });
+
+  test('with Economia de bateria off on the setup screen the screen never goes dark', async () => {
+    session({});
+    repo.getPrefs.mockReturnValue({ screenEconomy: false });
+    jest.useFakeTimers();
+    await render(<Recording />);
+    await act(async () => jest.advanceTimersByTime(60_000));
+    expect(screen.queryByTestId('screen-economy')).toBeNull();
+    expect(setScreenEconomy).not.toHaveBeenCalledWith(true);
+    jest.useRealTimers();
+    repo.getPrefs.mockReturnValue({ screenEconomy: true });
   });
 
   test('the first tap while dark only wakes the screen: no clip is saved', async () => {

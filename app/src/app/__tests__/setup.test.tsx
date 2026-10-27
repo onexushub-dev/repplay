@@ -16,6 +16,8 @@ jest.mock('../../../modules/replay-camera', () => {
     getZoomRange: jest.fn(() => ({ min: 0.5, max: 5, continuous: true })),
     getDeviceUpright: jest.fn(() => 'portrait'),
     isRemoteSupported: jest.fn(() => false),
+    supportsQuality: jest.fn(() => true),
+    setScreenEconomy: jest.fn(),
     remoteControllerHost: jest.fn(() => null),
     remoteControllerForget: jest.fn(),
     remoteHostStart: jest.fn(),
@@ -50,6 +52,7 @@ jest.mock('../../data/mmkv', () => {
     soundOnSave: true,
     flashOnSave: true,
     voiceEnabled: false,
+    screenEconomy: true,
   };
   let prefs: any = { ...initial };
   return {
@@ -544,6 +547,70 @@ test('the collapsed summary mentions a ready watch, and only then', async () => 
 function freeTier() {
   jest.requireMock('../../share/entitlement').usePlan.mockReturnValue('free');
 }
+
+// ---- Video quality (Full HD / 4K) and battery saving
+
+test('4K is offered on a phone that has it, and picking it is saved for the mode and shown in the summary', async () => {
+  session({});
+  await render(<Setup />);
+  await openSettings();
+  expect(screen.getByText('QUALIDADE DO VÍDEO')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Full HD' }).props.accessibilityState).toMatchObject({ selected: true });
+  await fireEvent.press(screen.getByRole('button', { name: '4K' }));
+  expect(repo.setPrefs).toHaveBeenLastCalledWith({ modeSettings: { quadra: { quality: '2160p30' } } });
+  expect(screen.getByRole('button', { name: '4K' }).props.accessibilityState).toMatchObject({ selected: true });
+  expect(screen.getByText(/4K a 30 quadros por segundo/)).toBeTruthy();
+  // Closed again, the summary says so.
+  await fireEvent.press(screen.getByRole('button', { name: 'Fechar ajustes' }));
+  expect(screen.getByRole('button', { name: /em 4K/ })).toBeTruthy();
+});
+
+test('a phone without 4K shows no quality choice', async () => {
+  camera().supportsQuality.mockReturnValue(false);
+  session({});
+  await render(<Setup />);
+  await openSettings();
+  expect(screen.queryByText('QUALIDADE DO VÍDEO')).toBeNull();
+  camera().supportsQuality.mockReturnValue(true);
+});
+
+test('on the free tier 4K carries the Pro badge, opens the paywall and the game stays in Full HD', async () => {
+  freeTier();
+  repo.setPrefs({ modeSettings: { quadra: { quality: '2160p30' } } });
+  session({});
+  await render(<Setup />);
+  await openSettings();
+  expect(screen.getByRole('button', { name: 'Full HD' }).props.accessibilityState).toMatchObject({ selected: true });
+  await fireEvent.press(screen.getByRole('button', { name: '4K, Disponível no Pro' }));
+  expect(openPaywall).toHaveBeenCalledTimes(1);
+});
+
+test('battery saving sits beside the zoom: on by default, a tap turns it off and says what that means', async () => {
+  session({});
+  await render(<Setup />);
+  const button = screen.getByRole('switch', { name: 'Economia de bateria' });
+  expect(button.props.accessibilityState).toMatchObject({ checked: true });
+  expect(screen.queryByTestId('economy-toast')).toBeNull();
+  jest.useFakeTimers();
+  await fireEvent.press(button);
+  expect(repo.setPrefs).toHaveBeenLastCalledWith({ screenEconomy: false });
+  expect(screen.getByRole('switch', { name: 'Economia de bateria' }).props.accessibilityState).toMatchObject({ checked: false });
+  expect(screen.getByText('Economia de bateria desligada')).toBeTruthy();
+  expect(screen.getByText('A tela fica acesa durante a gravação.')).toBeTruthy();
+  // On again, the notice says so; then it goes away by itself.
+  await fireEvent.press(screen.getByRole('switch', { name: 'Economia de bateria' }));
+  expect(screen.getByText('Economia de bateria ligada')).toBeTruthy();
+  await act(async () => jest.advanceTimersByTime(3000));
+  expect(screen.queryByTestId('economy-toast')).toBeNull();
+  jest.useRealTimers();
+});
+
+test('the settings sheet no longer has its own battery row', async () => {
+  session({});
+  await render(<Setup />);
+  await openSettings();
+  expect(screen.queryByText('BATERIA')).toBeNull();
+});
 
 test('on the free tier the Relógio tile shows a Pro badge and opens the paywall', async () => {
   freeTier();

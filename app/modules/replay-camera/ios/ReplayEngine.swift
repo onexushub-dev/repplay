@@ -19,7 +19,8 @@ final class ReplayEngine {
   let voice = VoiceTrigger()
   var emit: ((String, [String: Any]) -> Void)?
 
-  typealias SaveResult = Result<(path: String, durationMs: Int), Failure>
+  /// `shortSide`: the saved video's resolution (1080 Full HD, 2160 4K).
+  typealias SaveResult = Result<(path: String, durationMs: Int, shortSide: Int), Failure>
 
   private struct PendingSave {
     let id: UUID
@@ -164,7 +165,7 @@ final class ReplayEngine {
         try ClipConcat.concat(initSegment: writer.initSegmentURL, segments: segments, to: joined)
       }
       try ClipConcat.normalize(joined, to: dest, rotationDegrees: rotationDegrees)
-      return .success((dest.path, Int(seconds * 1000)))
+      return .success((dest.path, Int(seconds * 1000), min(writer.width, writer.height)))
     } catch {
       try? FileManager.default.removeItem(at: dest)
       return .failure(.encoder(error))
