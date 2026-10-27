@@ -50,6 +50,7 @@ import { captureOverlay } from '../../share/captureOverlay';
 import { contentFloor, nextRotation, outputMs, raiseToFloor, readEdit, turnedSize } from '../../share/editing';
 import { clipWindow } from '../../share/trim';
 import { unlockRecording } from '../../payments/unlock';
+import { accessPlan } from '../../payments/rules';
 import { clipExportJob } from '../../share/clipExport';
 import { useViewPlan } from '../../share/entitlement';
 import { cachedExport, rememberExport } from '../../share/exportCache';
@@ -584,7 +585,8 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
 
   async function run(kind: ExportJob['kind'], action: (path: string) => Promise<void>) {
     if (exporting.current || !sizeKnown) return;
-    if (plan === 'free') {
+    // The free-plan notice says what the video loses: nothing while the field test unlocks it all (accessPlan).
+    if (accessPlan(plan) === 'free') {
       const choice = await freeGate.ask({ focus: focusActive, speed: edit.speed !== 1, sound: !edit.muted && edit.speed === 1 });
       if (choice === 'unlock') void unlockRecording(clip!.sessionId, t);
       if (choice !== 'go') return;

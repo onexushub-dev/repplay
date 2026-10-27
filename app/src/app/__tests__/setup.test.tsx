@@ -651,19 +651,32 @@ test('on the free tier picking 15s is free and saves it', async () => {
   expect(repo.setPrefs).toHaveBeenCalledWith({ modeSettings: { quadra: { cutSeconds: 15 } } });
 });
 
-test('on the free tier the Bluetooth and phone remote tiles are free: they open their screens, not the paywall', async () => {
+test('on the free tier the phone remote tiles are free: they open their screens, not the paywall', async () => {
   freeTier();
   camera().isRemoteSupported.mockReturnValue(true);
   session({});
   await render(<Setup />);
   await openSettings();
-  for (const title of ['Controle Bluetooth', 'Conectar um celular controle', 'Usar este celular como controle']) {
+  for (const title of ['Conectar um celular controle', 'Usar este celular como controle']) {
     router.push.mockClear?.();
     await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${title}`) }));
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('button', { name: new RegExp(`^${title}.*Disponível no Pro$`) })).toBeNull();
   }
   expect(openPaywall).not.toHaveBeenCalled();
+});
+
+test('on the free tier the Bluetooth remote tile is Pro: badge, paywall, and not counted as ready', async () => {
+  freeTier();
+  camera().isRemoteSupported.mockReturnValue(true);
+  session({});
+  await render(<Setup />);
+  expect(screen.getByRole('button', { name: /^Ajustes:/ }).props.accessibilityLabel).not.toMatch(/controle pareado/);
+  await openSettings();
+  router.push.mockClear?.();
+  await fireEvent.press(screen.getByRole('button', { name: /^Controle Bluetooth.*Disponível no Pro$/ }));
+  expect(openPaywall).toHaveBeenCalledTimes(1);
+  expect(router.push).not.toHaveBeenCalled();
 });
 
 test('on the free tier a locked watch is not counted as ready in the summary', async () => {

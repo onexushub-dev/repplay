@@ -15,6 +15,7 @@ import { clipNumber, dayAndTime, megabytes, modeLabel, recordedLabel, sessionLab
 import { removeFile, repo } from '../../data/mmkv';
 import { MAX_GAME_NAME } from '../../data/schema';
 import { unlockRecording } from '../../payments/unlock';
+import { accessPlan } from '../../payments/rules';
 import { useFreeExportGate } from '../../components/useFreeExportGate';
 import { useViewPlan } from '../../share/entitlement';
 import { freeLosses } from '../../share/exportOptions';
@@ -56,7 +57,8 @@ export default function SessionSummary() {
   // A free recording's clips leave without sound, Modo Foco and the app mark off: say so before saving or sending them.
   const freeGate = useFreeExportGate();
   const exportAfterNotice = async (clips: typeof pickedClips, go: (clips: typeof pickedClips) => Promise<void>) => {
-    if (plan === 'free') {
+    // Nothing is lost while the field test unlocks it all (accessPlan): no notice then.
+    if (accessPlan(plan) === 'free') {
       const choice = await freeGate.ask({
         focus: clips.some((c) => freeLosses(c).focus),
         speed: clips.some((c) => freeLosses(c).speed),
@@ -169,9 +171,16 @@ export default function SessionSummary() {
             {session ? (
               <Text style={styles.subtitle}>{`${modeLabel(session.sport, locale)} · ${dayAndTime(session.startedAt, undefined, locale)}`}</Text>
             ) : null}
-            <Text style={styles.title} accessibilityRole="header" numberOfLines={2}>
-              {session?.name ? sessionLabel(session, undefined, locale) : t('summary.ended')}
-            </Text>
+            {session?.name ? (
+              <Text style={styles.title} accessibilityRole="header" numberOfLines={2}>
+                {sessionLabel(session, undefined, locale)}
+              </Text>
+            ) : (
+              // Always one line: the font shrinks to fit narrow screens and long translations.
+              <Text style={styles.title} accessibilityRole="header" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
+                {t('summary.ended')}
+              </Text>
+            )}
           </View>
           {session && !selecting ? (
             <Pressable
@@ -349,8 +358,17 @@ const styles = StyleSheet.create({
   pickBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 32 },
   pickLink: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.accent },
   pickCount: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text },
-  headerTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerText: { flex: 1, minWidth: 0, gap: 4 },
-  deleteGame: { width: 44, height: 44, marginRight: -10, marginTop: -6, alignItems: 'center', justifyContent: 'center' },
+  deleteGame: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   buttons: { flexDirection: 'row', gap: 10 },
 });

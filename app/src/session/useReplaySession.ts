@@ -13,7 +13,7 @@ import type {
 import type { Repo } from '../data/repo';
 import type { ModeId, ModeSettings, Sport, TriggerSource } from '../data/schema';
 import { type AppLocale, voiceLocale } from '../i18n/locale';
-import { type CaptureConfig, captureConfig } from '../payments/limits';
+import { type CaptureConfig, captureConfig, triggerAllowed } from '../payments/limits';
 import { planOf } from '../payments/rules';
 import type { Plan, StartDecision } from '../payments/types';
 import { effectiveSettings } from '../modes/registry';
@@ -182,8 +182,9 @@ export function useReplaySession(deps: SessionDeps) {
     return () => sub.remove();
   }, [bus]);
 
-  // The Bluetooth remote is free: any game turns it on.
-  deps.useRemote(state.phase === 'recording', () => trigger('remote'));
+  // The Bluetooth remote is paid: it listens only in a game whose plan may use it (fixed at the game's start).
+  const remoteOn = state.phase === 'recording' && triggerAllowed('remote', state.paid ? 'paid' : 'free');
+  deps.useRemote(remoteOn, () => trigger('remote'));
 
   /**
    * Turns the camera on for `mode` with what `plan` allows (the free plan: 15 s at most).

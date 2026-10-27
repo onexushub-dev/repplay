@@ -1,4 +1,7 @@
+import { FIELD_TEST_UNLOCK_ALL } from './fieldTest';
 import { PASS_PRODUCT_ID, type PassTransaction, type Plan, type Snapshot, type StartDecision } from './types';
+
+export { FIELD_TEST_UNLOCK_ALL };
 
 export function availableCredit(snapshot: Snapshot, spent: ReadonlySet<string>): PassTransaction | undefined {
   return snapshot.passTransactions
@@ -10,8 +13,10 @@ export function creditCount(snapshot: Snapshot, spent: ReadonlySet<string>): num
   return snapshot.passTransactions.filter((t) => t.productId === PASS_PRODUCT_ID && !spent.has(t.id)).length;
 }
 
-/** TEMP(field-test): treats every user and session as paid so all features work on the free plan. Revert before release. */
-const FIELD_TEST_UNLOCK_ALL = true as boolean;
+/** What a plan may do: the plan itself, or everything (paid) while the field test unlocks it. Labels use the plan. */
+export function accessPlan(plan: Plan): Plan {
+  return FIELD_TEST_UNLOCK_ALL ? 'paid' : plan;
+}
 
 export const FREE_RECORDINGS_PER_MONTH = 3;
 
@@ -27,10 +32,10 @@ export function freeLeft(freeUsed: number): number {
 
 /** Decides "Começar gravação": Pro, else the oldest unused Pass, else the free plan while the month has room, else blocked. A credit is not spent with Pro. */
 export function startPlan(input: { proActive: boolean; credit?: PassTransaction; freeUsed: number }): StartDecision {
-  if (FIELD_TEST_UNLOCK_ALL) return { kind: 'pro' };
   if (input.proActive) return { kind: 'pro' };
   if (input.credit) return { kind: 'credit', passTransactionId: input.credit.id };
-  if (input.freeUsed < FREE_RECORDINGS_PER_MONTH) return { kind: 'free' };
+  // The field test never runs out of free recordings: the game is still a free one, with everything unlocked.
+  if (input.freeUsed < FREE_RECORDINGS_PER_MONTH || FIELD_TEST_UNLOCK_ALL) return { kind: 'free' };
   return { kind: 'blocked' };
 }
 
@@ -51,7 +56,6 @@ export function planOf(d: StartDecision): Plan {
 
 /** The plan a stored session ran with: an explicit `paid` wins, else a bound Pass means paid. */
 export function sessionPlan(s: { paid?: boolean; passTransactionId?: string }): Plan {
-  if (FIELD_TEST_UNLOCK_ALL) return 'paid';
   if (s.paid !== undefined) return s.paid ? 'paid' : 'free';
   return s.passTransactionId ? 'paid' : 'free';
 }

@@ -303,7 +303,7 @@ test('Compartilhar exports with the cut, speed and zoom, without the app mark on
     expect.objectContaining({
       clipPath: '/c1.mp4', startMs: 30000, endMs: 60000, speed: 2, muted: true,
       crop: { x: 0, y: 0.5, width: 0.5, height: 0.5 },
-      width: 1920, height: 1080, overlayPngPath: '/tmp/overlay.png', watermark: true,
+      width: 1920, height: 1080, overlayPngPath: '/tmp/overlay.png', watermark: false,
     }),
   );
   expect(sharing.shareAsync).toHaveBeenCalledWith('file:///exports/e1.mp4', expect.objectContaining({ mimeType: 'video/mp4' }));

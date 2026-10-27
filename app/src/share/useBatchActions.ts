@@ -8,6 +8,7 @@ import type { Clip } from '../data/schema';
 import { repo } from '../data/mmkv';
 import { useT } from '../i18n/useT';
 import { openPaywall } from '../payments/feedback';
+import { canCompile } from '../payments/limits';
 import type { Plan } from '../payments/types';
 import { type BatchResult, runBatch } from './batchExport';
 import { clipShapeOf, compilationOrientation } from './clipExport';
@@ -140,7 +141,7 @@ export function useBatchActions(o: { plan: Plan; labelOf: (clip: Clip) => string
 
   const compile = async (clips: Clip[]) => {
     if (job !== undefined) return;
-    if (o.plan !== 'paid') {
+    if (!canCompile(o.plan)) {
       await openPaywall(t);
       return;
     }

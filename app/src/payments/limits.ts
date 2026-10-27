@@ -1,5 +1,6 @@
 import type { Quality, TriggerSource } from '../../modules/replay-camera/src/ReplayCamera.types';
 import type { ModeSettings } from '../data/schema';
+import { accessPlan } from './rules';
 import type { Plan } from './types';
 
 /** The free plan records at most this much per clip. */
@@ -13,7 +14,7 @@ export type CaptureConfig = { quality: Quality; bufferSeconds: number; cutSecond
  * made. The 15 s ceiling cannot be given back later, so it stays at capture.
  */
 export function captureConfig(settings: ModeSettings, plan: Plan): CaptureConfig {
-  if (plan === 'paid') {
+  if (accessPlan(plan) === 'paid') {
     return { quality: settings.quality, bufferSeconds: settings.bufferSeconds, cutSeconds: settings.cutSeconds, audio: settings.audio };
   }
   return {
@@ -27,17 +28,17 @@ export function captureConfig(settings: ModeSettings, plan: Plan): CaptureConfig
 
 /** Recording in 4K is paid. */
 export function qualityAllowed(quality: Quality, plan: Plan): boolean {
-  return plan === 'paid' || quality !== '2160p30';
+  return accessPlan(plan) === 'paid' || quality !== '2160p30';
 }
 
-/** The watch is the only paid trigger: voice, gesture, screen, Bluetooth remote and phone remote are free. */
-export const PAID_TRIGGERS: readonly TriggerSource[] = ['watch'];
+/** The paid triggers: the watch and the Bluetooth remote. Voice, gesture, screen and the phone remote are free. */
+export const PAID_TRIGGERS: readonly TriggerSource[] = ['watch', 'remote'];
 
 export function triggerAllowed(source: TriggerSource, plan: Plan): boolean {
-  return plan === 'paid' || !PAID_TRIGGERS.includes(source);
+  return accessPlan(plan) === 'paid' || !PAID_TRIGGERS.includes(source);
 }
 
 /** Compiling several clips into one video is paid. */
 export function canCompile(plan: Plan): boolean {
-  return plan === 'paid';
+  return accessPlan(plan) === 'paid';
 }

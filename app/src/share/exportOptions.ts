@@ -1,6 +1,7 @@
 import type { Clip } from '../data/schema';
 import type { Plan } from '../payments/types';
 import { cropRect, readEdit } from './editing';
+import { accessPlan } from '../payments/rules';
 import { type ShortSide, sideSize } from './exportSize';
 
 export type ExportOptions = {
@@ -30,10 +31,10 @@ type Tier = Plan | 'pass' | 'pro';
  * when on, ready, not turned and not zoomed by hand.
  */
 /**
- * For now every clip carries the Repplay mark, on every plan (decided 2026-10-27; which plans drop it comes later).
- * false brings back the rule: free with the mark, paid without.
+ * true: every clip carries the Repplay mark, on every plan. false (the rule since 2026-10-27): only free recordings
+ * carry it, Pro and the Single Pass never do.
  */
-export const WATERMARK_ON_EVERY_PLAN = true as boolean;
+export const WATERMARK_ON_EVERY_PLAN = false as boolean;
 
 export function exportOptions(
   tier: Tier,
@@ -44,7 +45,8 @@ export function exportOptions(
   /** The export's resolution (short side): Full HD unless a 4K clip is exported as 4K or 2K. */
   side: ShortSide = 1080,
 ): ExportOptions {
-  const paid = tier !== 'free';
+  // What the export may carry (the field test unlocks it all); the screens still label the plan as it is.
+  const paid = tier !== 'free' || accessPlan('free') === 'paid';
   const { width: frameWidth, height: frameHeight } = sideSize(side, true);
   const short = frameHeight;
   const long = frameWidth;
@@ -61,7 +63,8 @@ export function exportOptions(
     muted: muted || speed !== 1 || !paid,
     crop: zoom && zoom.scale > 1 ? cropRect(zoom) : undefined,
     rotation,
-    watermark: WATERMARK_ON_EVERY_PLAN || !paid,
+    // The mark follows the plan as it is, also during the field test: it is the release look, not a locked feature.
+    watermark: WATERMARK_ON_EVERY_PLAN || tier === 'free',
     ...(follow ? { focus: { path: focus.path, aspect: landscape ? ('landscape' as const) : ('portrait' as const) } } : {}),
   };
 }
