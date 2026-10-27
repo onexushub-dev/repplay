@@ -129,16 +129,17 @@ final class ReplayEngine {
     }
   }
 
-  /// Waits for the in-progress segment (the one holding the trigger) to close, then copies the window.
+  /// Waits for the in-progress segment (the one holding the trigger) to close, then copies the last `keepSeconds` of the
+  /// window (whole 1 s segments, so a little more; 0 or more than the window = the whole window).
   /// `completion` is called exactly once.
-  func saveClip(completion: @escaping (SaveResult) -> Void) {
+  func saveClip(keepSeconds: Double = 0, completion: @escaping (SaveResult) -> Void) {
     guard running else { return completion(.failure(.noSession)) }
     let id = UUID()
     // The phone's position at the moment of the play, not the one the session started with.
     let rotation = gesture.currentUpright().videoRotationDegrees
     let pending = PendingSave(id: id, run: { [weak self] writer in
       guard let self else { return }
-      self.saveQueue.async { completion(self.copyClip(using: writer, rotationDegrees: rotation)) }
+      self.saveQueue.async { completion(self.copyClip(using: writer, rotationDegrees: rotation, keepSeconds: keepSeconds)) }
     }, fail: { completion(.failure($0)) })
 
     capture.queue.async {
@@ -152,13 +153,14 @@ final class ReplayEngine {
   }
 
   /// Runs on `saveQueue`; the ring pins the copied segments, so capture keeps going meanwhile.
-  private func copyClip(using writer: SegmentWriter, rotationDegrees: Int) -> SaveResult {
+  private func copyClip(using writer: SegmentWriter, rotationDegrees: Int, keepSeconds: Double) -> SaveResult {
     // Outside the buffer dir, so the buffer's disk size measures the ring alone.
     let joined = FileManager.default.temporaryDirectory.appendingPathComponent("save-\(UUID().uuidString).mp4")
     let dest = ReplayPaths.clips.appendingPathComponent("\(UUID().uuidString).mp4")
     defer { try? FileManager.default.removeItem(at: joined) }
     do {
-      let seconds = try ring.copyClip(lastSeconds: self.windowSeconds, to: joined) { segments, joined in
+      let lastSeconds = keepSeconds > 0 ? min(keepSeconds, self.windowSeconds) : self.windowSeconds
+      let seconds = try ring.copyClip(lastSeconds: lastSeconds, to: joined) { segments, joined in
         try ClipConcat.concat(initSegment: writer.initSegmentURL, segments: segments, to: joined)
       }
       try ClipConcat.normalize(joined, to: dest, rotationDegrees: rotationDegrees)

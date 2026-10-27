@@ -18,6 +18,8 @@ class SessionOptions : Record {
 class SaveClipOptions : Record {
   @Field val source: String = "screen"
   @Field val at: Double = 0.0
+  /** How much of the buffer the file keeps, from its end; 0 = the whole buffer (older callers). */
+  @Field val keepMs: Double = 0.0
 }
 
 class ExportClipOptions : Record {
@@ -52,8 +54,9 @@ class ReplayCameraModule : Module() {
       ReplayEngine.stop { promise.resolve(null) }
     }
 
-    AsyncFunction("saveClip") { _: SaveClipOptions, promise: Promise ->
+    AsyncFunction("saveClip") { o: SaveClipOptions, promise: Promise ->
       ReplayEngine.saveClip(
+        keepSeconds = o.keepMs / 1000,
         onDone = { path, ms -> promise.resolve(mapOf("clipPath" to path, "durationMs" to ms)) },
         onError = promise::reject,
       )

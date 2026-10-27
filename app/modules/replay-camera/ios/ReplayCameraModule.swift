@@ -12,6 +12,8 @@ struct SessionOptions: Record {
 struct SaveClipOptions: Record {
   @Field var source: String = "screen"
   @Field var at: Double = 0
+  /// How much of the buffer the file keeps, from its end; 0 = the whole buffer (older callers).
+  @Field var keepMs: Double = 0
 }
 
 final class ReplayException: Exception, @unchecked Sendable {
@@ -119,8 +121,8 @@ public class ReplayCameraModule: Module {
       self.engine.stop { promise.resolve(nil) }
     }
 
-    AsyncFunction("saveClip") { (_: SaveClipOptions, promise: Promise) in
-      self.engine.saveClip { result in
+    AsyncFunction("saveClip") { (o: SaveClipOptions, promise: Promise) in
+      self.engine.saveClip(keepSeconds: o.keepMs / 1000) { result in
         switch result {
         case .success(let clip): promise.resolve(["clipPath": clip.path, "durationMs": clip.durationMs])
         case .failure(let failure): promise.reject(ReplayException.from(failure))

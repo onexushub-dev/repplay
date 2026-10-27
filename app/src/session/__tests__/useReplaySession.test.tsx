@@ -75,7 +75,7 @@ test('trigger saves a clip and records it in the repo', async () => {
   const { view, camera, deps, finishSave } = await started();
 
   await act(async () => view.result.current.trigger('screen'));
-  expect(camera.saveClip).toHaveBeenCalledWith({ source: 'screen', at: 1000 });
+  expect(camera.saveClip).toHaveBeenCalledWith({ source: 'screen', at: 1000, keepMs: 5000 }); // the 3 s minimum cut + 2 s
   await act(async () => finishSave());
 
   const sessionId = view.result.current.state.sessionId!;
@@ -100,7 +100,7 @@ test('native onTrigger goes through the bus', async () => {
   await act(async () => emit('onTrigger', { source: 'gesture', at: 1 }));
   await act(async () => finishSave());
 
-  expect(camera.saveClip).toHaveBeenCalledWith({ source: 'gesture', at: 1000 + SETTLE_MS });
+  expect(camera.saveClip).toHaveBeenCalledWith({ source: 'gesture', at: 1000 + SETTLE_MS, keepMs: 5000 });
   expect(view.result.current.state.lastSaved?.source).toBe('gesture');
 });
 
@@ -381,6 +381,31 @@ test('each clip is cut to the chosen length, but never back past the previous cl
   ]);
 });
 
+test('a save keeps only its cut and a 2 s margin of the buffer, and the cuts stay the same (30s: 0:30, 0:45, 1:30)', async () => {
+  const f = fakeDeps();
+  f.startDecision.mockResolvedValue({ kind: 'pro' });
+  const view = await renderHook(() => useReplaySession(f.deps));
+  await act(() => view.result.current.start('quadra'));
+
+  // The native side copies about `keepMs` (whole segments), or the whole buffer when it holds less.
+  await saveAfter(f, view, 30_000, 30_000); // 0:30 → 30s cut; only 30s recorded so far
+  await saveAfter(f, view, 15_000, 17_000); // 0:45 → 15s cut, 17s file
+  await saveAfter(f, view, 45_000, 32_000); // 1:30 → 30s cut, 32s file
+
+  expect(f.camera.saveClip.mock.calls.map((c: unknown[]) => (c[0] as { keepMs: number }).keepMs)).toEqual([
+    32_000, 17_000, 32_000,
+  ]);
+  expect(trims(f, view)).toEqual([
+    { startMs: 0, endMs: 30_000 },
+    { startMs: 2_000, endMs: 17_000 },
+    { startMs: 2_000, endMs: 32_000 },
+  ]);
+  const clips = f.deps.repo.listClips(view.result.current.state.sessionId!);
+  expect(clips.map((c) => c.trim.endMs - c.trim.startMs)).toEqual([30_000, 15_000, 30_000]);
+  // The editor never reaches the margin: the bounds are the cut.
+  expect(clips.map((c) => c.bounds)).toEqual(clips.map((c) => c.trim));
+});
+
 test('the saved state carries the length the clip really got, for the popup', async () => {
   const f = fakeDeps();
   const view = await renderHook(() => useReplaySession(f.deps));
@@ -536,7 +561,7 @@ test('a tap on the remote phone saves a clip with the phone as source', async ()
   const { view, camera, emit, finishSave } = await started();
   await act(async () => emit('onTrigger', { source: 'phone', at: 1 }));
   await act(async () => finishSave());
-  expect(camera.saveClip).toHaveBeenCalledWith({ source: 'phone', at: 1000 });
+  expect(camera.saveClip).toHaveBeenCalledWith({ source: 'phone', at: 1000, keepMs: 5000 });
   expect(view.result.current.state.lastSaved?.source).toBe('phone');
 });
 
@@ -1001,7 +1026,7 @@ test('right after the recording starts, a gesture, voice or volume press saves n
   expect(camera.saveClip).not.toHaveBeenCalled();
   advance(100);
   await act(async () => view.result.current.trigger('screen'));
-  expect(camera.saveClip).toHaveBeenCalledWith({ source: 'screen', at: 1100 });
+  expect(camera.saveClip).toHaveBeenCalledWith({ source: 'screen', at: 1100, keepMs: 5000 });
 });
 
 test('a saved clip is handed over for the Modo Foco analysis', async () => {

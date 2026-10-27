@@ -138,8 +138,11 @@ object ReplayEngine {
     startPipeline(onReady = { emit?.invoke("onResumed", emptyMap()) }) { fail(it) }
   }
 
-  /** Forces a segment cut at the trigger, then copies the window once that segment is closed. Settles exactly once. */
-  fun saveClip(onDone: (String, Int) -> Unit, onError: (CodedException) -> Unit) = post {
+  /**
+   * Forces a segment cut at the trigger, then copies the last `keepSeconds` of the window once that segment is closed
+   * (0 or more than the window = the whole window). Settles exactly once.
+   */
+  fun saveClip(keepSeconds: Double = 0.0, onDone: (String, Int) -> Unit, onError: (CodedException) -> Unit) = post {
     val enc = encoder
     val ctx = context
     if (!wanted || enc == null || ctx == null) return@post onError(ReplayException("NO_SESSION", "No replay session is running"))
@@ -148,7 +151,8 @@ object ReplayEngine {
       saveExecutor.execute {
         val dest = File(ReplayPaths.clips(ctx), "$id.mp4")
         try {
-          val seconds = ring.copyClip(windowSeconds, dest, ClipConcat::concat)
+          val lastSeconds = if (keepSeconds > 0) minOf(keepSeconds, windowSeconds) else windowSeconds
+          val seconds = ring.copyClip(lastSeconds, dest, ClipConcat::concat)
           onDone(dest.path, (seconds * 1000).toInt())
         } catch (t: Throwable) {
           dest.delete()

@@ -19,7 +19,7 @@ import type { Plan, StartDecision } from '../payments/types';
 import { effectiveSettings } from '../modes/registry';
 import { clampZoom, lensFor } from '../modes/zoom';
 import { createTriggerBus } from '../triggers/bus';
-import { cutMsFor } from './cut';
+import { cutMsFor, keepMsFor } from './cut';
 import { initialState, reducer } from './reducer';
 
 /** Everything the session talks to, injected so the logic runs in tests without native code. */
@@ -106,7 +106,7 @@ export function useReplaySession(deps: SessionDeps) {
       const clipSeconds = cutSeconds.current;
       const cutMs = cutMsFor(clipSeconds, at, floors.length > 0 ? floors[floors.length - 1] : at - clipSeconds * 1000);
       try {
-        const saved = await deps.camera.saveClip({ source, at });
+        const saved = await deps.camera.saveClip({ source, at, keepMs: keepMsFor(cutMs) });
         const clip = deps.repo.addClip({
           sessionId,
           createdAt: at,

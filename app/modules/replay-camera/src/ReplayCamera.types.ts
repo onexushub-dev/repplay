@@ -28,7 +28,12 @@ export type DeviceUpright = 'portrait' | 'portraitUpsideDown' | 'landscapeLeft' 
 
 export type ZoomRange = { min: number; max: number; continuous: boolean };
 /** `at` = ms since epoch when the trigger happened. */
-export type SaveClipOptions = { source: TriggerSource; at: number };
+export type SaveClipOptions = {
+  source: TriggerSource;
+  at: number;
+  /** How much of the buffer the file keeps, from its end (the clip's cut plus a margin); absent = the whole buffer. */
+  keepMs?: number;
+};
 export type SavedClip = { clipPath: string; durationMs: number };
 
 /** Apple Watch link: no paired watch · paired without the Repplay app · ready. */
