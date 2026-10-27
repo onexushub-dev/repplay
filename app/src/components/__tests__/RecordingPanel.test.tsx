@@ -82,7 +82,7 @@ test('holding the footer ends the game and opens its summary', async () => {
   await act(async () => jest.advanceTimersByTime(1000));
   jest.useRealTimers();
   expect(s.stop).toHaveBeenCalled();
-  expect(router.replace).toHaveBeenCalledWith('/session/s1');
+  expect(router.push).toHaveBeenCalledWith('/session/s1');
 });
 
 test('a hot phone shows the heat banner', async () => {
@@ -114,7 +114,7 @@ test('a native error says recording stopped and offers the saved clipes', async 
   await render(<Recording />);
   expect(screen.getByText('A gravação parou: celular muito quente')).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: 'Ver clipes' }));
-  expect(router.replace).toHaveBeenCalledWith('/session/s1');
+  expect(router.push).toHaveBeenCalledWith('/session/s1');
 });
 
 test('a clipe saved by voice says so', async () => {
@@ -149,7 +149,7 @@ test('a remote phone asking to end the recording ends it like the hold button do
   const ask = calls.filter((c: any[]) => c[0] === 'onRemoteStop').pop()[1];
   await act(async () => ask());
   expect(s.stop).toHaveBeenCalledTimes(1);
-  expect(router.replace).toHaveBeenCalledWith('/session/s1');
+  expect(router.push).toHaveBeenCalledWith('/session/s1');
 });
 
 test('a stop asked outside a recording is ignored', async () => {
@@ -181,7 +181,7 @@ describe('a recording without any clip', () => {
     expect(repo.deleteSession).toHaveBeenCalledWith('s1');
     expect(s.reset).toHaveBeenCalled();
     expect(router.push).toHaveBeenCalledWith('/games');
-    expect(router.replace).not.toHaveBeenCalled();
+    expect(router.push).not.toHaveBeenCalledWith('/session/s1');
     repo.listClips.mockReturnValue([{ id: 'c1' }]);
   });
 

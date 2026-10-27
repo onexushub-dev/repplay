@@ -482,6 +482,19 @@ test('a remote press while collapsed shows the remote works', async () => {
   expect(screen.getByRole('button', { name: /controle conectado$/ })).toBeTruthy();
 });
 
+test('a remote paired in an earlier launch shows on, like the recording screen', async () => {
+  const { StyleSheet } = jest.requireActual('react-native');
+  const { colors } = jest.requireActual('../../theme/tokens');
+  const statusColor = () => StyleSheet.flatten(screen.getByText('Pareado · aperte um botão').props.style).color;
+
+  session({});
+  repo.setPrefs({ remoteTestedAt: 1 });
+  await render(<Setup />);
+  expect(screen.getByRole('button', { name: /controle pareado$/ })).toBeTruthy();
+  await openSettings();
+  expect(statusColor()).toBe(colors.accent);
+});
+
 test('the positioning guide fits the camera area above the sheet', async () => {
   session({});
   await render(<Setup />);

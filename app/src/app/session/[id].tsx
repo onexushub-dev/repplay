@@ -113,7 +113,7 @@ export default function SessionSummary() {
     );
   }
 
-  // Minhas gravações must always have the setup screen under it. A game that has just ended got here by replacing the
+  // Minhas gravações must always have the setup screen under it. A game that has just ended got here straight from the
   // setup, so /games is not in the stack and dismissTo would leave it as the only screen, with nowhere to go back to.
   function leaveToGames() {
     const state = navigation.getState();
@@ -125,6 +125,19 @@ export default function SessionSummary() {
     router.dismissTo('/setup');
     router.push('/games');
   }
+
+  // However this screen goes (swiping back to the setup, Android's back, Nova gravação, Minhas gravações), the game that
+  // has just ended leaves with it: the setup under it starts over, as Nova gravação always did.
+  const leaving = useRef({ live: state.sessionId === id, reset });
+  useEffect(() => {
+    leaving.current = { live: state.sessionId === id, reset };
+  }, [state.sessionId, id, reset]);
+  useEffect(
+    () => () => {
+      if (leaving.current.live) leaving.current.reset();
+    },
+    [],
+  );
 
   function newGame() {
     // Only the game that just ended resets the live session; from Minhas gravações, setup is already under us.
