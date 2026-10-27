@@ -224,9 +224,9 @@ describe('free recording', () => {
   test('the free plan shows the card, and tapping it opens the paywall', async () => {
     setup('free');
     await render(<SessionSummary />);
-    expect(screen.getByText('Gravada no plano grátis')).toBeTruthy();
-    expect(screen.getByText('Seus clipes saem com marca d’água, sem som, sem Modo Foco e sem velocidade. Libere tudo com o Pro ou um Passe Avulso.')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: /^Gravada no plano grátis/ }));
+    expect(screen.getByText('Desbloqueie os recursos PRO')).toBeTruthy();
+    expect(screen.getByText('Som, Modo Foco, sem marca d’água e os melhores momentos compilados em um só vídeo. Com o Pro ou um Passe Avulso.')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: /^Desbloqueie os recursos PRO/ }));
     expect(payments.showPaywall).toHaveBeenCalledWith();
   });
 
@@ -234,14 +234,14 @@ describe('free recording', () => {
     setup('free');
     payments.unlockOption.mockReturnValue({ kind: 'pro' });
     await render(<SessionSummary />);
-    expect(screen.queryByText('Gravada no plano grátis')).toBeNull();
+    expect(screen.queryByText('Desbloqueie os recursos PRO')).toBeNull();
     payments.unlockOption.mockReturnValue({ kind: 'none' });
   });
 
   test.each(['pass', 'pro'])('on the %s plan there is no card', async (tier) => {
     setup(tier);
     await render(<SessionSummary />);
-    expect(screen.queryByText('Gravada no plano grátis')).toBeNull();
+    expect(screen.queryByText('Desbloqueie os recursos PRO')).toBeNull();
     expect(screen.queryByText('Liberar')).toBeNull();
   });
 

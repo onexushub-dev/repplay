@@ -149,8 +149,8 @@ describe('the Pro invitation in the gallery', () => {
     repo.listSessions.mockReturnValue([freeGame]);
     repo.sessionStats.mockReturnValue({ clips: 2, bytes: 1, recordedMs: 60_000 });
     await render(<Games />);
-    expect(screen.getByText('Desbloqueie todos os recursos com o PRO')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: /^Desbloqueie todos os recursos com o PRO/ }));
+    expect(screen.getByText('Desbloqueie tudo com o PRO')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: /^Desbloqueie tudo com o PRO/ }));
     expect(payments.showPaywall).toHaveBeenCalledTimes(1);
   });
 
@@ -158,7 +158,7 @@ describe('the Pro invitation in the gallery', () => {
     repo.listSessions.mockReturnValue([paidGame]);
     repo.sessionStats.mockReturnValue({ clips: 2, bytes: 1, recordedMs: 60_000 });
     await render(<Games />);
-    expect(screen.queryByText('Desbloqueie todos os recursos com o PRO')).toBeNull();
+    expect(screen.queryByText('Desbloqueie tudo com o PRO')).toBeNull();
   });
 
   test('is not there for a Pro subscriber, who already has everything unlocked', async () => {
@@ -166,7 +166,7 @@ describe('the Pro invitation in the gallery', () => {
     repo.listSessions.mockReturnValue([freeGame]);
     repo.sessionStats.mockReturnValue({ clips: 2, bytes: 1, recordedMs: 60_000 });
     await render(<Games />);
-    expect(screen.queryByText('Desbloqueie todos os recursos com o PRO')).toBeNull();
+    expect(screen.queryByText('Desbloqueie tudo com o PRO')).toBeNull();
     payments.unlockOption.mockReturnValue({ kind: 'none' });
   });
 });

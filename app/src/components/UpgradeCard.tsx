@@ -8,7 +8,7 @@ type Props = { title: string; message: string; action: string; badge: string; on
 
 /**
  * An invitation to unlock what the free plan holds back: the lime outline and the one small "Pro" pill of the paid
- * groups, a crown, a title, one line and the action. The whole card is the button.
+ * groups, a crown, a title, a short message and the action under it. The whole card is the button.
  */
 export function UpgradeCard({ title, message, action, badge, onPress }: Props) {
   return (
@@ -19,8 +19,9 @@ export function UpgradeCard({ title, message, action, badge, onPress }: Props) {
       <View style={styles.text}>
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.message}>{message}</Text>
+        {/* Under the text, not beside it: the message keeps the card's whole width. */}
+        <Text style={styles.action}>{`${action} →`}</Text>
       </View>
-      <Text style={styles.action}>{action}</Text>
       <ProBadge label={badge} right={14} />
     </Pressable>
   );
@@ -29,10 +30,10 @@ export function UpgradeCard({ title, message, action, badge, onPress }: Props) {
 const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 12,
     minHeight: 64,
-    marginTop: 6,
+    marginTop: 12, // the "Pro" pill rises 9 above the card: inside the list, not clipped by its top edge
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
@@ -40,8 +41,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   icon: { width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(214, 242, 63, 0.12)', alignItems: 'center', justifyContent: 'center' },
-  text: { flex: 1, minWidth: 0, gap: 2 },
+  text: { flex: 1, minWidth: 0, gap: 4 },
   title: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.text },
   message: { fontFamily: fonts.body, fontSize: 12, lineHeight: 17, color: colors.muted },
-  action: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.accent },
+  action: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.accent, marginTop: 2 },
 });
