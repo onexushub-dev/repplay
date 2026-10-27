@@ -3,6 +3,7 @@ import type { FocusTrack } from '../data/focusFile';
 import { framingAt } from '../focus/framing';
 import { NO_ZOOM, readEdit, turnedSize, type Zoom } from '../share/editing';
 import { exportOptions } from '../share/exportOptions';
+import type { ShortSide } from '../share/exportSize';
 import { frameLayout } from '../share/layout';
 
 type Tier = Parameters<typeof exportOptions>[0];
@@ -19,13 +20,14 @@ export function clipStage(
   videoSize: Size,
   focusReady: string | false | undefined,
   forceLandscape?: boolean,
+  side?: ShortSide,
 ) {
   // The shape after the player's own turn; the clip's own rotation is already in the thumbnail's shape.
   const shape = turnedSize(videoSize, readEdit(edit).rotation);
   // A landscape clip is exported (and previewed) in a landscape frame; a vertical one in a vertical frame — unless a
   // compilation forces one frame for every clip.
   const landscape = forceLandscape !== undefined ? forceLandscape : shape.width > shape.height;
-  const options = exportOptions(tier, edit, trim, landscape, focusReady ? { path: focusReady, ready: true } : undefined);
+  const options = exportOptions(tier, edit, trim, landscape, focusReady ? { path: focusReady, ready: true } : undefined, side);
   const frame = { width: options.width, height: options.height };
   return { shape, landscape, frame, watermark: options.watermark, layout: frameLayout(shape, frame), options };
 }

@@ -17,11 +17,17 @@ export function captureConfig(settings: ModeSettings, plan: Plan): CaptureConfig
     return { quality: settings.quality, bufferSeconds: settings.bufferSeconds, cutSeconds: settings.cutSeconds, audio: settings.audio };
   }
   return {
-    quality: settings.quality,
+    // 4K is paid: the free plan records Full HD at 60 fps.
+    quality: settings.quality === '2160p30' ? '1080p60' : settings.quality,
     bufferSeconds: Math.min(settings.bufferSeconds, FREE_MAX_SECONDS),
     cutSeconds: Math.min(settings.cutSeconds, FREE_MAX_SECONDS),
     audio: settings.audio,
   };
+}
+
+/** Recording in 4K is paid. */
+export function qualityAllowed(quality: Quality, plan: Plan): boolean {
+  return plan === 'paid' || quality !== '2160p30';
 }
 
 /** The watch is the only paid trigger: voice, gesture, screen, Bluetooth remote and phone remote are free. */

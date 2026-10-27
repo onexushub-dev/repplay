@@ -7,6 +7,7 @@ import { readFocusFile } from '../data/focusFile';
 import type { Clip } from '../data/schema';
 import { readEdit, turnedSize } from './editing';
 import type { ExportOptions } from './exportOptions';
+import type { ShortSide } from './exportSize';
 
 export type Orientation = 'portrait' | 'landscape';
 type Size = { width: number; height: number };
@@ -26,14 +27,21 @@ export type ClipJob = {
  * (a compilation has one); without it the clip's own shape decides. `trackFound` is for a caller that already read the
  * Modo Foco framing (the clip screen), so the file is not read on every render.
  */
-export function clipExportJob(clip: Clip, plan: Tier, videoSize: Size, orientation?: Orientation, trackFound?: boolean): ClipJob {
+export function clipExportJob(
+  clip: Clip,
+  plan: Tier,
+  videoSize: Size,
+  orientation?: Orientation,
+  trackFound?: boolean,
+  side?: ShortSide,
+): ClipJob {
   const shape = turnedSize(videoSize, readEdit(clip.edit).rotation);
   const landscape = orientation ? orientation === 'landscape' : shape.width > shape.height;
   const file = clip.focus && clip.focus.status === 'ready' ? clip.focus.file : undefined;
   const found =
     file !== undefined && (trackFound !== undefined ? trackFound : readFocusFile(file, landscape ? 'landscape' : 'portrait') !== undefined);
   // A forced frame is passed as the shape the stage lays out in; the video still keeps its own shape inside it.
-  const stage = clipStage(plan, clip.edit, clip.trim, videoSize, found ? file : undefined, landscape);
+  const stage = clipStage(plan, clip.edit, clip.trim, videoSize, found ? file : undefined, landscape, side);
   const options = stage.options;
   return {
     options,

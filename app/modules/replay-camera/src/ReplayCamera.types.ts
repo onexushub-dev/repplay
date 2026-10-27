@@ -1,7 +1,8 @@
 import type { StyleProp, ViewStyle } from 'react-native';
 
 export type Lens = 'ultraWide' | 'wide';
-export type Quality = '1080p60' | '1080p30' | '720p60' | '720p30';
+/** `2160p30` = 4K at 30 fps (iOS, on phones whose camera has it: `supportsQuality`). */
+export type Quality = '2160p30' | '1080p60' | '1080p30' | '720p60' | '720p30';
 export type TriggerSource = 'screen' | 'gesture' | 'remote' | 'watch' | 'voice' | 'phone';
 /** The language the voice command listens in (iOS speech recognizer locale). */
 export type VoiceLocale = 'pt-BR' | 'en-US';
@@ -34,7 +35,8 @@ export type SaveClipOptions = {
   /** How much of the buffer the file keeps, from its end (the clip's cut plus a margin); absent = the whole buffer. */
   keepMs?: number;
 };
-export type SavedClip = { clipPath: string; durationMs: number };
+/** `shortSide`: the saved video's resolution in pixels (1080 Full HD, 2160 4K); missing on Android and older builds. */
+export type SavedClip = { clipPath: string; durationMs: number; shortSide?: number };
 
 /** Apple Watch link: no paired watch · paired without the Repplay app · ready. */
 export type WatchStatus = 'unsupported' | 'notInstalled' | 'ready';

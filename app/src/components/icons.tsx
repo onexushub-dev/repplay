@@ -60,6 +60,36 @@ export function DownloadIcon({ color = colors.text, size = 22 }: IconProps) {
   );
 }
 
+/** Battery saving on: a battery with a bolt. */
+export function BatteryIcon({ color = colors.text, size = 26 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityElementsHidden>
+      <Rect x="2.5" y="7" width="16" height="10" rx="2.2" {...stroke(color)} />
+      <Path d="M21 10.5v3M11.5 9l-2.5 3.2h3L9.5 15" {...stroke(color)} />
+    </Svg>
+  );
+}
+
+/** Battery saving off: the battery crossed out. */
+export function BatteryOffIcon({ color = colors.soft, size = 26 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityElementsHidden>
+      <Rect x="2.5" y="7" width="16" height="10" rx="2.2" {...stroke(color)} />
+      <Path d="M21 10.5v3M3 4l17 16" {...stroke(color)} />
+    </Svg>
+  );
+}
+
+/** "How does this work?": opens an explanation. */
+export function InfoIcon({ color = colors.soft, size = 18 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityElementsHidden>
+      <Circle cx="12" cy="12" r="9" {...stroke(color)} />
+      <Path d="M12 11v6M12 7.5v.5" {...stroke(color)} />
+    </Svg>
+  );
+}
+
 /** Delete: red (`colors.rec`) everywhere in the app unless a screen has a reason to differ. */
 export function TrashIcon({ color = colors.rec, size = 22 }: IconProps) {
   return (

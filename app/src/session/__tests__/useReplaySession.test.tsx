@@ -15,12 +15,12 @@ function fakeDeps() {
   let n = 0;
   let t = 1000;
   const deleted: string[] = [];
-  let pendingSave: ((v: { clipPath: string; durationMs: number }) => void) | undefined;
+  let pendingSave: ((v: { clipPath: string; durationMs: number; shortSide?: number }) => void) | undefined;
   const camera = {
     startSession: jest.fn(async () => {}),
     stopSession: jest.fn(async () => {}),
     saveClip: jest.fn(
-      () => new Promise<{ clipPath: string; durationMs: number }>((resolve) => (pendingSave = resolve))
+      () => new Promise<{ clipPath: string; durationMs: number; shortSide?: number }>((resolve) => (pendingSave = resolve))
     ),
     setGestureEnabled: jest.fn(),
     // Two fixed lenses (Android) unless a test says otherwise.
@@ -60,7 +60,7 @@ function fakeDeps() {
     sessionIds: (): string[] => JSON.parse(map.get('repplay:v1:sessions') ?? '[]'),
     emit: (event: string, e: any = {}) => listeners.get(event)?.(e),
     advance: (ms: number) => void (t += ms),
-    finishSave: (v = { clipPath: '/c.mp4', durationMs: 60000 }) => pendingSave?.(v),
+    finishSave: (v: { clipPath: string; durationMs: number; shortSide?: number } = { clipPath: '/c.mp4', durationMs: 60000 }) => pendingSave?.(v),
   };
 }
 
@@ -404,6 +404,20 @@ test('a save keeps only its cut and a 2 s margin of the buffer, and the cuts sta
   expect(clips.map((c) => c.trim.endMs - c.trim.startMs)).toEqual([30_000, 15_000, 30_000]);
   // The editor never reaches the margin: the bounds are the cut.
   expect(clips.map((c) => c.bounds)).toEqual(clips.map((c) => c.trim));
+});
+
+test('the clip keeps the resolution the camera saved it in (4K), and none is stored when the camera does not say', async () => {
+  const f = fakeDeps();
+  const view = await renderHook(() => useReplaySession(f.deps));
+  await act(() => view.result.current.start('quadra'));
+  f.advance(30_000);
+  await act(async () => view.result.current.trigger('screen'));
+  await act(async () => f.finishSave({ clipPath: '/4k.mp4', durationMs: 32_000, shortSide: 2160 }));
+  f.advance(30_000);
+  await act(async () => view.result.current.trigger('screen'));
+  await act(async () => f.finishSave({ clipPath: '/old.mp4', durationMs: 32_000 }));
+  const clips = f.deps.repo.listClips(view.result.current.state.sessionId!);
+  expect(clips.map((c) => c.shortSide)).toEqual([2160, undefined]);
 });
 
 test('the saved state carries the length the clip really got, for the popup', async () => {

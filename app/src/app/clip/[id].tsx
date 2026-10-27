@@ -33,6 +33,7 @@ import { ExportProgress, type ExportJob } from '../../components/ExportProgress'
 import { clipNumber, seconds, timeOfDay } from '../../components/format';
 import { BackIcon, PauseIcon, PlayIcon } from '../../components/icons';
 import { Playhead } from '../../components/Playhead';
+import { useExportQualityGate } from '../../components/useExportQualityGate';
 import { useFreeExportGate } from '../../components/useFreeExportGate';
 import { TrimBar } from '../../components/TrimBar';
 import { knownShape, rememberShape } from '../../components/clipShape';
@@ -52,6 +53,7 @@ import { unlockRecording } from '../../payments/unlock';
 import { clipExportJob } from '../../share/clipExport';
 import { useViewPlan } from '../../share/entitlement';
 import { cachedExport, rememberExport } from '../../share/exportCache';
+import { exportChoices, type ShortSide } from '../../share/exportSize';
 import { frameLayout } from '../../share/layout';
 import { ShareOverlay } from '../../share/ShareOverlay';
 import { ZoomableVideo } from '../../share/ZoomableVideo';
@@ -162,6 +164,9 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
   const maxMs = session ? effectiveSettings(session.sport, repo.getPrefs()).bufferSeconds * 1000 : undefined;
   const plan = useViewPlan(clip?.sessionId);
   const freeGate = useFreeExportGate();
+  // A 4K clip leaves the app as 4K, 2K or Full HD (asked at each Salvar/Enviar); every other clip as Full HD.
+  const qualityGate = useExportQualityGate();
+  const [exportSide, setExportSide] = useState<ShortSide>(1080);
 
   const [trim, setTrim] = useState(() => (clip ? clip.trim : { startMs: 0, endMs: 0 }));
   // Speed, sound and Modo Foco work in the app for every plan; a free export drops them (see the notice in `run`).
@@ -271,7 +276,20 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
   const focusEnterMs = reduceMotion ? 0 : showIntro ? FOCUS_INTRO_EASE_MS : readyAtOpen ? 0 : FOCUS_READY_EASE_MS;
 
   // The export of this clip as it looks now: the same job the recording screen's batch makes, so they cannot differ.
-  const look = clip ? clipExportJob(clip, plan, videoSize, undefined, track !== undefined) : undefined;
+  // The size picked for the last export, if this clip offers it (a swipe to a Full HD clip falls back to Full HD).
+  const side: ShortSide = exportChoices(clip ? clip.shortSide : undefined).includes(exportSide) ? exportSide : 1080;
+  const look = clip ? clipExportJob(clip, plan, videoSize, undefined, track !== undefined, side) : undefined;
+  // The export reads the job of the size just picked: it waits for the screen to redraw the overlay at that size.
+  const lookRef = useRef(look);
+  const sideWait = useRef<{ side: ShortSide; done: () => void } | null>(null);
+  useEffect(() => {
+    lookRef.current = look;
+    const wait = sideWait.current;
+    if (wait && wait.side === side) {
+      sideWait.current = null;
+      requestAnimationFrame(() => wait.done()); // the off-screen overlay is laid out at the new size first
+    }
+  });
   const options = look ? look.options : undefined;
   const frame = look ? look.frame : landscape ? { width: 1920, height: 1080 } : { width: 1080, height: 1920 };
   const layout = look ? look.layout : frameLayout(shape, frame);
@@ -540,13 +558,23 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
     ]);
   }
 
-  /** One export per look (cut, edits, frame), reused by both buttons. */
+  /** Shows (and lays out) the export at `next` before it is captured; at once when it already is. */
+  function showSide(next: ShortSide): Promise<void> {
+    if (next === side) return Promise.resolve();
+    return new Promise((done) => {
+      sideWait.current = { side: next, done };
+      setExportSide(next);
+    });
+  }
+
+  /** One export per look (cut, edits, frame, size), reused by both buttons. */
   async function ensureExport(): Promise<string> {
-    const key = look ? look.key : '';
+    const job = lookRef.current;
+    const key = job ? job.key : '';
     const cached = cachedExport(key);
     if (cached) return cached;
     const overlayPngPath = await captureOverlay(captureRefView);
-    const result = await exportClip({ clipPath: clip!.path, ...options!, overlayPngPath, background: colors.ground });
+    const result = await exportClip({ clipPath: clip!.path, ...job!.options, overlayPngPath, background: colors.ground });
     removeQuietly(overlayPngPath);
     // Kept even when the screen closed meanwhile: the next Salvar/Enviar of this look (here or in a batch) uses it.
     rememberExport(key, result.path);
@@ -561,6 +589,17 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
       if (choice === 'unlock') void unlockRecording(clip!.sessionId, t);
       if (choice !== 'go') return;
       if (exporting.current) return;
+    }
+    const choices = exportChoices(clip!.shortSide);
+    if (choices.length > 1 && look) {
+      const picked = await qualityGate.ask({
+        choices,
+        landscape: look.frame.width > look.frame.height,
+        durationMs: (look.options.endMs - look.options.startMs) / look.options.speed,
+        sound: !look.options.muted,
+      });
+      if (picked === null || exporting.current) return;
+      await showSide(picked);
     }
     exporting.current = true;
     saveName(); // a name typed without closing the keyboard still counts
@@ -768,6 +807,7 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
       )}
 
       {freeGate.sheet}
+      {qualityGate.sheet}
 
       {/* Off-screen copy at exactly the export's pixel size, captured to PNG for the video overlay. */}
       <View pointerEvents="none" style={styles.offscreen}>

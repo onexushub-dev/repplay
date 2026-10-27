@@ -113,6 +113,7 @@ export function useReplaySession(deps: SessionDeps) {
           source,
           path: saved.clipPath,
           durationMs: saved.durationMs,
+          ...(saved.shortSide !== undefined ? { shortSide: saved.shortSide } : {}),
         }, cutMs);
         if (deps.onClipSaved) deps.onClipSaved(clip.id);
         // A save that finished after its game ended must not move the floor of the next game.

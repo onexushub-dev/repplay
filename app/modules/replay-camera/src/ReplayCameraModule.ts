@@ -15,6 +15,7 @@ import type {
   VoiceLocale,
   WatchStatus,
   ZoomRange,
+  Quality,
 } from './ReplayCamera.types';
 
 declare class ReplayCameraModule extends NativeModule<ReplayCameraModuleEvents> {
@@ -29,6 +30,8 @@ declare class ReplayCameraModule extends NativeModule<ReplayCameraModuleEvents> 
   setZoom?(factor: number, animated: boolean): void;
   // Screen economy while recording (iOS only: missing on Android and in older builds).
   setScreenEconomy?(on: boolean): void;
+  // Whether the phone records a quality (iOS only: missing on Android and in older builds).
+  supportsQuality?(quality: Quality): boolean;
   // TEMP(diag-remote) (iOS only: missing on Android and in older builds).
   diagAudioState?(): string;
   requestPermissions(): Promise<boolean>;
