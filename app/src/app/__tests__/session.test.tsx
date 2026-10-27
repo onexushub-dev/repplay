@@ -170,6 +170,27 @@ test('the footer has no "Postar um clipe": sharing happens inside the clip', asy
   expect(screen.getByRole('button', { name: 'Apagar gravação' })).toBeTruthy();
 });
 
+test('swiping back from the game that just ended resets it, as Nova gravação does', async () => {
+  const reset = jest.fn();
+  useSession.mockReturnValue({ reset, state: { sessionId: 's1' } });
+  repo.listClips.mockReturnValue([]);
+  repo.sessionStats.mockReturnValue({ clips: 0, bytes: 0, recordedMs: 0 });
+  const view = await render(<SessionSummary />);
+  expect(reset).not.toHaveBeenCalled();
+  await act(async () => view.unmount()); // the screen leaves the stack: a swipe back, Android's back, a dismiss
+  expect(reset).toHaveBeenCalled();
+});
+
+test('leaving a past game never touches the current session', async () => {
+  const reset = jest.fn();
+  useSession.mockReturnValue({ reset, state: { sessionId: 'other' } });
+  repo.listClips.mockReturnValue([]);
+  repo.sessionStats.mockReturnValue({ clips: 0, bytes: 0, recordedMs: 0 });
+  const view = await render(<SessionSummary />);
+  await act(async () => view.unmount());
+  expect(reset).not.toHaveBeenCalled();
+});
+
 test('Nova gravação from a past game goes back to the existing setup without touching the current session', async () => {
   const reset = jest.fn();
   useSession.mockReturnValue({ reset, state: { sessionId: 'other' } });

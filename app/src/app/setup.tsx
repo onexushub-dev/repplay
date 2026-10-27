@@ -128,7 +128,10 @@ export default function Setup() {
     { pressed: remoteTest.pressed, testedBefore: remoteTest.testedBefore, waitedLong: false },
     locale,
   );
-  const remoteWorks = remoteView.state === 'connected';
+  // Paired counts as ready: a remote heard before works in the recording (which always listens to it), so its icon and
+  // tile show it on like the recording screen does; only a remote never heard in the app stays grey. The texts still
+  // tell paired from connected.
+  const remoteReady = remoteView.state !== 'setup';
   // The sheet opens collapsed so the camera and its guide stay visible; mode and triggers sit behind the summary.
   const [expanded, setExpanded] = useState(false);
   const [sheetHeight, setSheetHeight] = useState(0);
@@ -382,7 +385,7 @@ export default function Setup() {
         <View style={styles.summaryIcons}>
           <MicIcon color={iconColor(voiceOn)} size={32} />
           <ArmsUpIcon color={iconColor(settings.gestureEnabled)} size={32} />
-          <RemoteIcon color={iconColor(remoteWorks)} size={32} />
+          <RemoteIcon color={iconColor(remoteReady)} size={32} />
           <WatchIcon color={iconColor(watchOn)} size={32} />
           {remoteSupported ? <QrIcon color={iconColor(remoteLinked > 0)} size={32} /> : null}
         </View>
@@ -450,7 +453,7 @@ export default function Setup() {
                 icon={<RemoteIcon />}
                 title={t('setup.bluetoothRemote')}
                 status={remoteView.statusText}
-                active={remoteWorks}
+                active={remoteReady}
                 onPress={() => router.push({ pathname: '/devices', params: { kind: 'remote' } })}
               />
             </View>

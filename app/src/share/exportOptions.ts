@@ -28,6 +28,12 @@ type Tier = Plan | 'pass' | 'pro';
  * the phone is held sideways, like any video in Photos. Any speed other than 1x plays without sound. Modo Foco applies
  * when on, ready, not turned and not zoomed by hand.
  */
+/**
+ * For now every clip carries the Repplay mark, on every plan (decided 2026-10-27; which plans drop it comes later).
+ * false brings back the rule: free with the mark, paid without.
+ */
+export const WATERMARK_ON_EVERY_PLAN = true as boolean;
+
 export function exportOptions(
   tier: Tier,
   edit: Clip['edit'],
@@ -51,7 +57,7 @@ export function exportOptions(
     muted: muted || speed !== 1 || !paid,
     crop: zoom && zoom.scale > 1 ? cropRect(zoom) : undefined,
     rotation,
-    watermark: !paid,
+    watermark: WATERMARK_ON_EVERY_PLAN || !paid,
     ...(follow ? { focus: { path: focus.path, aspect: landscape ? ('landscape' as const) : ('portrait' as const) } } : {}),
   };
 }

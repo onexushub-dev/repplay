@@ -91,9 +91,12 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
     return () => clearTimeout(hide);
   }, [last]);
 
-  /** After a game: its summary, or — with no clip to show — straight to Minhas gravações, the empty game removed. */
+  /**
+   * After a game: its summary, or — with no clip to show — straight to Minhas gravações, the empty game removed. The
+   * summary goes over the setup screen, so swiping back returns to it (the summary resets the ended game as it leaves).
+   */
   function leaveEnded(id: string) {
-    if (repo.listClips(id).length > 0) return router.replace(`/session/${id}`);
+    if (repo.listClips(id).length > 0) return router.push(`/session/${id}`);
     repo.deleteSession(id).forEach((path) => removeFile(path));
     reset();
     router.push('/games'); // the setup screen stays under it

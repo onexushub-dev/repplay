@@ -60,7 +60,8 @@ export function DownloadIcon({ color = colors.text, size = 22 }: IconProps) {
   );
 }
 
-export function TrashIcon({ color = colors.text, size = 22 }: IconProps) {
+/** Delete: red (`colors.rec`) everywhere in the app unless a screen has a reason to differ. */
+export function TrashIcon({ color = colors.rec, size = 22 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityElementsHidden>
       <Path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" {...stroke(color)} />

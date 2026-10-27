@@ -1,5 +1,5 @@
 import type { Clip } from '../../data/schema';
-import { exportOptions, freeLosses } from '../exportOptions';
+import { exportOptions, freeLosses, WATERMARK_ON_EVERY_PLAN } from '../exportOptions';
 
 const trim = { startMs: 30000, endMs: 60000 };
 
@@ -14,10 +14,11 @@ test('pro exports 1080x1920', () => {
   });
 });
 
-test('a free export carries the app mark; a paid one (pass, pro) does not', () => {
+test('for now every export carries the app mark, on every plan', () => {
+  expect(WATERMARK_ON_EVERY_PLAN).toBe(true);
   expect(exportOptions('free', undefined, trim).watermark).toBe(true);
-  expect(exportOptions('pass', undefined, trim).watermark).toBe(false);
-  expect(exportOptions('pro', undefined, trim).watermark).toBe(false);
+  expect(exportOptions('pass', undefined, trim).watermark).toBe(true);
+  expect(exportOptions('pro', undefined, trim).watermark).toBe(true);
 });
 
 test('a free export keeps 1x speed whatever the clip says', () => {
