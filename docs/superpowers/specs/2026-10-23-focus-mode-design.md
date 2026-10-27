@@ -92,6 +92,21 @@ Output: keyframes every 100 ms, each a crop rect `(x, y, width, height)` in 0..1
    this clip).
 
 The constants above are the spike's values. They live in one `FocusTuning` struct so the field test can adjust them.
+
+**Amendment 2026-10-27 (field tuning, "v13").** Chosen on the 2026-10-26 field recording (7 beach tennis clips) and two
+reference videos (vertical beach tennis, horizontal basketball), with `docs/focus-refs/tools/focus_variant.py` (a port of
+this file, checked equal to the Swift by `FocusPathTests.test_matchesThePortTheTuningWasChosenWith`) and
+`render_focus.py`:
+
+- **Hold of vanished people** (`holdMs` 1 s), after rule 2: someone the detector stops finding still counts where last
+  seen for 1 s, unless someone is found within a body length of that spot. Vision often misses a player cut by the
+  edge of the picture; without the hold the framing swung away from them and cut them.
+- **Width hold** (`widthHoldMs` 1 s), in rule 6: the width target is the widest needed within ±1 s before the Gaussian,
+  so the crop opens before someone reaches the edge and closes only once the play settles.
+- Rule 5: σ for x 0.5 s → **0.6 s** (a calmer pan). Rule 7: lift 10% → **0** (near players are big; the lift cut feet).
+
+Result against the spike values: players more than 25% outside the crop 55 → 3 on the field clips, 12 → 0 and 20 → 0
+on the references; pan jitter −37 to −53%; median zoom 1.46× → 1.31× (it no longer zooms past someone at the edge).
 The spike's detection files (6 clips, in `docs/superpowers/spikes/focus-mode/`) become test fixtures: the filters must drop the floor balls and stand spectators
 seen in the spike, and the path must stay inside the frame with speed and zoom limits respected.
 
