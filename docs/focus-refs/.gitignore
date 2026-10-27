@@ -6,4 +6,7 @@
 !clips/manifest.csv
 !clips/horizontal-app-export.json
 !tools/
-!tools/*
+!tools/**
+
+# Python caches of the tools
+__pycache__/
