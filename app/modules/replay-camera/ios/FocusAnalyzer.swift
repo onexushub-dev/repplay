@@ -75,6 +75,15 @@ enum FocusAnalyzer {
 
     let request = VNDetectHumanRectanglesRequest()
     request.upperBodyOnly = false
+    // v14: the same detector on the gesture's 9 half-frame regions as well, so far players are found (ScanTiles).
+    // With a regionOfInterest the boxes still come back normalized to the whole frame.
+    let tileRequests: [(request: VNDetectHumanRectanglesRequest, region: CGRect)] = ScanTiles.regions.map { region in
+      let r = VNDetectHumanRectanglesRequest()
+      r.upperBodyOnly = false
+      r.regionOfInterest = region
+      return (r, region)
+    }
+    let frameSize = CGSize(width: width, height: height)
     var frames: [FocusSample] = []
     // Cut suggestion (experiment): how much of the court moved, per analysed frame, as [clip ms, share of the picture].
     var motion: [[Double]] = []
@@ -91,14 +100,25 @@ enum FocusAnalyzer {
       if let level = courtMotion(pixels, turned: turned, meter: &meter) { motion.append([t, level]) }
       let boxes: [FocusBox]? = autoreleasepool {
         do {
-          try VNImageRequestHandler(cvPixelBuffer: pixels, orientation: orientation).perform([request])
+          try VNImageRequestHandler(cvPixelBuffer: pixels, orientation: orientation)
+            .perform([request] + tileRequests.map { $0.request })
         } catch {
           return nil
         }
         // Vision: normalized, origin bottom-left, in the upright picture (the orientation above).
-        return (request.results ?? []).filter { $0.confidence >= minConfidence }.map {
-          let b = $0.boundingBox
-          return FocusBox(x: Double(b.minX), y: Double(1 - b.maxY), width: Double(b.width), height: Double(b.height))
+        let full = (request.results ?? []).filter { $0.confidence >= minConfidence }
+          .map { (box: $0.boundingBox, confidence: Double($0.confidence)) }
+        var tiles: [(box: CGRect, confidence: Double)] = []
+        for (r, region) in tileRequests {
+          for o in r.results ?? [] {
+            let b = o.boundingBox
+            guard region.insetBy(dx: -0.02, dy: -0.02).contains(CGPoint(x: b.midX, y: b.midY)),
+                  ScanTiles.plausible(b, confidence: Double(o.confidence), frame: frameSize) else { continue }
+            tiles.append((b, Double(o.confidence)))
+          }
+        }
+        return PersonBoxes.merge(full + tiles).map {
+          FocusBox(x: Double($0.minX), y: Double(1 - $0.maxY), width: Double($0.width), height: Double($0.height))
         }
       }
       guard let found = boxes else { failures += 1; continue }
@@ -114,12 +134,14 @@ enum FocusAnalyzer {
     let landscape = width >= height
     let main: FocusAspect = landscape ? .landscape : .portrait
     let other: FocusAspect = landscape ? .portrait : .landscape
-    let mainRects = FocusPath.compute(samples: samples, videoWidth: width, videoHeight: height, aspect: main, zoom: true)
+    let mainRects = FocusPath.compute(samples: samples, videoWidth: width, videoHeight: height, aspect: main, zoom: true,
+                                      tuning: .action)
     let otherRects = mainRects == nil
-      ? nil : FocusPath.compute(samples: samples, videoWidth: width, videoHeight: height, aspect: other, zoom: false)
+      ? nil : FocusPath.compute(samples: samples, videoWidth: width, videoHeight: height, aspect: other, zoom: false,
+                                tuning: .action)
 
     var file: [String: Any] = [
-      "v": 1, "stepMs": stepMs, "startMs": startMs, "size": [width, height],
+      "v": 1, "rules": "v14-acao", "stepMs": stepMs, "startMs": startMs, "size": [width, height],
       "landscape": rows(landscape ? mainRects : otherRects),
       "portrait": rows(landscape ? otherRects : mainRects),
     ]
