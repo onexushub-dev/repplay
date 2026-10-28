@@ -63,8 +63,36 @@ public struct FocusTuning {
   /// only once the play has settled. 0 = off.
   public var widthHoldMs = 1000.0
 
+  // v14 "ação" (2026-10-28, FocusActivity): people tracked between samples; off in `standard` (v13).
+  /// Stillness and movement measured per tracked person in body heights; replaces the pixel still filter above.
+  public var activity = false
+  /// A track not seen for this long ends.
+  public var trackGapMs = 1000.0
+  /// A box joins a track whose last centre is within this many body heights.
+  public var trackMatch = 0.7
+  /// Someone whose feet stay within this many body heights for the whole time they are seen ...
+  public var stillBodies = 0.3
+  /// ... when that time is at least this long, is not playing (bench, stands).
+  public var spectatorMinMs = 8000.0
+  /// The body height is the median over ± this window.
+  public var activityWindowMs = 6000.0
+  /// Weight: 1 + min(speed / speedUnit, moveCap), speed in body heights per second over ± speedWindowMs.
+  public var speedUnit = 0.6
+  public var speedWindowMs = 500.0
+  /// The crop width covers the people in action (weight >= activeWeight) when there are any: the frame closes on the
+  /// play instead of on everybody.
+  public var activeSpread = false
+  public var activeWeight = 2.0
+
   public init() {}
   public static let standard = FocusTuning()
+  /// v14: what FocusAnalyzer uses since 2026-10-28, with the tiles finding the far players.
+  public static let action: FocusTuning = {
+    var t = FocusTuning()
+    t.activity = true
+    t.activeSpread = true
+    return t
+  }()
 }
 
 public enum FocusPath {
@@ -85,9 +113,15 @@ public enum FocusPath {
       return s.boxes.filter { $0.height >= t.farShare * ref }
     }
     // 2. Still people out.
-    let feet = near.map { $0.map { (x: $0.x + $0.width / 2, y: $0.y + $0.height) } }
     var people: [[FocusBox]] = []
-    for i in 0..<n {
+    var activityWeights: [[Double]]? = nil
+    if t.activity {
+      let act = FocusActivity.people((0..<n).map { FocusSample(tMs: samples[$0].tMs, boxes: near[$0]) }, W: W, H: H, t: t)
+      people = act.map { $0.map { $0.box } }
+      activityWeights = act.map { $0.map { $0.weight } }
+    }
+    let feet = near.map { $0.map { (x: $0.x + $0.width / 2, y: $0.y + $0.height) } }
+    for i in 0..<n where !t.activity {
       var keep: [FocusBox] = []
       for (j, box) in near[i].enumerated() {
         let foot = feet[i][j]
@@ -110,15 +144,27 @@ public enum FocusPath {
     for i in 0..<n {
       let centres = people[i].map { (x: $0.x + $0.width / 2, y: $0.y + $0.height / 2) }
       guard !centres.isEmpty else { previous = []; continue }
-      let weights: [Double] = centres.map { c -> Double in
-        let moved = previous.map { hypot((c.x - $0.x) * W, (c.y - $0.y) * H) }.min() ?? 0
-        return 1 + min(moved / (t.moveUnit * W), t.moveCap)
+      let weights: [Double]
+      if let own = activityWeights {
+        // Each person's own speed; people held where last seen (appended by `held`) weigh 1.
+        weights = centres.indices.map { $0 < own[i].count ? own[i][$0] : 1 }
+      } else {
+        weights = centres.map { c -> Double in
+          let moved = previous.map { hypot((c.x - $0.x) * W, (c.y - $0.y) * H) }.min() ?? 0
+          return 1 + min(moved / (t.moveUnit * W), t.moveCap)
+        }
       }
       let total = weights.reduce(0, +)
       cx[i] = zip(centres, weights).map { $0.x * $1 }.reduce(0, +) / total
       cy[i] = zip(centres, weights).map { $0.y * $1 }.reduce(0, +) / total
       let xs = centres.map { $0.x }
-      spread[i] = weightedQuantile(xs, weights, t.spreadHigh) - weightedQuantile(xs, weights, t.spreadLow)
+      let active = activityWeights != nil && t.activeSpread ? xs.indices.filter { weights[$0] >= t.activeWeight } : []
+      if !active.isEmpty {
+        let ax = active.map { xs[$0] }
+        spread[i] = ax.max()! - ax.min()!
+      } else {
+        spread[i] = weightedQuantile(xs, weights, t.spreadHigh) - weightedQuantile(xs, weights, t.spreadLow)
+      }
       previous = centres
     }
 
