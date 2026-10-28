@@ -1,26 +1,47 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Image, Linking, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { requestPermissions } from '../../modules/replay-camera';
 import { Button } from '../components/Button';
-import { PhoneIcon, ShareIcon, ShieldIcon, ArmsUpIcon } from '../components/icons';
 import { repo } from '../data/mmkv';
-import type { MessageKey } from '../i18n';
 import { useT } from '../i18n/useT';
+import { EditMedia } from '../onboarding/EditMedia';
+import { Reveal } from '../onboarding/motion';
+import { RecordMedia } from '../onboarding/RecordMedia';
+import { SaveMedia } from '../onboarding/SaveMedia';
+import { ShareMedia } from '../onboarding/ShareMedia';
+import { SLIDES, splitHighlight, waysOf } from '../onboarding/slides';
+import { StoryBars } from '../onboarding/StoryBars';
+import { useStories } from '../onboarding/useStories';
 import { BRAND_LOGO, logoAspect } from '../share/brandLogo';
-import { colors, fonts } from '../theme/tokens';
+import { colors, fonts, radius } from '../theme/tokens';
 
-const STEPS: { Icon: typeof PhoneIcon; text: MessageKey }[] = [
-  { Icon: PhoneIcon, text: 'onboarding.step1' },
-  { Icon: ArmsUpIcon, text: 'onboarding.step2' },
-  { Icon: ShareIcon, text: 'onboarding.step3' },
-];
+/** How long a finger must stay down to count as a hold (which freezes the story) and not as a tap. */
+const HOLD_MS = 180;
 
+/**
+ * First run: the app's steps told as stories, the way Instagram plays them. A tap on the left edge goes back, on the
+ * right goes forward, holding a finger down freezes the current step, and each one moves on by itself.
+ *
+ * The two tap areas sit behind the content, which lets touches through (`box-none`) except on what the player can use
+ * (options, buttons), so a hold or a tap works anywhere else on the screen.
+ */
 export default function Onboarding() {
   const { t } = useT();
+  const stories = useStories(SLIDES);
   const [denied, setDenied] = useState(false);
+
+  const slide = SLIDES[stories.index];
+  const last = stories.index === SLIDES.length - 1;
+  const labels = [
+    `1 ${t('onboarding.stepRecord')}`,
+    `2 ${t('onboarding.stepSave')}`,
+    `3 ${t('onboarding.stepEdit')}`,
+    `4 ${t('onboarding.stepShare')}`,
+  ];
+  const [before, highlighted, after] = splitHighlight(t(`onboarding.${slide.id}.body`));
 
   async function allow() {
     if (await requestPermissions()) {
@@ -32,53 +53,125 @@ export default function Onboarding() {
   }
 
   return (
-    <SafeAreaView style={styles.root}>
-      <Image source={BRAND_LOGO} style={styles.logo} resizeMode="contain" accessibilityLabel="Repplay" />
+    <View style={styles.root}>
+      <View style={styles.zones}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('onboarding.previousStory')}
+          delayLongPress={HOLD_MS}
+          onPress={stories.previous}
+          onLongPress={stories.hold}
+          onPressOut={stories.release}
+          style={styles.zoneBack}
+        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('onboarding.nextStory')}
+          delayLongPress={HOLD_MS}
+          onPress={stories.next}
+          onLongPress={stories.hold}
+          onPressOut={stories.release}
+          style={styles.zoneNext}
+        />
+      </View>
 
-      <Text style={styles.title} accessibilityRole="header">
-        {t('onboarding.titleTop')}
-        {'\n'}
-        <Text style={{ color: colors.accent }}>{t('onboarding.titleAccent')}</Text>
-      </Text>
+      <SafeAreaView style={styles.content} pointerEvents="box-none">
+        <View style={styles.bars}>
+          <StoryBars slides={SLIDES} labels={labels} index={stories.index} progress={stories.progress} />
+        </View>
 
-      <View style={styles.steps}>
-        {STEPS.map(({ Icon, text }) => (
-          <View key={text} style={styles.step}>
-            <Icon />
-            <Text style={styles.stepText}>{t(text)}</Text>
+        <View style={styles.header} pointerEvents="box-none">
+          <View pointerEvents="none">
+            <Image source={BRAND_LOGO} style={styles.logo} resizeMode="contain" accessibilityLabel="Repplay" />
           </View>
-        ))}
-      </View>
+          {last ? null : (
+            <Pressable accessibilityRole="button" onPress={() => stories.goTo(SLIDES.length - 1)} style={styles.skip}>
+              <Text style={styles.skipText}>{t('onboarding.skip')}</Text>
+            </Pressable>
+          )}
+        </View>
 
-      <View style={styles.note}>
-        <ShieldIcon />
-        <Text style={styles.noteText}>{t('onboarding.privacy')}</Text>
-      </View>
+        <Reveal key={slide.id} style={styles.copy}>
+          <View pointerEvents="none">
+            <View style={styles.headline}>
+              <Text allowFontScaling={false} style={styles.number}>
+                {String(slide.step + 1).padStart(2, '0')}
+              </Text>
+              <Text allowFontScaling={false} accessibilityRole="header" style={styles.word}>
+                {t(`onboarding.${slide.id}.word`)}
+              </Text>
+            </View>
+            <Text style={styles.title}>{t(`onboarding.${slide.id}.title`)}</Text>
+            <Text style={styles.body}>
+              {before}
+              {highlighted ? <Text style={styles.highlight}>{highlighted}</Text> : null}
+              {after}
+            </Text>
+          </View>
+        </Reveal>
 
-      <View style={styles.footer}>
-        {denied ? (
-          <>
-            <Text style={styles.denied}>{t('common.cameraDenied')}</Text>
-            <Button label={t('common.openSettings')} variant="secondary" onPress={() => Linking.openSettings()} />
-          </>
-        ) : null}
-        <Button label={t('onboarding.allow')} onPress={allow} />
-        <Text style={styles.caption}>{t('onboarding.caption')}</Text>
-      </View>
-    </SafeAreaView>
+        <View style={styles.media} pointerEvents="box-none">
+          {slide.id === 'record' ? <RecordMedia /> : null}
+          {slide.id === 'saveFree' || slide.id === 'savePro' ? (
+            <SaveMedia key={slide.id} ways={waysOf(slide.id)} card={stories.card} onPick={stories.pickCard} />
+          ) : null}
+          {slide.id === 'edit' ? <EditMedia /> : null}
+          {slide.id === 'share' ? <ShareMedia /> : null}
+        </View>
+
+        <View style={styles.footer}>
+          {last ? (
+            <>
+              <Text style={styles.note}>{t('onboarding.cameraNote')}</Text>
+              {denied ? (
+                <>
+                  <Text style={styles.denied}>{t('common.cameraDenied')}</Text>
+                  <Button label={t('common.openSettings')} variant="secondary" onPress={() => Linking.openSettings()} />
+                </>
+              ) : null}
+              <Button label={t('onboarding.allow')} onPress={allow} />
+            </>
+          ) : (
+            <Pressable accessibilityRole="button" onPress={stories.next} style={styles.next}>
+              <Text style={styles.nextText}>{t('onboarding.next')}</Text>
+            </Pressable>
+          )}
+        </View>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.ground, paddingHorizontal: 24, paddingTop: 24, gap: 28 },
-  logo: { height: 30, aspectRatio: logoAspect(), alignSelf: 'flex-start' },
-  title: { fontFamily: fonts.displayBold, fontSize: 46, lineHeight: 48, color: colors.text },
-  steps: { gap: 14 },
-  step: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  stepText: { flex: 1, fontFamily: fonts.body, fontSize: 15, lineHeight: 20, color: colors.text },
-  note: { flexDirection: 'row', gap: 10, alignItems: 'center', backgroundColor: colors.surface, borderRadius: 14, padding: 14 },
-  noteText: { flex: 1, fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.soft },
-  footer: { marginTop: 'auto', gap: 10, paddingBottom: 16 },
+  root: { flex: 1, backgroundColor: colors.ground },
+  zones: { ...StyleSheet.absoluteFill, flexDirection: 'row' },
+  zoneBack: { flex: 3 },
+  zoneNext: { flex: 7 },
+  content: { flex: 1, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 },
+  bars: { marginHorizontal: -4 },
+  header: { height: 44, marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  logo: { height: 24, aspectRatio: logoAspect() },
+  skip: { minWidth: 64, height: 44, alignItems: 'flex-end', justifyContent: 'center' },
+  skipText: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.text },
+  copy: { marginBottom: 12 },
+  headline: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, height: 80, overflow: 'hidden' },
+  number: { fontFamily: fonts.displayBold, fontSize: 22, color: colors.accent, paddingBottom: 12 },
+  word: { fontFamily: fonts.displayBold, fontSize: 84, lineHeight: 84, color: colors.text },
+  title: { fontFamily: fonts.bodyBold, fontSize: 20, lineHeight: 25, color: colors.text, marginTop: 6 },
+  body: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: 'rgba(243,237,225,0.86)', marginTop: 6 },
+  highlight: { fontFamily: fonts.bodySemi, color: colors.accent },
+  media: { flex: 1, minHeight: 0 },
+  footer: { gap: 10, paddingTop: 12 },
+  note: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: 'rgba(243,237,225,0.86)' },
   denied: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.warning, textAlign: 'center' },
-  caption: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, textAlign: 'center' },
+  next: {
+    height: 54,
+    borderRadius: radius.button,
+    borderWidth: 1.5,
+    borderColor: 'rgba(243,237,225,0.5)',
+    backgroundColor: colors.ground,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nextText: { fontFamily: fonts.bodyBold, fontSize: 17, color: colors.text },
 });

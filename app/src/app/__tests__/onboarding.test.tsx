@@ -1,0 +1,129 @@
+import { act, fireEvent, render, screen, userEvent } from '@testing-library/react-native';
+import { Linking } from 'react-native';
+
+import { requestPermissions } from '../../../modules/replay-camera';
+import { repo } from '../../data/mmkv';
+import { setLocale } from '../../i18n';
+import { SLIDES } from '../../onboarding/slides';
+import Onboarding from '../onboarding';
+
+const { router } = jest.requireMock('expo-router');
+
+jest.mock('../../../modules/replay-camera', () => ({ requestPermissions: jest.fn(async () => true) }));
+jest.mock('expo-router', () => ({ router: { replace: jest.fn() } }));
+jest.mock('../../data/mmkv', () => ({ repo: { setPrefs: jest.fn() } }));
+
+const allow = requestPermissions as jest.Mock;
+
+beforeEach(() => {
+  jest.useFakeTimers();
+  setLocale('pt-BR');
+  jest.clearAllMocks();
+  allow.mockResolvedValue(true);
+});
+afterEach(() => jest.useRealTimers());
+
+const next = () => screen.getByLabelText('Próxima etapa');
+const previous = () => screen.getByLabelText('Etapa anterior');
+const run = (ms: number) =>
+  act(async () => {
+    jest.advanceTimersByTime(ms);
+  });
+
+test('opens on the Record story with the steps in the bar', async () => {
+  await render(<Onboarding />);
+  expect(screen.getByText('GRAVE.')).toBeTruthy();
+  expect(screen.getByText('Grave o jogo. Guarde só os melhores lances.')).toBeTruthy();
+  for (const label of ['1 Grave', '2 Salve', '3 Edite', '4 Envie']) expect(screen.getByText(label)).toBeTruthy();
+  expect(screen.getByText('Começar gravação')).toBeTruthy();
+});
+
+test('a tap on the right edge goes forward and one on the left goes back', async () => {
+  await render(<Onboarding />);
+  await fireEvent.press(next());
+  expect(screen.getByText('SALVE.')).toBeTruthy();
+  await fireEvent.press(next());
+  expect(screen.getByText('Salve à distância com o PRO.')).toBeTruthy();
+  await fireEvent.press(next());
+  expect(screen.getByText('EDITE.')).toBeTruthy();
+  await fireEvent.press(previous());
+  expect(screen.getByText('Salve à distância com o PRO.')).toBeTruthy();
+});
+
+test('the stories move on by themselves', async () => {
+  await render(<Onboarding />);
+  await run(SLIDES[0].ms + 100);
+  expect(screen.getByText('Salve o lance sem parar o jogo.')).toBeTruthy();
+});
+
+test('holding a finger down freezes the story and lifting it lets it go on, without a tap', async () => {
+  await render(<Onboarding />);
+  const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+  await user.longPress(next(), { duration: 60_000 });
+  // The hold lasted longer than the slide: it did not move on while the finger was down, and it was not a tap either.
+  expect(screen.getByText('GRAVE.')).toBeTruthy();
+  await run(SLIDES[0].ms - 500);
+  expect(screen.getByText('GRAVE.')).toBeTruthy();
+  await run(1000);
+  expect(screen.getByText('SALVE.')).toBeTruthy();
+});
+
+test('a quick press is a tap, not a hold', async () => {
+  await render(<Onboarding />);
+  const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+  await user.press(next());
+  expect(screen.getByText('SALVE.')).toBeTruthy();
+  await user.press(previous());
+  expect(screen.getByText('GRAVE.')).toBeTruthy();
+});
+
+test('Continue goes to the next story and Skip jumps to the last one', async () => {
+  await render(<Onboarding />);
+  await fireEvent.press(screen.getByText('Continuar'));
+  expect(screen.getByText('SALVE.')).toBeTruthy();
+  await fireEvent.press(screen.getByText('Pular'));
+  expect(screen.getByText('ENVIE.')).toBeTruthy();
+  expect(screen.queryByText('Pular')).toBeNull();
+  expect(screen.queryByText('Continuar')).toBeNull();
+});
+
+test('the Save story shows its ways, and tapping one opens it', async () => {
+  await render(<Onboarding />);
+  await fireEvent.press(next());
+  expect(screen.getByText('Toque na tela')).toBeTruthy();
+  await fireEvent.press(screen.getByLabelText('Voz'));
+  expect(screen.getByText('Diga “salvar” ou “gravar”.')).toBeTruthy();
+  await run(10_000);
+  expect(screen.getByText('Diga “salvar” ou “gravar”.')).toBeTruthy();
+});
+
+test('the last story explains the camera and asking for it ends the onboarding', async () => {
+  await render(<Onboarding />);
+  await fireEvent.press(screen.getByText('Pular'));
+  expect(screen.getByText(/a permissão será solicitada a seguir/)).toBeTruthy();
+  await act(async () => fireEvent.press(screen.getByText('Permitir câmera e começar')));
+  expect(repo.setPrefs).toHaveBeenCalledWith({ onboardingDone: true });
+  expect(router.replace).toHaveBeenCalledWith('/setup');
+});
+
+test('a refused camera keeps the player here with a way to Settings', async () => {
+  allow.mockResolvedValue(false);
+  const openSettings = jest.spyOn(Linking, 'openSettings').mockResolvedValue();
+  await render(<Onboarding />);
+  await fireEvent.press(screen.getByText('Pular'));
+  await act(async () => fireEvent.press(screen.getByText('Permitir câmera e começar')));
+  expect(repo.setPrefs).not.toHaveBeenCalled();
+  expect(router.replace).not.toHaveBeenCalled();
+  expect(screen.getByText('Sem câmera não dá para gravar os clipes. Libere em Ajustes.')).toBeTruthy();
+  await fireEvent.press(screen.getByText('Abrir Ajustes'));
+  expect(openSettings).toHaveBeenCalled();
+});
+
+test('is in English on an English phone', async () => {
+  setLocale('en');
+  await render(<Onboarding />);
+  expect(screen.getByText('RECORD.')).toBeTruthy();
+  expect(screen.getByText('1 Record')).toBeTruthy();
+  await fireEvent.press(screen.getByText('Skip'));
+  expect(screen.getByText('SHARE.')).toBeTruthy();
+});
