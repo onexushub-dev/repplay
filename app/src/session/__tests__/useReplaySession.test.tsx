@@ -364,6 +364,7 @@ const trims = (f: ReturnType<typeof fakeDeps>, view: Awaited<ReturnType<typeof s
 
 test('each clip is cut to the chosen length, but never back past the previous clip (30s, saves at 0:30, 0:45, 1:00, 2:47)', async () => {
   const f = fakeDeps();
+  f.deps.repo.setPrefs({ modeSettings: { quadra: { cutSeconds: 30 } } }); // a Pro player who picked 30s
   f.startDecision.mockResolvedValue({ kind: 'pro' });
   const view = await renderHook(() => useReplaySession(f.deps));
   await act(() => view.result.current.start('quadra'));
@@ -383,6 +384,7 @@ test('each clip is cut to the chosen length, but never back past the previous cl
 
 test('a save keeps only its cut and a 2 s margin of the buffer, and the cuts stay the same (30s: 0:30, 0:45, 1:30)', async () => {
   const f = fakeDeps();
+  f.deps.repo.setPrefs({ modeSettings: { quadra: { cutSeconds: 30 } } }); // a Pro player who picked 30s
   f.startDecision.mockResolvedValue({ kind: 'pro' });
   const view = await renderHook(() => useReplaySession(f.deps));
   await act(() => view.result.current.start('quadra'));

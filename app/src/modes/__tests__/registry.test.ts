@@ -9,13 +9,13 @@ test('the app offers one free mode, with nothing drawn over the camera', () => {
   expect(DEFAULT_PREFS.sport).toBe('quadra');
 });
 
-test('the free mode defaults to 0.5x (ultra-wide), 60s, gesture on, last 30s', () => {
+test('the free mode defaults to 0.5x (ultra-wide), 60s, gesture on, last 15s', () => {
   expect(effectiveSettings('quadra', prefs())).toEqual({
     zoom: 0.5,
     gestureEnabled: true,
     voiceEnabled: false,
     bufferSeconds: 60,
-    cutSeconds: 30,
+    cutSeconds: 15,
     quality: '1080p60',
     audio: true,
   });
