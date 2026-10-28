@@ -90,3 +90,12 @@ Itens adiados nas revisões finais. Nada aqui bloqueia o uso, mas vale resolver 
 - Acessibilidade: selo "preparando" sem estado ocupado; barra de ferramentas sem papel de lista de abas; título EDITAR sem papel de cabeçalho.
 - Segurar para 2x com o vídeo pausado mostra o selo 2x mas não toca (o Reels toca enquanto segura).
 - Se o clipe sumir no modo edição, o primeiro "voltar" do Android é engolido.
+
+## Feature futura: sugestão de corte e melhores momentos (protótipo de 2026-10-27)
+- Ideia: achar sozinho o lance dentro de um clipe "puro" e sugerir o corte no editor (a pessoa aceita ou ajusta); com os cortes, "Compilar" junta todos os clipes no estado atual num vídeo só.
+- Protótipo fora do app em `docs/highlights/` (só local, ignorado pelo git): scripts em Python, `relatorio.html` e os vídeos em `out/`. Como rodar: `docs/highlights/LEIAME.md`.
+- Regra testada: movimento só dos jogadores na quadra (quem passa perto da câmera é ignorado) + sons secos de batida, a cada 100 ms; o trecho de atividade mais perto do gatilho vira o corte (6–15 s, termina no gatilho).
+- Resultado com os 7 clipes da gravação de 26/10 (beach tennis): coincidência média de 73% com a referência marcada a olho, 5 de 7 acima de 88%.
+- Pendências antes do app: testar com basquete e outros ângulos de câmera; gatilho falso do gesto (saque com braços para cima) gera clipe sem lance no fim.
+- No app (2026-10-27, só iOS): a análise do Modo Foco grava o movimento da quadra (`CourtMotion.swift`) e `src/cutSuggestion/` aplica o corte sugerido quando o clipe ainda está com o corte original. Chave: `CUT_SUGGESTION_ENABLED`. Para remover: a pasta `src/cutSuggestion/`, `CourtMotion.swift` (+ testes), o `motion` em `FocusAnalyzer.swift`, `analyzed` na fila do Modo Foco, `cutSuggestion` no schema/repo e o bloco da sugestão em `app/clip/[id].tsx`.
+- Ainda não feito: "Compilar melhores momentos" automático; Android.

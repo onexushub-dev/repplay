@@ -84,6 +84,11 @@ export type Clip = {
    * too few people for a framing, `failed` when the analysis broke. Absent = never analysed (clips from before it).
    */
   focus?: ClipFocus;
+  /**
+   * The cut the app suggested from the court's motion (src/cutSuggestion), in file ms. Applied as `trim` when it
+   * arrived before the player touched the cut. Absent: not analysed yet, no clear play, or an older clip.
+   */
+  cutSuggestion?: { startMs: number; endMs: number };
   /** Optional name the player gives the clip (like a recording's name). */
   name?: string;
   /** When the edited video was last saved to Photos / sent through the share sheet (the clip itself stays inside the app). */

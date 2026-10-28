@@ -10,6 +10,8 @@ export type FocusQueueDeps = {
   supported(): boolean;
   repo: Pick<Repo, 'getClip' | 'updateClip'>;
   deleteFile(path: string): void;
+  /** A clip's analysis is stored and its file written (the cut suggestion reads it). */
+  analyzed?(clipId: string, outPath: string): void;
 };
 
 export type FocusQueue = {
@@ -71,7 +73,15 @@ export function createFocusQueue(deps: FocusQueueDeps): FocusQueue {
       .analyze({ clipPath: clip.path, startMs: range.startMs, endMs: range.endMs, outPath })
       .then((result) => {
         // updateClip never brings back a deleted clip; the file it wrote is then left over.
-        if (!deps.repo.updateClip(clip.id, { focus: { v: 1, status: result.status, file: outPath } })) deps.deleteFile(outPath);
+        if (!deps.repo.updateClip(clip.id, { focus: { v: 1, status: result.status, file: outPath } })) {
+          deps.deleteFile(outPath);
+          return;
+        }
+        try {
+          deps.analyzed?.(clip.id, outPath);
+        } catch (e) {
+          console.warn('[Repplay] after the analysis', clip.path, e);
+        }
       })
       .catch((e: unknown) => {
         const code = codeOf(e);
