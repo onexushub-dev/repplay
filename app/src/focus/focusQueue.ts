@@ -12,6 +12,8 @@ export type FocusQueueDeps = {
   deleteFile(path: string): void;
   /** A clip's analysis is stored and its file written (the cut suggestion reads it). */
   analyzed?(clipId: string, outPath: string): void;
+  /** Every finished analysis with its numbers (field test: how long the Modo Foco takes on each phone). */
+  measured?(clip: Clip, result: FocusAnalysis): void;
 };
 
 export type FocusQueue = {
@@ -72,6 +74,11 @@ export function createFocusQueue(deps: FocusQueueDeps): FocusQueue {
     deps
       .analyze({ clipPath: clip.path, startMs: range.startMs, endMs: range.endMs, outPath })
       .then((result) => {
+        try {
+          if (deps.measured) deps.measured(clip, result);
+        } catch {
+          // a measurement never breaks an analysis
+        }
         // updateClip never brings back a deleted clip; the file it wrote is then left over.
         if (!deps.repo.updateClip(clip.id, { focus: { v: 1, status: result.status, file: outPath } })) {
           deps.deleteFile(outPath);

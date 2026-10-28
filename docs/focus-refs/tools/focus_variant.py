@@ -37,7 +37,85 @@ STANDARD = {
     "spreadFromEdges": 0.0,
     # centerOnSpan=0..1: blend of the target x from the weighted mean (0) to the middle of the spread (1).
     "centerOnSpan": 0.0,
+    # activity=1 (2026-10-28): people followed between samples (tracks); "still" and the movement weight measured per
+    # track in body heights, not in fixed pixels. The pixel still filter above drops nobody in practice (boxes jitter
+    # more than stillRadius and come and go), so the bench and the stands counted as players.
+    "activity": 0.0,
+    "trackGapMs": 1000.0,     # a track not seen for this long ends
+    "trackMatch": 0.7,        # a box joins a track whose last centre is within this many body heights
+    "stillBodies": 0.3,       # feet staying within this many body heights over ±activityWindowMs: still
+    "activityWindowMs": 6000.0,  # long enough that a player in a ready stance between rallies still counts
+    # stillScope=1: only a whole track that stays still for at least spectatorMinMs is left out (the bench, the
+    # stands); players who stand still for a while (beach tennis, ready stance) keep counting, with a low weight.
+    "stillScope": 1.0,
+    "spectatorMinMs": 8000.0,
+    # activeSpread=1: the crop width covers the people moving (weight >= activeWeight) when there are any, so the
+    # frame closes on the action instead of on everybody; the others still pull the centre a little.
+    "activeSpread": 0.0,
+    "activeWeight": 2.0,
+    "stillMinSeen": 4,        # samples needed in the window to call someone still
+    "speedUnit": 0.6,         # body heights per second that add 1 to the weight (capped at moveCap)
+    "speedWindowMs": 500.0,
 }
+
+
+def tracks_of(samples, W, H, t):
+    """Greedy tracks over the samples: [(sample index, box)] lists. Distances in pixels, scaled by body height."""
+    tracks = []  # each: {"items": [(i, box)], "last": (cx, cy, h), "seen": tMs}
+    for i, (now, boxes) in enumerate(samples):
+        open_ = [k for k, tr in enumerate(tracks) if now - tr["seen"] <= t["trackGapMs"]]
+        pairs = []
+        for j, b in enumerate(boxes):
+            c = ((b[0] + b[2] / 2) * W, (b[1] + b[3] / 2) * H)
+            for k in open_:
+                lx, ly, lh = tracks[k]["last"]
+                d = math.hypot(c[0] - lx, c[1] - ly) / max(lh, b[3] * H, 1e-9)
+                if d <= t["trackMatch"]:
+                    pairs.append((d, j, k))
+        used_b, used_t = set(), set()
+        for d, j, k in sorted(pairs):
+            if j in used_b or k in used_t:
+                continue
+            used_b.add(j); used_t.add(k)
+            b = boxes[j]
+            tracks[k]["items"].append((i, b))
+            tracks[k]["last"] = ((b[0] + b[2] / 2) * W, (b[1] + b[3] / 2) * H, b[3] * H)
+            tracks[k]["seen"] = now
+        for j, b in enumerate(boxes):
+            if j not in used_b:
+                tracks.append({"items": [(i, b)], "last": ((b[0] + b[2] / 2) * W, (b[1] + b[3] / 2) * H, b[3] * H), "seen": now})
+    return [tr["items"] for tr in tracks]
+
+
+def activity_people(samples, W, H, t):
+    """Per sample: the boxes of people not still, each with its movement weight (activity=1)."""
+    n = len(samples)
+    out = [[] for _ in range(n)]
+    for items in tracks_of(samples, W, H, t):
+        times = [samples[i][0] for i, _ in items]
+        feet = [((b[0] + b[2] / 2) * W, (b[1] + b[3]) * H) for _, b in items]
+        heights = [b[3] * H for _, b in items]
+        if t["stillScope"]:
+            body = median(heights)
+            mx = median([f[0] for f in feet]); my = median([f[1] for f in feet])
+            reach = max(math.hypot(f[0] - mx, f[1] - my) for f in feet) / max(body, 1e-9)
+            if times[-1] - times[0] >= t["spectatorMinMs"] and reach < t["stillBodies"]:
+                continue  # still for the whole time it was seen: not playing
+        for a, (i, b) in enumerate(items):
+            near = [q for q in range(len(items)) if abs(times[q] - times[a]) <= t["activityWindowMs"]]
+            body = median([heights[q] for q in near])
+            if not t["stillScope"] and len(near) >= t["stillMinSeen"]:
+                mx = median([feet[q][0] for q in near]); my = median([feet[q][1] for q in near])
+                reach = max(math.hypot(feet[q][0] - mx, feet[q][1] - my) for q in near) / max(body, 1e-9)
+                if reach < t["stillBodies"]:
+                    continue  # still: the bench, the stands, someone waiting
+            # speed over ±speedWindowMs, in body heights per second
+            win = [q for q in range(len(items)) if abs(times[q] - times[a]) <= t["speedWindowMs"]]
+            q0, q1 = min(win, key=lambda q: times[q]), max(win, key=lambda q: times[q])
+            dt = (times[q1] - times[q0]) / 1000
+            speed = math.hypot(feet[q1][0] - feet[q0][0], feet[q1][1] - feet[q0][1]) / max(body, 1e-9) / dt if dt > 0 else 0
+            out[i].append((b, 1 + min(speed / t["speedUnit"], t["moveCap"])))
+    return out
 
 
 def median(values):
@@ -112,9 +190,17 @@ def compute(samples, W, H, aspect, zoom, t):
         ref = median(tallest)
         near.append([b for b in boxes if b[3] >= t["farShare"] * ref])
     # 2. Still people out.
+    weights_by_box = None
+    if t["activity"]:
+        act = activity_people([(samples[i][0], near[i]) for i in range(n)], W, H, t)
+        people = [[b for b, _ in a] for a in act]
+        weights_by_box = [{id(b): w for b, w in a} for a in act]
     feet = [[(b[0] + b[2] / 2, b[1] + b[3]) for b in bs] for bs in near]
-    people = []
-    for i in range(n):
+    if t["activity"]:
+        pass
+    else:
+      people = []
+      for i in range(n):
         keep = []
         for j, box in enumerate(near[i]):
             fx, fy = feet[i][j]
@@ -159,13 +245,24 @@ def compute(samples, W, H, aspect, zoom, t):
             previous = []
             continue
         weights = []
-        for c in centres:
+        if weights_by_box is not None:
+            # activity=1: each person's own speed (held boxes of people gone a moment: 1)
+            weights = [weights_by_box[i].get(id(b), 1.0) for b in people[i]]
+        else:
+          for c in centres:
             moved = min((math.hypot((c[0] - p[0]) * W, (c[1] - p[1]) * H) for p in previous), default=0)
             weights.append(1 + min(moved / (t["moveUnit"] * W), t["moveCap"]))
         total = sum(weights)
         cx[i] = sum(c[0] * w for c, w in zip(centres, weights)) / total
         cy[i] = sum(c[1] * w for c, w in zip(centres, weights)) / total
         xs = [c[0] for c in centres]
+        if weights_by_box is not None and t["activeSpread"]:
+            active = [k for k, w in enumerate(weights) if w >= t["activeWeight"]]
+            if active:
+                xs_a = [xs[k] for k in active]
+                spread[i] = max(xs_a) - min(xs_a)
+                previous = centres
+                continue
         if t["spreadFromEdges"]:
             low = weighted_quantile([b[0] for b in people[i]], weights, t["spreadLow"])
             high = weighted_quantile([b[0] + b[2] for b in people[i]], weights, t["spreadHigh"])
@@ -241,12 +338,16 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--set", action="append", default=[], help="tuning value, e.g. spreadScale=1.1 or maxZoom=2")
     ap.add_argument("--check", action="store_true", help="compare with the app's file")
+    ap.add_argument("--preset", choices=["v13", "acao"], default="v13",
+                    help="acao: FocusTuning.action (v14, the app since 2026-10-28) = --set activity=1 --set activeSpread=1")
     ap.add_argument("--boxes", choices=["full", "tiled"], default="full",
                     help="people from the whole-frame detector (the app today) or the whole frame + tiles "
                          "(vision-probe.swift from 2026-10-28 on; older people files have broken tiled boxes)")
     args = ap.parse_args()
 
     tuning = dict(STANDARD)
+    if args.preset == "acao":
+        tuning.update(activity=1.0, activeSpread=1.0)
     for item in args.set:
         name, _, value = item.partition("=")
         if name not in tuning:
