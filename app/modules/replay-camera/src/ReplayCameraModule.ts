@@ -23,6 +23,8 @@ declare class ReplayCameraModule extends NativeModule<ReplayCameraModuleEvents> 
   stopSession(): Promise<void>;
   saveClip(opts: SaveClipOptions): Promise<SavedClip>;
   setGestureEnabled(enabled: boolean): void;
+  // Gesture test, spike screen (iOS only: missing on Android and in older builds).
+  setGestureTrace?(enabled: boolean): void;
   // The phone's position (iOS only: missing on Android and in older builds).
   getUpright?(): DeviceUpright;
   // Continuous zoom (iOS only: missing on Android and in older builds).

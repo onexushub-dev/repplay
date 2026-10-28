@@ -1,21 +1,29 @@
 // Etapa 0 spike screen: exercises the ReplayCamera module for the field test. Not the product UI.
-import { Directory, Paths } from 'expo-file-system';
+import * as Device from 'expo-device';
+import { Directory, File, Paths } from 'expo-file-system';
+import { shareAsync } from 'expo-sharing';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   addReplayListener,
   ReplayCameraView,
   requestPermissions,
   saveClip,
+  setGestureTrace,
   startSession,
   stopSession,
   type ThermalLevel,
   type TriggerSource,
 } from '../../modules/replay-camera';
+import { createGestureTest } from '../diag/gestureTest';
 
 const bufferDir = new Directory(Paths.cache, 'replay-buffer');
+/** Zooms to test with (0.5 = ultra-wide) and the real distances the tester can mark, in metres. */
+const ZOOMS = [0.5, 0.7, 1, 2];
+const DISTANCES = [3, 5, 8, 10, 12, 15, 18, 20, 25, 30];
+const QUALITY = '1080p60';
 const EMPTY_COUNTS: Record<TriggerSource, number> = { screen: 0, gesture: 0, remote: 0, watch: 0, voice: 0, phone: 0 };
 
 function bufferMb(): number {
@@ -49,6 +57,11 @@ export default function SpikeScreen() {
   const [starting, setStarting] = useState(false);
   const [pose, setPose] = useState('');
   const saving = useRef(false);
+  // Gesture test: every gesture sample, the marked distances and the triggers, for the report to share.
+  const test = useRef(createGestureTest());
+  const [zoom, setZoom] = useState(0.5);
+  const [distance, setDistance] = useState<number | null>(null);
+  const [testLine, setTestLine] = useState('');
 
   const note = (line: string) =>
     setLog((l) => [`${new Date().toLocaleTimeString()} ${line}`, ...l].slice(0, 6));
@@ -71,6 +84,7 @@ export default function SpikeScreen() {
 
   // Every native trigger is counted on arrival, so a missed X and a failed save can be told apart.
   const onTrigger = useEffectEvent((source: TriggerSource) => {
+    test.current.fire(source);
     setReceived((n) => n + 1);
     note(`gatilho recebido: ${source}`);
     save(source);
@@ -86,12 +100,13 @@ export default function SpikeScreen() {
       }),
       addReplayListener('onGestureDebug', (e) =>
         setPose(
-          `pose: ${e.people} pessoa(s) · ${e.samples}/s · ori ${e.orientation}` +
+          `pose: ${e.people} pessoa(s) · analisadas ${e.posed ?? '?'} · dos tiles ${e.fromTiles ?? '?'} · menor ${e.smallestPx ?? '?'} px · ${e.samples}/s · ori ${e.orientation}` +
             (e.people > 0
               ? ` · conf ${(e.minConf ?? 0).toFixed(2)} · faltam [${e.missing ?? ''}] · pulsos acima do nariz ${e.wristGap ?? '?'} ombros (precisa > 0.35) · cotovelos acima ${e.elbowsUp ?? '?'} · braços ${e.isX} · mãos no alto ${e.raised ?? '?'} · aceno ${e.waved ?? '?'}`
               : '')
         )
       ),
+      addReplayListener('onGestureTrace', (e) => test.current.addTrace(e)),
       addReplayListener('onInterrupted', () => note('interrompido')),
       addReplayListener('onResumed', () => note('retomado')),
       // Native errors after start always end the session.
@@ -100,12 +115,18 @@ export default function SpikeScreen() {
         note(`erro (sessão encerrada): ${e.code} ${e.message}`);
       }),
     ];
-    return () => subs.forEach((s) => s.remove());
+    return () => {
+      subs.forEach((s) => s.remove());
+      setGestureTrace(false);
+    };
   }, []);
 
   useEffect(() => {
     if (startedAt === null) return;
-    const tick = setInterval(() => setNow(Date.now()), 1000);
+    const tick = setInterval(() => {
+      setNow(Date.now());
+      setTestLine(test.current.summary());
+    }, 1000);
     const disk = setInterval(() => {
       const current = bufferMb();
       setMb(current);
@@ -119,6 +140,7 @@ export default function SpikeScreen() {
 
   async function toggle() {
     if (startedAt !== null) {
+      setGestureTrace(false);
       await stopSession();
       setStartedAt(null);
       note('parado');
@@ -128,7 +150,8 @@ export default function SpikeScreen() {
     setStarting(true);
     try {
       if (!(await requestPermissions())) return note('permissão negada');
-      await startSession({ lens: 'ultraWide', maxQuality: '1080p60' });
+      await startSession({ lens: 'ultraWide', zoom, maxQuality: QUALITY });
+      setGestureTrace(true);
       setStartedAt(Date.now());
       setClips(0);
       setCounts(EMPTY_COUNTS);
@@ -143,6 +166,39 @@ export default function SpikeScreen() {
   }
 
   const running = startedAt !== null;
+
+  function markDistance(meters: number | null) {
+    setDistance(meters);
+    test.current.mark(meters);
+    note(meters === null ? 'distância real: sem marca' : `distância real: ${meters} m`);
+  }
+
+  function shareTest() {
+    try {
+      const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
+      const file = new File(Paths.cache, `gesto-teste-${stamp}.txt`);
+      if (!file.exists) file.create();
+      file.write(test.current.report({ device: `${Device.modelName ?? 'iPhone'} (iOS ${Device.osVersion ?? '?'})`, zoom, quality: QUALITY }));
+      shareAsync(file.uri, { mimeType: 'text/plain', UTI: 'public.plain-text', dialogTitle: 'Teste do gesto' }).catch(() => {});
+    } catch (e) {
+      note(`erro ao compartilhar: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  function confirmClear() {
+    Alert.alert('Limpar o teste do gesto?', 'As amostras, as distâncias marcadas e os gatilhos registrados serão apagados.', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Limpar',
+        style: 'destructive',
+        onPress: () => {
+          test.current.clear();
+          setDistance(null);
+          setTestLine('');
+        },
+      },
+    ]);
+  }
 
   return (
     <View style={styles.root}>
@@ -161,11 +217,43 @@ export default function SpikeScreen() {
           {degraded ? ' (720p30)' : ''} · buffer {mb} MB (máx {maxMb})
         </Text>
         {pose ? <Text style={styles.stat}>{pose}</Text> : null}
+        {testLine ? <Text style={styles.stat}>{testLine}</Text> : null}
         {log.map((line) => (
           <Text key={line} style={styles.log}>
             {line}
           </Text>
         ))}
+      </View>
+      <View style={styles.testPanel}>
+        {running ? null : (
+          <View style={styles.chips}>
+            <Text style={styles.chipLabel}>zoom</Text>
+            {ZOOMS.map((z) => (
+              <Pressable key={z} style={[styles.chip, zoom === z && styles.chipOn]} onPress={() => setZoom(z)}>
+                <Text style={[styles.chipText, zoom === z && styles.chipTextOn]}>{z}x</Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+        <View style={styles.chips}>
+          <Text style={styles.chipLabel}>distância real</Text>
+          <Pressable style={[styles.chip, distance === null && styles.chipOn]} onPress={() => markDistance(null)}>
+            <Text style={[styles.chipText, distance === null && styles.chipTextOn]}>—</Text>
+          </Pressable>
+          {DISTANCES.map((m) => (
+            <Pressable key={m} style={[styles.chip, distance === m && styles.chipOn]} onPress={() => markDistance(m)}>
+              <Text style={[styles.chipText, distance === m && styles.chipTextOn]}>{m}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <View style={styles.testActions}>
+          <Pressable style={[styles.button, styles.toggle, styles.small]} onPress={shareTest}>
+            <Text style={styles.buttonText}>Compartilhar teste</Text>
+          </Pressable>
+          <Pressable style={[styles.button, styles.toggle, styles.small]} onPress={confirmClear}>
+            <Text style={styles.buttonText}>Limpar teste</Text>
+          </Pressable>
+        </View>
       </View>
       <View style={styles.actions}>
         <Pressable
@@ -177,7 +265,10 @@ export default function SpikeScreen() {
         <Pressable
           style={[styles.button, styles.save, !running && styles.disabled]}
           disabled={!running}
-          onPress={() => save('screen')}>
+          onPress={() => {
+            test.current.fire('screen');
+            save('screen');
+          }}>
           <Text style={styles.saveText}>Salvar</Text>
         </Pressable>
       </View>
@@ -206,4 +297,13 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.4 },
   buttonText: { color: '#F3EDE1', fontSize: 18, fontWeight: '700' },
   saveText: { color: '#0B0B09', fontSize: 20, fontWeight: '800' },
+  testPanel: { position: 'absolute', bottom: 120, left: 12, right: 12, gap: 8 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
+  chipLabel: { color: '#F3EDE1', fontSize: 13, marginRight: 4 },
+  chip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.6)' },
+  chipOn: { backgroundColor: '#D6F23F' },
+  chipText: { color: '#F3EDE1', fontSize: 14, fontWeight: '600' },
+  chipTextOn: { color: '#0B0B09' },
+  testActions: { flexDirection: 'row', gap: 12 },
+  small: { height: 44 },
 });

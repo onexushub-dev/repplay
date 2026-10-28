@@ -66,6 +66,11 @@ final class ReplayEngine {
       self?.emit?("onTrigger", ["source": "voice", "at": Date().timeIntervalSince1970 * 1000])
     }
     gesture.onDebug = { [weak self] in self?.emit?("onGestureDebug", $0) }
+    gesture.onTrace = { [weak self] in self?.emit?("onGestureTrace", $0) }
+    gesture.optics = { [weak self] in
+      guard let camera = self?.capture.camera else { return nil }
+      return (Double(camera.activeFormat.videoFieldOfView), Double(camera.videoZoomFactor))
+    }
     gesture.onGesture = { [weak self] in
       self?.emit?("onTrigger", ["source": "gesture", "at": Date().timeIntervalSince1970 * 1000])
     }

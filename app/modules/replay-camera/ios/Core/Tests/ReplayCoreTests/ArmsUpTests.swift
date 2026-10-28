@@ -85,6 +85,13 @@ final class HoldTrackerTests: XCTestCase {
     XCTAssertEqual(fired, [1.5])
   }
 
+  func test_aFarPlayerReadOnlyOnceASecond_stillFires() { // gesture v2: the pose flickers at 15-20 m
+    let h = HoldTracker()
+    let fired = feed(h, from: 0.0, to: 0.0, true) + feed(h, from: 0.25, to: 0.75, false) + feed(h, from: 1.0, to: 1.0, true)
+      + feed(h, from: 1.25, to: 1.75, false) + feed(h, from: 2.0, to: 2.0, true)
+    XCTAssertEqual(fired, [2.0])
+  }
+
   func test_aLongGap_resetsTheHold() {
     let h = HoldTracker()
     let fired = feed(h, from: 0.0, to: 0.5, true) + feed(h, from: 0.75, to: 1.5, false) + feed(h, from: 1.75, to: 2.5, true)
@@ -119,5 +126,69 @@ final class HoldTrackerTests: XCTestCase {
     let h = HoldTracker()
     let fired = feed(h, from: 0.0, to: 1.5, true) + feed(h, from: 1.75, to: 2.0, false) + feed(h, from: 2.25, to: 8.0, true)
     XCTAssertEqual(fired, [1.5]) // two missed samples are a detector hiccup, the player never lowered the arms
+  }
+}
+
+/// Feeds `people` (id -> arms up) every `step` seconds in [start, stop]; returns the times PersonHold fired.
+private func feedPeople(_ hold: PersonHold, from start: Double, to stop: Double, step: Double = 0.25,
+                        _ people: (Double) -> [(id: Int, isUp: Bool)]) -> [Double] {
+  var fired: [Double] = []
+  var i = 0
+  while true {
+    let t = start + Double(i) * step
+    if t > stop + 1e-9 { break }
+    if hold.update(people(t), at: t) { fired.append(t) }
+    i += 1
+  }
+  return fired
+}
+
+final class PersonHoldTests: XCTestCase {
+  func test_onePlayerHoldingAmongOthersFires() {
+    let fired = feedPeople(PersonHold(), from: 0, to: 3) { _ in [(1, false), (2, true), (3, false), (4, false)] }
+    XCTAssertEqual(fired, [1.5])
+  }
+
+  func test_twoPlayersRaisingOneAfterTheOtherDoNotAddUp() { // a block, then another player's block
+    let fired = feedPeople(PersonHold(), from: 0, to: 3) { t in
+      [(1, t < 0.75), (2, t >= 1.0 && t < 1.75)]
+    }
+    XCTAssertEqual(fired, [])
+  }
+
+  func test_aPlayerNotLookedAtInSomeSamplesStillHolds() { // others took the pose slots every other sample
+    let fired = feedPeople(PersonHold(), from: 0, to: 3) { t in
+      Int((t / 0.25).rounded()) % 2 == 0 ? [(7, true)] : [(1, false), (2, false)]
+    }
+    XCTAssertEqual(fired, [1.5])
+  }
+
+  func test_twoPlayersHoldingAtOnceFireOnce() {
+    let fired = feedPeople(PersonHold(), from: 0, to: 3) { _ in [(1, true), (2, true)] }
+    XCTAssertEqual(fired, [1.5])
+  }
+}
+
+final class FireGateTests: XCTestCase {
+  func test_aSecondRuleFiringOnTheSameGestureIsHeldBack() { // wave at 70.0, slow hold at 73.0 (2026-10-28)
+    let gate = FireGate()
+    XCTAssertTrue(gate.update(fired: true, anyRaised: true, at: 70.0))
+    for t in stride(from: 70.25, through: 72.75, by: 0.25) { XCTAssertFalse(gate.update(fired: false, anyRaised: true, at: t)) }
+    XCTAssertFalse(gate.update(fired: true, anyRaised: true, at: 73.0))
+  }
+
+  func test_theNextGestureAfterTheArmsCameDownFires() {
+    let gate = FireGate()
+    XCTAssertTrue(gate.update(fired: true, anyRaised: true, at: 40.0))
+    _ = gate.update(fired: false, anyRaised: true, at: 41.0)
+    for t in stride(from: 41.25, through: 45.0, by: 0.25) { _ = gate.update(fired: false, anyRaised: false, at: t) }
+    XCTAssertTrue(gate.update(fired: true, anyRaised: true, at: 46.0))
+  }
+
+  func test_armsDownButTooSoonStillWaitsForTheCooldown() {
+    let gate = FireGate()
+    XCTAssertTrue(gate.update(fired: true, anyRaised: false, at: 0.0))
+    XCTAssertFalse(gate.update(fired: true, anyRaised: false, at: 2.0))
+    XCTAssertTrue(gate.update(fired: true, anyRaised: false, at: 3.0))
   }
 }

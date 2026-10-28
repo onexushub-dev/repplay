@@ -94,7 +94,7 @@ public class ReplayCameraModule: Module {
   public func definition() -> ModuleDefinition {
     Name("ReplayCamera")
 
-    Events("onTrigger", "onThermalChange", "onInterrupted", "onResumed", "onError", "onGestureDebug", "onWatchStatus",
+    Events("onTrigger", "onThermalChange", "onInterrupted", "onResumed", "onError", "onGestureDebug", "onGestureTrace", "onWatchStatus",
            "onRemoteStatus", "onRemoteState", "onRemoteResult", "onRemotePairing", "onRemoteStop",
            "onRemoteStart", "onRemoteFrame", "onRemoteCheck", "onDiag") // onDiag: TEMP(diag-remote)
 
@@ -154,6 +154,11 @@ public class ReplayCameraModule: Module {
 
     Function("setGestureEnabled") { (enabled: Bool) in
       self.engine.gesture.enabled = enabled
+    }
+
+    /// Gesture test (spike screen): emit onGestureTrace for every sample.
+    Function("setGestureTrace") { (enabled: Bool) in
+      self.engine.gesture.traceEnabled = enabled
     }
 
     // Continuous zoom: 0.5x (ultra-wide) to 5x, one virtual camera so crossing 1x never restarts the session.

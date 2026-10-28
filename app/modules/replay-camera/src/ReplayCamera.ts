@@ -40,6 +40,11 @@ export function setGestureEnabled(enabled: boolean): void {
   ReplayCameraModule.setGestureEnabled(enabled);
 }
 
+/** Gesture test (spike screen): every gesture sample arrives as onGestureTrace while on. No-op where unsupported. */
+export function setGestureTrace(enabled: boolean): void {
+  if (typeof ReplayCameraModule.setGestureTrace === 'function') ReplayCameraModule.setGestureTrace(enabled);
+}
+
 /** How the phone is held right now. Portrait where the platform cannot tell (Android, older builds). */
 export function getDeviceUpright(): DeviceUpright {
   if (typeof ReplayCameraModule.getUpright === 'function') return ReplayCameraModule.getUpright();
