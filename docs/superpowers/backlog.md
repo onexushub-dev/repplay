@@ -28,7 +28,7 @@ Itens adiados nas revisões finais. Nada aqui bloqueia o uso, mas vale resolver 
 ## Gesto, voz e avisos (revisão de 2026-10-18)
 - Miniatura usa sempre o quadro do primeiro corte; depois de editar o corte ela não acompanha (aceitável).
 - Voz: ~1–2s de fala se perdem a cada reinício de 50s; um comando bem na virada pode passar.
-- Gesto: com muita gente no quadro, os 4 maiores são analisados; jogadores do lado de lá podem ficar de fora.
+- ~~Gesto: com muita gente no quadro, os 4 maiores são analisados; jogadores do lado de lá podem ficar de fora.~~ Resolvido no gesto v2 (2026-10-28, PR #17): revezamento entre todos, quem levanta os braços primeiro.
 - Android: a ultra-wide geralmente não tem flash e não há alternativa (sem piscada na 0.5x).
 - Android: `applyTorch` reconstrói a requisição de captura à mão; compartilhar um único construtor com `open()`.
 - iOS: a troca de saída para o alto-falante a cada som pode mudar o microfone usado quando há fone Bluetooth.
@@ -110,3 +110,9 @@ Itens adiados nas revisões finais. Nada aqui bloqueia o uso, mas vale resolver 
   - Fica igual quando os jogadores já aparecem grandes (`yt-basket-04`: zoom mediano 1,17x → 1,18x).
   - Abre demais quando há gente fora do jogo: banco/arquibancada no basquete contra a luz (1,7 → 5,5 pessoas/quadro, zoom some) e pessoas ao fundo do galpão em `yt-bt-06` (zoom mediano 1,37x → 1,15x). No beach tennis do app passa a pegar os 4 jogadores (≈1,5 → 3,5 pessoas/quadro) e abre o enquadramento.
 - Próximo passo (depois dos testes do gesto): antes de calcular o enquadramento, ignorar quem está parado ou fora da área de jogo (hoje o V13 só descarta quem é bem menor que os maiores da cena e quem fica parado — conferir por que o banco e o fundo passam); refazer a comparação com `tools/tiles-compare.sh` nos mesmos 12 vídeos. Se ficar bom, levar as partes do quadro para o `FocusAnalyzer` (por exemplo a cada poucos quadros, mantendo as pessoas entre um e outro, como `PersonTracks` no gesto) e conferir o custo de tempo da análise.
+
+## Gesto v2 — pendências (2026-10-28)
+- Medir num iPhone mais antigo (ex.: XR/11): no 16 Pro Max cada amostra leva ~55–60 ms; num aparelho mais lento o ritmo cai e o gesto fica mais lento ou falha de longe. Usar a `/spike` (relatório mostra ms por amostra e amostras/s).
+- Teste longo de calor: 1 h de jogo real com gesto ligado, pela `/spike` (relatório mostra o tempo em cada nível). Se chegar a critical: avisar no serious, reduzir gesto/Modo Foco antes de cortar a gravação ou começar em 30 fps.
+- Android: o gesto ainda é o v1 (ML Kit, uma pessoa, quadro de 640x360) — sem partes do quadro, acompanhamento por pessoa nem FireGate.
+- A `/spike` ganhou o teste do gesto (`src/diag/gestureTest.ts`): sai junto com a rota antes da loja (item do Plano 1).
