@@ -99,10 +99,71 @@ export type ReplayCameraModuleEvents = {
   onError: (e: { code: ReplayErrorCode; message: string }) => void;
   /** Diagnostic (Etapa 0): what the gesture detector saw in the last second. iOS only for now. */
   onGestureDebug: (e: GestureDebug) => void;
+  /** Gesture test (spike screen): one event per gesture sample while setGestureTrace(true). iOS only. */
+  onGestureTrace: (e: GestureTrace) => void;
+};
+
+/** One person the gesture detector looked at in one sample (see GestureDetector.traceInfo). */
+export type GestureTracePerson = {
+  /** Track id; -1 for the whole-frame fallback. */
+  id: number;
+  /** How the box was found this sample: whole-frame detector, a tile, a close look around a far person, kept from an earlier sample, or no box. */
+  src: 'full' | 'tile' | 'focus' | 'kept' | 'wholeFrame';
+  /** Box height in pixels. */
+  px: number;
+  /** [x, y, width, height], normalized, origin bottom-left. */
+  box: number[];
+  /** Distance from the box height, assuming a 1.75 m player (raised arms make it read closer). */
+  estM?: number;
+  /** A body was found in the crop. */
+  pose: boolean;
+  /** Joint confidences (-1: missing): lw, rw, le, re, ls, rs, nose. */
+  conf?: Record<string, number>;
+  up?: boolean;
+  raised?: boolean;
+  /** Shoulder width in pixels, and the distance it gives assuming 0.31 m between the shoulder joints. */
+  swPx?: number;
+  estSwM?: number;
+  /** Each wrist above the head line, in shoulder widths (the hold needs both > 0.35). */
+  riseL?: number;
+  riseR?: number;
+  /** Each wrist sideways from the shoulder centre, in shoulder widths. */
+  xL?: number;
+  xR?: number;
+  elbowsUp?: boolean;
+};
+
+export type GestureTrace = {
+  /** Camera clock, seconds. */
+  t: number;
+  /** Time the sample took, ms. */
+  ms: number;
+  frame: number[];
+  upright: string;
+  hot: boolean;
+  /** iOS thermal state: nominal, fair, serious, critical (missing in builds before 2026-10-28). */
+  thermal?: string;
+  tracked: number;
+  isUp: boolean;
+  raised: boolean;
+  hfov?: number;
+  zoomFactor?: number;
+  focalPx?: number;
+  fired?: 'hold' | 'wave';
+  /** A rule fired again on a gesture that already saved a clip: held back (FireGate), no clip. */
+  suppressed?: 'hold' | 'wave';
+  persons: GestureTracePerson[];
 };
 
 export type GestureDebug = {
+  /** People known to the detector (iOS: kept for 3 s between samples, see PersonTracks). */
   people: number;
+  /** People the pose step looked at in the last sample. iOS only. */
+  posed?: number;
+  /** People found only by the tiles (far players) in the last sample. iOS only. */
+  fromTiles?: number;
+  /** Height in pixels of the smallest person the pose step looked at. iOS only. */
+  smallestPx?: number;
   isX: boolean;
   /** Both wrists above the head line in at least one person (the cue for sampling faster). iOS only. */
   raised?: boolean;

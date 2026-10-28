@@ -437,7 +437,7 @@ test('the summary tells which triggers are on without opening', async () => {
   await render(<Setup />);
   expect(
     screen.getByRole('button', {
-      name: 'Ajustes: clipes de até 30 segundos, voz ligada, acenar com os braços desligado, controle não conectado',
+      name: 'Ajustes: clipes de até 15 segundos, voz ligada, acenar com os braços desligado, controle não conectado',
     }),
   ).toBeTruthy();
 });
@@ -448,14 +448,14 @@ test('the summary does not print the clip length: it is in the settings and in t
   expect(screen.queryByText(/Clipes de até/)).toBeNull();
 });
 
-test('the clip length options sit in the settings, with 30s picked by default', async () => {
+test('the clip length options sit in the settings, with 15s picked by default (the free length)', async () => {
   session({});
   await render(<Setup />);
   await openSettings();
   expect(screen.getByText('TAMANHO DO CLIPE')).toBeTruthy();
   for (const label of ['15s', '30s', '45s', '60s']) expect(screen.getByRole('button', { name: label })).toBeTruthy();
-  expect(screen.getByRole('button', { name: '30s' })).toBeSelected();
-  expect(screen.getByRole('button', { name: '15s' })).not.toBeSelected();
+  expect(screen.getByRole('button', { name: '15s' })).toBeSelected();
+  expect(screen.getByRole('button', { name: '30s' })).not.toBeSelected();
 });
 
 test('picking a clip length saves it for the next recordings', async () => {
@@ -658,7 +658,7 @@ test('on the free tier clip lengths above 15s are locked and open the paywall', 
   freeTier();
   session({});
   await render(<Setup />);
-  await openSettings(); // 30s is stored, but the free plan gets 15s
+  await openSettings(); // 15s by default; the longer lengths are Pro
   expect(screen.getByRole('button', { name: '15s' })).toBeSelected();
   expect(screen.getByRole('button', { name: '30s, Disponível no Pro' })).not.toBeSelected();
   for (const label of ['30s', '45s', '60s']) {

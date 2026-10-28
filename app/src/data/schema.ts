@@ -25,7 +25,8 @@ export const BUFFER_SECONDS = 60;
 
 /** The clip lengths the player can pick on the setup screen (seconds). */
 export const CLIP_SECONDS_OPTIONS = [15, 30, 45, 60] as const;
-export const DEFAULT_CLIP_SECONDS = 30;
+/** 15 s: what the free plan records, so a new player starts on a length they can use; 30 s and up open the paywall. */
+export const DEFAULT_CLIP_SECONDS = 15;
 
 /** 0.5 = the ultra-wide lens, 1 = the wide lens, above 1 a digital crop. */
 export type ModeSettings = {
@@ -127,5 +128,5 @@ export const DEFAULT_PREFS: Prefs = {
   screenEconomy: true,
 };
 
-/** Default cut: the last 30s of the saved 60s window (spec 3.3). */
-export const DEFAULT_TRIM_MS = DEFAULT_CLIP_SECONDS * 1000;
+/** Default cut when a save gives none: the last 30s of the saved 60s window (spec 3.3). Saves pass the clip length. */
+export const DEFAULT_TRIM_MS = 30 * 1000;

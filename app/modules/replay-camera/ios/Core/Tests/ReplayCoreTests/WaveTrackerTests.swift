@@ -103,3 +103,22 @@ final class WaveTrackerTests: XCTestCase {
     XCTAssertEqual(fired, [])
   }
 }
+
+final class WaveTrackerIdTests: XCTestCase {
+  func test_trackedPlayersStandingCloseKeepTheirOwnSamples() { // gesture v2: ids, not positions, when known
+    let still = wavePose(0, amplitude: 0.0)
+    let fired = runWave(WaveTracker(), from: 0.0, to: 4.0, step: 0.125) { t in
+      // Two players 0.05 apart (within matchDistance): only player 2 waves.
+      [Sighting(pose: still, x: 0.50, y: 0.5, id: 1), Sighting(pose: wavePose(t), x: 0.55, y: 0.5, id: 2)]
+    }
+    XCTAssertEqual(fired.count, 1)
+  }
+
+  func test_halfAWaveEachByTwoTrackedPlayersDoesNotFire() {
+    let fired = runWave(WaveTracker(), from: 0.0, to: 5.0, step: 0.125) { t in
+      [Sighting(pose: wavePose(t, right: false), x: 0.50, y: 0.5, id: 1),
+       Sighting(pose: wavePose(t, left: false), x: 0.52, y: 0.5, id: 2)]
+    }
+    XCTAssertEqual(fired, [])
+  }
+}

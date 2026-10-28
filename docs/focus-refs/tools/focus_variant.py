@@ -241,6 +241,9 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--set", action="append", default=[], help="tuning value, e.g. spreadScale=1.1 or maxZoom=2")
     ap.add_argument("--check", action="store_true", help="compare with the app's file")
+    ap.add_argument("--boxes", choices=["full", "tiled"], default="full",
+                    help="people from the whole-frame detector (the app today) or the whole frame + tiles "
+                         "(vision-probe.swift from 2026-10-28 on; older people files have broken tiled boxes)")
     args = ap.parse_args()
 
     tuning = dict(STANDARD)
@@ -274,7 +277,9 @@ def main():
         app = {"size": [W, H], "landscape": [], "portrait": []}
         if args.check:
             sys.exit("--check needs the app's focus file")
-    frames = [(s["t"], [tuple(b[:4]) for b in s["full"]]) for s in probe["samples"]]
+    if args.boxes == "tiled" and not probe.get("summary", {}).get("tilesFixed"):
+        sys.exit("this people file was made before the tile fix (2026-10-28): re-run vision-probe.swift")
+    frames = [(s["t"], [tuple(b[:4]) for b in s[args.boxes]]) for s in probe["samples"]]
     # The app reads only the cut (AVAssetReader timeRange), so no frame before startMs.
     frames = [f for f in frames if start_ms - 0.5 <= f[0] < end_ms]
     samples = grid(frames, start_ms, end_ms, step_ms)

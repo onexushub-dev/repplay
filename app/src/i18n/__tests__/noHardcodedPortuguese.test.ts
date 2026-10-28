@@ -16,6 +16,8 @@ const ALLOWLIST = new Set([
   'app/diag.tsx',
   'diag/diagLog.ts',
   'diag/useSessionDiag.ts',
+  // Gesture test report (spike screen, for the team only).
+  'diag/gestureTest.ts',
 ]);
 const ACCENTED = /[À-ÿ]/;
 

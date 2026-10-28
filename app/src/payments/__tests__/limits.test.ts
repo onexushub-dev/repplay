@@ -16,7 +16,8 @@ test('captureConfig free: 15 s is a ceiling for the cut, not a fixed value', () 
 });
 
 test('captureConfig paid: what the player chose', () => {
-  expect(captureConfig(court, 'paid')).toEqual({ quality: '1080p60', bufferSeconds: 60, cutSeconds: 30, audio: true });
+  expect(captureConfig(court, 'paid')).toEqual({ quality: '1080p60', bufferSeconds: 60, cutSeconds: 15, audio: true });
+  expect(captureConfig({ ...court, cutSeconds: 30 }, 'paid').cutSeconds).toBe(30);
   expect(captureConfig({ ...court, audio: false }, 'paid').audio).toBe(false);
   expect(captureConfig({ ...court, quality: '720p30' }, 'paid').quality).toBe('720p30');
 });

@@ -14,10 +14,13 @@ public final class WaveTracker {
   private final class Track {
     var x: Double
     var y: Double
+    /// The person's PersonTracks id when known (-1: matched by position only).
+    var id: Int
     var samples: [Sample] = []
-    init(x: Double, y: Double) {
+    init(x: Double, y: Double, id: Int) {
       self.x = x
       self.y = y
+      self.id = id
     }
   }
 
@@ -81,15 +84,20 @@ public final class WaveTracker {
     for s in sightings {
       guard let m = WaveTracker.measure(s.pose) else { continue }
       var best: Track?
-      var bestDistance = matchDistance
-      for track in tracks where !used.contains(ObjectIdentifier(track)) {
-        let d = max(abs(track.x - s.x), abs(track.y - s.y))
-        if d <= bestDistance {
-          best = track
-          bestDistance = d
+      if s.id >= 0 {
+        // A tracked person: their own samples only, however close other players stand.
+        best = tracks.first { $0.id == s.id && !used.contains(ObjectIdentifier($0)) }
+      } else {
+        var bestDistance = matchDistance
+        for track in tracks where track.id < 0 && !used.contains(ObjectIdentifier(track)) {
+          let d = max(abs(track.x - s.x), abs(track.y - s.y))
+          if d <= bestDistance {
+            best = track
+            bestDistance = d
+          }
         }
       }
-      let track = best ?? Track(x: s.x, y: s.y)
+      let track = best ?? Track(x: s.x, y: s.y, id: s.id)
       if best == nil { tracks.append(track) }
       used.insert(ObjectIdentifier(track))
       track.x = s.x

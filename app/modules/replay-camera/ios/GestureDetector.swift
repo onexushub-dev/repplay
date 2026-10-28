@@ -6,8 +6,8 @@ import Vision
 /// Samples camera frames at ~4 fps and fires `onGesture` when a player holds both arms up or waves both hands above the head.
 /// Frame orientation follows the phone's physical position (accelerometer), not the UI, which is portrait-locked.
 ///
-/// Far from the phone a player is only ~100 px tall, too small for body pose on the whole frame. So each
-/// sample first finds the people (works at a distance), then runs pose on an enlarged crop around each one.
+/// The vision work is in GesturePipeline: far from the phone a player is only ~60-100 px tall, so people are looked for
+/// in tiles of the frame as well as in the whole of it, kept between samples, and pose runs on an enlarged crop of each.
 final class GestureDetector {
   static let sampleInterval = 0.25
   static let maxPeople = 4
@@ -24,14 +24,24 @@ final class GestureDetector {
   var onGesture: (() -> Void)?
   /// Diagnostic: about once a second, what the detector saw (Etapa 0 spike only).
   var onDebug: (([String: Any]) -> Void)?
+  /// Gesture test (spike screen): every sample, each person looked at, with size, estimated distance and pose.
+  /// Only while `traceEnabled`.
+  var onTrace: (([String: Any]) -> Void)?
+  /// The camera's horizontal field of view (degrees, at zoom factor 1) and current zoom factor, to turn a person's
+  /// height in pixels into an estimated distance.
+  var optics: (() -> (hfovDegrees: Double, zoomFactor: Double)?)?
+  /// Assumed height of a player for the distance estimate, and shoulder width (between the shoulder joints).
+  static let personHeightM = 1.75
+  /// Vision's shoulder joints sit inside the shoulders, and closer still with the arms up: ~0.31 m on the 2026-10-27 test.
+  static let shoulderWidthM = 0.31
 
   private let queue = DispatchQueue(label: "replay.gesture", qos: .userInitiated)
   private let motion = CMMotionManager()
-  private let tracker = HoldTracker()
-  private let wave = WaveTracker()
+  private let pipeline = GesturePipeline()
   private let lock = NSLock()
   private var _enabled = true
   private var _degraded = false
+  private var _traceEnabled = false
   private var _armedUntil = -Double.infinity
   private var busy = false
   private var lastSample = -Double.infinity
@@ -50,12 +60,20 @@ final class GestureDetector {
     set { lock.withLock { _degraded = newValue } }
   }
 
+  var traceEnabled: Bool {
+    get { lock.withLock { _traceEnabled } }
+    set { lock.withLock { _traceEnabled = newValue } }
+  }
+
   func start() {
     motion.accelerometerUpdateInterval = Self.sampleInterval
     motion.startAccelerometerUpdates()
   }
 
-  func stop() { motion.stopAccelerometerUpdates() }
+  func stop() {
+    motion.stopAccelerometerUpdates()
+    queue.async { self.pipeline.reset() }
+  }
 
   /// The phone's physical position from the latest accelerometer reading; the last known one while it lies flat.
   func currentUpright() -> DeviceUpright {
@@ -86,67 +104,35 @@ final class GestureDetector {
       if take { lock.withLock { busy = false } }
       return
     }
-    let image = CIImage(cvPixelBuffer: pixels).oriented(Self.orientation(for: currentUpright()))
-    let maxPeople = degraded ? Self.hotMaxPeople : Self.maxPeople
+    let upright = currentUpright()
+    let image = CIImage(cvPixelBuffer: pixels).oriented(Self.orientation(for: upright))
+    let hot = degraded
+    let trace = traceEnabled
+    let lens = trace ? optics?() : nil
+    let maxPeople = hot ? Self.hotMaxPeople : Self.maxPeople
     queue.async {
       defer { self.lock.withLock { self.busy = false } }
-      let sightings = Self.sightings(in: image, maxPeople: maxPeople)
-      let isUp = sightings.contains { ArmsUp.isUp($0.pose) }
-      let raised = sightings.contains { WaveTracker.armsRaised($0.pose) }
-      if raised { self.lock.withLock { self._armedUntil = t + Self.armedSeconds } }
-      let held = self.tracker.update(isX: isUp, at: t)
-      let waved = self.wave.update(sightings, at: t) // both trackers see every sample, so run both before deciding
-      if held || waved { self.onGesture?() }
+      let result = self.pipeline.process(image, at: t, maxPeople: maxPeople,
+                                         options: hot ? GesturePipeline.Options.hot : GesturePipeline.Options.standard)
+      if result.raised { self.lock.withLock { self._armedUntil = t + Self.armedSeconds } }
+      if result.fired { self.onGesture?() }
+      if trace {
+        self.onTrace?(Self.traceInfo(result, at: t, frame: image.extent.size, upright: upright, lens: lens, hot: hot))
+      }
       self.samples += 1
       if t - self.lastDebug >= 1 {
         self.lastDebug = t
-        self.onDebug?(Self.debugInfo(poses: sightings.map { $0.pose }, isUp: isUp, raised: raised, waved: waved,
-                                     samples: self.samples))
+        self.onDebug?(Self.debugInfo(result, samples: self.samples))
         self.samples = 0
       }
     }
   }
 
-  /// Poses in pixel units (y down) of their own crop: ArmsUp only compares lengths within one body.
-  /// Each comes with where its person was in the frame, so the wave tracker can follow people between samples.
-  private static func sightings(in image: CIImage, maxPeople: Int) -> [Sighting] {
-    let people = VNDetectHumanRectanglesRequest()
-    people.upperBodyOnly = false
-    try? VNImageRequestHandler(ciImage: image).perform([people])
-    let boxes = (people.results ?? [])
-      .map(\.boundingBox)
-      .sorted { $0.width * $0.height > $1.width * $1.height }
-      .prefix(maxPeople)
-
-    // Nobody found (e.g. very close, partly out of frame): fall back to the whole frame.
-    let crops = boxes.isEmpty ? [image.extent] : boxes.map { PersonCrop.rect(person: $0, in: image.extent) }
-    return crops.compactMap { rect in
-      let crop = image.cropped(to: rect).transformed(by: CGAffineTransform(translationX: -rect.minX, y: -rect.minY))
-      let request = VNDetectHumanBodyPoseRequest()
-      try? VNImageRequestHandler(ciImage: crop).perform([request])
-      guard let observation = request.results?.first else { return nil }
-      let extent = image.extent
-      return Sighting(pose: pose(from: observation, size: rect.size),
-                      x: (rect.midX - extent.minX) / extent.width,
-                      y: (rect.midY - extent.minY) / extent.height)
-    }
-  }
-
-  private static func pose(from observation: VNHumanBodyPoseObservation, size: CGSize) -> Pose {
-    func point(_ name: VNHumanBodyPoseObservation.JointName) -> Point? {
-      guard let p = try? observation.recognizedPoint(name) else { return nil }
-      return Point(x: Double(p.location.x * size.width), y: Double((1 - p.location.y) * size.height),
-                   confidence: Double(p.confidence))
-    }
-    return Pose(leftWrist: point(.leftWrist), rightWrist: point(.rightWrist),
-                leftElbow: point(.leftElbow), rightElbow: point(.rightElbow),
-                leftShoulder: point(.leftShoulder), rightShoulder: point(.rightShoulder), nose: point(.nose))
-  }
-
-  private static func debugInfo(poses: [Pose], isUp: Bool, raised: Bool, waved: Bool, samples: Int) -> [String: Any] {
-    var info: [String: Any] = ["people": poses.count, "isX": isUp, "raised": raised, "waved": waved,
-                               "orientation": 0, "samples": samples]
-    guard let p = poses.first else { return info }
+  private static func debugInfo(_ result: GesturePipeline.Result, samples: Int) -> [String: Any] {
+    var info: [String: Any] = ["people": result.people, "posed": result.sightings.count, "fromTiles": result.fromTiles,
+                               "smallestPx": Int(result.smallestPosedPx), "isX": result.isUp, "raised": result.raised,
+                               "waved": result.waved, "orientation": 0, "samples": samples]
+    guard let p = result.sightings.first.map({ $0.pose }) else { return info }
     let points: [(String, Point?)] = [("lw", p.leftWrist), ("rw", p.rightWrist), ("le", p.leftElbow),
                                       ("re", p.rightElbow), ("ls", p.leftShoulder), ("rs", p.rightShoulder),
                                       ("nose", p.nose)]
@@ -161,6 +147,73 @@ final class GestureDetector {
     }
     if let le = p.leftElbow, let re = p.rightElbow, let ls = p.leftShoulder, let rs = p.rightShoulder {
       info["elbowsUp"] = le.y < ls.y && re.y < rs.y
+    }
+    return info
+  }
+
+  /// One sample for the gesture test. Distances assume a 1.75 m player (from the box height) and 0.31 m between the
+  /// shoulder joints (from the pose); the box includes raised arms when they are seen, which makes the person look
+  /// taller (closer), so the shoulder estimate is the better one when the shoulders are read.
+  private static func traceInfo(_ r: GesturePipeline.Result, at t: Double, frame: CGSize, upright: DeviceUpright,
+                                lens: (hfovDegrees: Double, zoomFactor: Double)?, hot: Bool) -> [String: Any] {
+    func r2(_ v: Double) -> Double { (v * 100).rounded() / 100 }
+    func r4(_ v: Double) -> Double { (v * 10000).rounded() / 10000 }
+    // Focal length in pixels along the frame's long side (the sensor's horizontal field of view).
+    var focal: Double?
+    if let lens = lens, lens.hfovDegrees > 0, lens.zoomFactor > 0 {
+      let half = atan(tan(lens.hfovDegrees * .pi / 360) / lens.zoomFactor)
+      focal = Double(max(frame.width, frame.height)) / 2 / tan(half)
+    }
+    var info: [String: Any] = [
+      "t": r2(t), "ms": Int(r.elapsedMs.rounded()), "frame": [Int(frame.width), Int(frame.height)],
+      "upright": "\(upright)", "hot": hot, "tracked": r.people, "isUp": r.isUp, "raised": r.raised,
+      "thermal": (ThermalLevel(rawValue: ProcessInfo.processInfo.thermalState.rawValue) ?? .nominal).name,
+    ]
+    if let lens = lens { info["hfov"] = r2(lens.hfovDegrees); info["zoomFactor"] = r2(lens.zoomFactor) }
+    if let focal = focal { info["focalPx"] = Int(focal.rounded()) }
+    let rule: String? = r.held ? "hold" : (r.waved ? "wave" : nil)
+    if let rule = rule {
+      // A rule that fired again on the same gesture is held back by FireGate: reported apart, it saves no clip.
+      info[r.fired ? "fired" : "suppressed"] = rule
+    }
+    info["persons"] = r.traces.map { p -> [String: Any] in
+      var person: [String: Any] = [
+        "id": p.id, "src": p.source.rawValue, "px": Int(p.px.rounded()),
+        "box": [r4(Double(p.box.minX)), r4(Double(p.box.minY)), r4(Double(p.box.width)), r4(Double(p.box.height))],
+      ]
+      if let focal = focal, p.px > 0, p.source != .wholeFrame { person["estM"] = r2(personHeightM * focal / p.px) }
+      guard let pose = p.pose else {
+        person["pose"] = false
+        return person
+      }
+      person["pose"] = true
+      let joints: [(String, Point?)] = [("lw", pose.leftWrist), ("rw", pose.rightWrist), ("le", pose.leftElbow),
+                                        ("re", pose.rightElbow), ("ls", pose.leftShoulder), ("rs", pose.rightShoulder),
+                                        ("nose", pose.nose)]
+      var conf: [String: Double] = [:]
+      for (name, point) in joints { conf[name] = point.map { r2($0.confidence) } ?? -1 }
+      person["conf"] = conf
+      person["up"] = ArmsUp.isUp(pose)
+      person["raised"] = WaveTracker.armsRaised(pose)
+      if let head = ArmsUp.headLine(pose) {
+        person["swPx"] = r2(head.shoulderWidth)
+        if let focal = focal, head.shoulderWidth > 0 { person["estSwM"] = r2(shoulderWidthM * focal / head.shoulderWidth) }
+        if let lw = pose.leftWrist, let rw = pose.rightWrist {
+          // How far each wrist is above the head line, in shoulder widths (ArmsUp needs both > 0.35).
+          person["riseL"] = r2((head.y - lw.y) / head.shoulderWidth)
+          person["riseR"] = r2((head.y - rw.y) / head.shoulderWidth)
+          if let ls = pose.leftShoulder, let rs = pose.rightShoulder {
+            let mid = (ls.x + rs.x) / 2
+            // Sideways wrist position in shoulder widths (the wave looks at how this swings).
+            person["xL"] = r2((lw.x - mid) / head.shoulderWidth)
+            person["xR"] = r2((rw.x - mid) / head.shoulderWidth)
+          }
+        }
+        if let le = pose.leftElbow, let re = pose.rightElbow, let ls = pose.leftShoulder, let rs = pose.rightShoulder {
+          person["elbowsUp"] = le.y < ls.y && re.y < rs.y
+        }
+      }
+      return person
     }
     return info
   }

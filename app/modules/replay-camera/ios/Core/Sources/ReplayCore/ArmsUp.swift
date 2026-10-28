@@ -32,11 +32,15 @@ public struct Sighting: Equatable {
   public let pose: Pose
   public let x: Double
   public let y: Double
+  /// The person's PersonTracks id, or -1 when unknown (whole-frame fallback, no tracking): then only the position
+  /// tells people apart.
+  public let id: Int
 
-  public init(pose: Pose, x: Double, y: Double) {
+  public init(pose: Pose, x: Double, y: Double, id: Int = -1) {
     self.pose = pose
     self.x = x
     self.y = y
+    self.id = id
   }
 }
 
@@ -85,6 +89,9 @@ public enum ArmsUp {
 /// Fires once when the gesture is held for `holdSeconds`. A few missed samples (the detector flickers at a
 /// distance) do not break the hold: only a gap longer than `gapTolerance` does. After firing, the arms must
 /// really come down (a gap longer than `gapTolerance`) and `cooldownSeconds` must pass before it fires again.
+///
+/// Gesture v2 (distance): 15-20 m away the pose reads the raised arms in only ~30-50% of samples, so the gap allowed
+/// is 1.2 s and 3 hits are enough; the hold still has to last `holdSeconds`, which keeps blocks and quick celebrations out.
 public final class HoldTracker {
   private let holdSeconds: Double
   private let cooldownSeconds: Double
@@ -96,7 +103,7 @@ public final class HoldTracker {
   private var cooldownUntil = -Double.infinity
   private var awaitingRelease = false
 
-  public init(holdSeconds: Double = 1.5, cooldownSeconds: Double = 3.0, gapTolerance: Double = 0.8, minHits: Int = 4) {
+  public init(holdSeconds: Double = 1.5, cooldownSeconds: Double = 3.0, gapTolerance: Double = 1.2, minHits: Int = 3) {
     self.holdSeconds = holdSeconds
     self.cooldownSeconds = cooldownSeconds
     self.gapTolerance = gapTolerance
@@ -123,6 +130,67 @@ public final class HoldTracker {
     hits = 0
     awaitingRelease = true
     cooldownUntil = t + cooldownSeconds
+    return true
+  }
+}
+
+/// The hold gesture per person (gesture v2, many players on screen): each tracked person has their own HoldTracker, so
+/// two players who raise their arms one after the other (a block, then another block) never add up to one hold, and a
+/// player who is not looked at in a sample (others took the pose slots) is not counted as having lowered the arms.
+/// After any fire, nobody fires for `cooldownSeconds` (the trigger bus would merge it anyway).
+public final class PersonHold {
+  private var holds: [Int: (tracker: HoldTracker, lastSeen: Double)] = [:]
+  private let make: () -> HoldTracker
+  private let forgetSeconds: Double
+  private let cooldownSeconds: Double
+  private var cooldownUntil = -Double.infinity
+
+  public init(forgetSeconds: Double = 10, cooldownSeconds: Double = 3, make: @escaping () -> HoldTracker = { HoldTracker() }) {
+    self.make = make
+    self.forgetSeconds = forgetSeconds
+    self.cooldownSeconds = cooldownSeconds
+  }
+
+  /// Every person looked at in this sample, with whether their arms are up. True when somebody's hold just completed.
+  public func update(_ people: [(id: Int, isUp: Bool)], at t: Double) -> Bool {
+    var fired = false
+    for person in people {
+      let tracker = holds[person.id]?.tracker ?? make()
+      holds[person.id] = (tracker, t)
+      if tracker.update(isX: person.isUp, at: t) { fired = true }
+    }
+    holds = holds.filter { t - $0.value.lastSeen <= forgetSeconds }
+    guard fired, t >= cooldownUntil else { return false }
+    cooldownUntil = t + cooldownSeconds
+    return true
+  }
+}
+
+/// One gesture, one trigger. The hold and the wave watch the same raised arms and can both fire on one gesture, seconds
+/// apart: on 2026-10-28 a slow hold completed 3.0 s after the wave, just past the trigger bus's 3 s, which made two clips.
+/// After a fire, nothing fires again until nobody has had the arms up for `release` and `cooldown` has passed.
+public final class FireGate {
+  private let cooldown: Double
+  private let release: Double
+  private var lastFire = -Double.infinity
+  private var lastRaised = -Double.infinity
+  private var awaiting = false
+
+  public init(cooldown: Double = 3.0, release: Double = 1.0) {
+    self.cooldown = cooldown
+    self.release = release
+  }
+
+  /// `fired`: a rule fired in this sample; `anyRaised`: somebody looked at had the arms up. True when it really fires.
+  public func update(fired: Bool, anyRaised: Bool, at t: Double) -> Bool {
+    if anyRaised { lastRaised = t }
+    if awaiting {
+      guard t - lastRaised > release + 1e-9, t - lastFire >= cooldown - 1e-9 else { return false }
+      awaiting = false
+    }
+    guard fired else { return false }
+    awaiting = true
+    lastFire = t
     return true
   }
 }
