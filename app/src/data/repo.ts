@@ -227,7 +227,15 @@ export function createRepo(kv: KV, files: FileProbe, newId: () => string) {
 
     updateClip(
       id: string,
-      patch: { trim?: Clip['trim']; edit?: Clip['edit']; contentStartMs?: number; savedAt?: number; sharedAt?: number; focus?: Clip['focus'] },
+      patch: {
+        trim?: Clip['trim'];
+        edit?: Clip['edit'];
+        contentStartMs?: number;
+        savedAt?: number;
+        sharedAt?: number;
+        focus?: Clip['focus'];
+        cutSuggestion?: Clip['cutSuggestion'];
+      },
     ): Clip | undefined {
       const existing = read<Clip>(key.clip(id));
       if (!existing) return undefined; // deleted meanwhile: never resurrect a record without a file

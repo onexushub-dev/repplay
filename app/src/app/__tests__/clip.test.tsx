@@ -804,6 +804,35 @@ describe('Modo Foco', () => {
   });
 });
 
+describe('the suggested cut', () => {
+  const suggested = { startMs: 48000, endMs: 60000 };
+
+  test('a clip opened with its suggestion plays from it, marked in the editor', async () => {
+    __setClip({ ...base, trim: suggested, cutSuggestion: suggested });
+    await open();
+    await act(async () => player.emit('timeUpdate', { currentTime: 0 }));
+    expect(player.currentTime).toBe(48);
+    await pressAction('Editar');
+    expect(jest.requireMock('../../components/TrimBar').__props.last.trim).toEqual(suggested);
+  });
+
+  test('a suggestion landing while the clip plays moves playback into it', async () => {
+    await open();
+    await act(async () => void repo.updateClip('c1', { cutSuggestion: suggested, trim: suggested }));
+    await act(async () => player.emit('timeUpdate', { currentTime: 35 }));
+    expect(player.currentTime).toBe(48);
+  });
+
+  test('a suggestion kept beside a cut the player chose changes nothing on screen', async () => {
+    __setClip({ ...base, trim: { startMs: 35000, endMs: 50000 } });
+    await open();
+    await act(async () => void repo.updateClip('c1', { cutSuggestion: suggested }));
+    player.currentTime = 40;
+    await act(async () => player.emit('timeUpdate', { currentTime: 40 }));
+    expect(player.currentTime).toBe(40);
+  });
+});
+
 describe('the cut loops', () => {
   test('when the player reaches the end of the file it starts the cut again and keeps playing', async () => {
     await open();

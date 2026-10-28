@@ -212,3 +212,34 @@ describe('hold while recording (thermal spec item 1)', () => {
     expect(runs[0].opts.clipPath).toBe('/c/2.mp4');
   });
 });
+
+test('after a stored analysis the cut suggestion is told, with the file it reads', async () => {
+  const { deps, runs, addClip, done, flush } = setup();
+  const analyzed = jest.fn();
+  const q = createFocusQueue({ ...deps, analyzed });
+  const clip = addClip('/c/9.mp4');
+  q.enqueue(clip.id);
+  runs[runs.length - 1].resolve(done());
+  await flush();
+  expect(analyzed).toHaveBeenCalledWith(clip.id, '/c/9.focus.json');
+});
+
+test('a failing cut suggestion does not break the queue', async () => {
+  const { deps, runs, addClip, done, flush, repo } = setup();
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+  const q = createFocusQueue({
+    ...deps,
+    analyzed: () => {
+      throw new Error('boom');
+    },
+  });
+  const a = addClip('/c/a.mp4');
+  const b = addClip('/c/b.mp4');
+  q.enqueue(a.id);
+  q.enqueue(b.id);
+  runs[runs.length - 1].resolve(done());
+  await flush();
+  expect(repo.getClip(a.id)!.focus!.status).toBe('ready');
+  expect(runs[runs.length - 1].opts.clipPath).toBe('/c/b.mp4');
+  warn.mockRestore();
+});

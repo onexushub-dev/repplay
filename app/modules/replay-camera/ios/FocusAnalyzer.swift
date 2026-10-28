@@ -76,6 +76,9 @@ enum FocusAnalyzer {
     let request = VNDetectHumanRectanglesRequest()
     request.upperBodyOnly = false
     var frames: [FocusSample] = []
+    // Cut suggestion (experiment): how much of the court moved, per analysed frame, as [clip ms, share of the picture].
+    var motion: [[Double]] = []
+    var meter: CourtMotion?
     var people = 0
     var failures = 0
     var next = startMs
@@ -85,6 +88,7 @@ enum FocusAnalyzer {
       if t + 0.5 < next { continue } // keep the first frame at or after each 100 ms tick
       while next <= t + 0.5 { next += stepMs }
       guard let pixels = CMSampleBufferGetImageBuffer(buffer) else { continue }
+      if let level = courtMotion(pixels, turned: turned, meter: &meter) { motion.append([t, level]) }
       let boxes: [FocusBox]? = autoreleasepool {
         do {
           try VNImageRequestHandler(cvPixelBuffer: pixels, orientation: orientation).perform([request])
@@ -119,6 +123,7 @@ enum FocusAnalyzer {
       "landscape": rows(landscape ? mainRects : otherRects),
       "portrait": rows(landscape ? otherRects : mainRects),
     ]
+    file["motion"] = motion.map { [($0[0] * 10).rounded() / 10, ($0[1] * 100_000).rounded() / 100_000] }
     if debug {
       file["samples"] = samples.map { s in [s.tMs, s.boxes.map { [r4($0.x), r4($0.y), r4($0.width), r4($0.height)] }] as [Any] }
     }
@@ -127,6 +132,23 @@ enum FocusAnalyzer {
     return Outcome(ready: mainRects != nil, frames: frames.count, framesWithPeople: frames.filter { !$0.boxes.isEmpty }.count,
                    meanPeople: frames.isEmpty ? 0 : Double(people) / Double(frames.count),
                    elapsedMs: Date().timeIntervalSince(started) * 1000)
+  }
+
+  /// The frame's luma in a small grid, compared with the last one (`CourtMotion`); nil when the frame has no luma plane.
+  private static func courtMotion(_ pixels: CVPixelBuffer, turned: Bool, meter: inout CourtMotion?) -> Double? {
+    guard CVPixelBufferGetPlaneCount(pixels) > 0 else { return nil }
+    CVPixelBufferLockBaseAddress(pixels, .readOnly)
+    defer { CVPixelBufferUnlockBaseAddress(pixels, .readOnly) }
+    guard let base = CVPixelBufferGetBaseAddressOfPlane(pixels, 0) else { return nil }
+    let width = CVPixelBufferGetWidthOfPlane(pixels, 0), height = CVPixelBufferGetHeightOfPlane(pixels, 0)
+    let bytesPerRow = CVPixelBufferGetBytesPerRowOfPlane(pixels, 0)
+    let block = CourtMotion.blockSize(bufferWidth: width, bufferHeight: height, turned: turned)
+    let grid = CourtMotion.grid(luma: UnsafeRawBufferPointer(start: base, count: bytesPerRow * height), bytesPerRow: bytesPerRow,
+                                bufferWidth: width, bufferHeight: height, block: block)
+    if meter == nil || meter?.width != grid.width || meter?.height != grid.height {
+      meter = CourtMotion(width: grid.width, height: grid.height, tallAlongX: turned)
+    }
+    return meter?.next(grid.cells)
   }
 
   private static func rows(_ rects: [FocusRect]?) -> [[Double]] {
