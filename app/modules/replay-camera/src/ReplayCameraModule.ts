@@ -34,6 +34,8 @@ declare class ReplayCameraModule extends NativeModule<ReplayCameraModuleEvents> 
   setScreenEconomy?(on: boolean): void;
   // Whether the phone records a quality (iOS only: missing on Android and in older builds).
   supportsQuality?(quality: Quality): boolean;
+  // The phone's real output volume, 0-1 (iOS only: missing on Android and in older builds).
+  outputVolume?(): number;
   // TEMP(diag-remote) (iOS only: missing on Android and in older builds).
   diagAudioState?(): string;
   requestPermissions(): Promise<boolean>;

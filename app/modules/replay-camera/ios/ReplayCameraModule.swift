@@ -1,3 +1,4 @@
+import AVFoundation
 import ExpoModulesCore
 import Speech
 
@@ -145,6 +146,10 @@ public class ReplayCameraModule: Module {
     Function("setScreenEconomy") { (on: Bool) in
       DispatchQueue.main.async { MainActor.assumeIsolated { ScreenEconomy.set(on) } }
     }
+
+    // The phone's real output volume. The volume remote reads presses as volume changes and parks the volume after
+    // each one; the volume library reports its hidden slider instead, which goes stale (2026-10-28 field log).
+    Function("outputVolume") { () -> Double in Double(AVAudioSession.sharedInstance().outputVolume) }
 
     // TEMP(diag-remote): the audio session the volume remote depends on.
     Function("diagAudioState") { () -> String in ReplayEngine.audioState() }
