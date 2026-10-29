@@ -119,6 +119,7 @@ Itens adiados nas revisões finais. Nada aqui bloqueia o uso, mas vale resolver 
 
 ## Métricas de uso anônimas (PostHog, 2026-10-28)
 Antes de lançar com a chave:
+- No projeto do PostHog, ligar "Discard client IP data" (o app já desliga o GeoIP, mas o IP da requisição só deixa de ser guardado com essa opção).
 - Criar o projeto no PostHog Cloud (host EU) e colocar a chave pública em `REPPLAY_POSTHOG_KEY` (`app/.env.local` e no EAS). Sem a chave o app não envia nada.
 - Gerar um novo dev client: o SDK (`posthog-react-native`, `expo-application`) é nativo.
 - Passar pelo app com a chave e conferir em Live Events: cada evento uma vez, só com as propriedades do spec, nenhum perfil de pessoa criado, nenhum IP.

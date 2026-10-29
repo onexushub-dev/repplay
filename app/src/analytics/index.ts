@@ -33,11 +33,19 @@ export function initAnalytics(): void {
   started = true;
   const config = posthogConfig();
   if (config) {
-    try {
-      target = createPostHogAdapter({ ...config, installId: analytics.installId() });
-    } catch {
-      // the SDK failed to start: the app goes on without metrics
-    }
+    // Built on the first event that is actually sent, never before: the SDK talks to the server as soon as it exists, and
+    // someone who opted out must not cause a single request.
+    let client: AnalyticsAdapter | null = null;
+    target = {
+      capture(name, props) {
+        try {
+          client ??= createPostHogAdapter({ ...config, installId: analytics.installId() });
+        } catch {
+          return; // the SDK failed to start: the app goes on without metrics
+        }
+        client.capture(name, props);
+      },
+    };
   }
   analytics.startSession();
   sessionSummary.start();

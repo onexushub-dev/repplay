@@ -15,6 +15,10 @@ export function createPostHogAdapter(o: { key: string; host: string; installId: 
     captureAppLifecycleEvents: false,
     enableSessionReplay: false,
     errorTracking: { autocapture: false },
+    // The SDK only receives events: no flags, surveys or remote config are asked of the server.
+    preloadFeatureFlags: false,
+    disableSurveys: true,
+    disableRemoteConfig: true,
     bootstrap: { distinctId: o.installId },
   });
   return {

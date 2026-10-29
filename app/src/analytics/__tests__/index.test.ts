@@ -71,12 +71,30 @@ describe('initAnalytics', () => {
     expect(instances).toHaveLength(1);
   });
 
-  test('an opted-out install sends nothing, not even app_open', () => {
+  test('an opted-out install builds no SDK, so not even its start-up requests go out', () => {
     mockExtra.posthog = { key: 'phc_test', host: 'https://eu.i.posthog.com' };
     const { analytics, instances } = load();
     analytics.analytics.setEnabled(false);
     analytics.initAnalytics();
     analytics.track('onboarding_completed');
-    expect(instances[0]?.capture ?? { mock: { calls: [] } }).toHaveProperty('mock.calls', []);
+    expect(instances).toHaveLength(0);
+  });
+
+  test('turning collection on later builds the SDK then, and sends from there', () => {
+    mockExtra.posthog = { key: 'phc_test', host: 'https://eu.i.posthog.com' };
+    const { analytics, instances } = load();
+    analytics.analytics.setEnabled(false);
+    analytics.initAnalytics();
+    analytics.analytics.setEnabled(true);
+    analytics.track('onboarding_completed');
+    expect(instances).toHaveLength(1);
+    expect(instances[0].capture).toHaveBeenCalledWith('onboarding_completed', undefined);
+  });
+
+  test('the SDK asks the server for nothing but to receive events: no flags, surveys or remote config', () => {
+    mockExtra.posthog = { key: 'phc_test', host: 'https://eu.i.posthog.com' };
+    const { analytics, instances } = load();
+    analytics.initAnalytics();
+    expect(instances[0].options).toMatchObject({ preloadFeatureFlags: false, disableSurveys: true, disableRemoteConfig: true });
   });
 });
