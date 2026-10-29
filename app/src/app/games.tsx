@@ -81,7 +81,7 @@ export default function Games() {
               message={t('games.proMessage')}
               action={t('games.proAction')}
               badge={t('setup.proBadge')}
-              onPress={() => void openPaywall(t)}
+              onPress={() => void openPaywall(t, 'upgrade_card')}
             />
           ) : undefined
         }

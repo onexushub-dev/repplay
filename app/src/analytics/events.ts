@@ -1,5 +1,8 @@
 import type { ModeId, TriggerSource } from '../data/schema';
 
+/** Where the paywall was opened from; `locked_feature` is a tap on something Pro-only (see pro_feature_blocked). */
+export type PaywallSource = 'onboarding' | 'export_limit' | 'upgrade_card' | 'start_limit' | 'locked_feature';
+
 /** A count sent as a range, so the number of distinct values stays small and nothing is a precise tally. */
 export type CountBucket = '0' | '1' | '2-5' | '6-20' | '21+';
 export type DurationBucket = '<1m' | '1-5m' | '5-30m' | '>30m';
@@ -47,10 +50,10 @@ export type AnalyticsEvents = {
   pairing_failed: { reason: string };
 
   // Monetization
-  paywall_viewed: { source: 'onboarding' | 'export_limit' | 'upgrade_card' | 'start_limit' | 'other' };
+  paywall_viewed: { source: PaywallSource };
   purchase_completed: undefined;
   purchase_failed: { reason: 'error' };
-  pro_feature_blocked: { feature: string };
+  pro_feature_blocked: { feature: 'quality_4k' | 'clip_length' | 'bluetooth_remote' | 'watch' | 'compile' };
   free_export_limit_hit: undefined;
 };
 

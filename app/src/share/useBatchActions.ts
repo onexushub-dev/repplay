@@ -151,7 +151,8 @@ export function useBatchActions(o: { plan: Plan; labelOf: (clip: Clip) => string
   const compile = async (clips: Clip[]) => {
     if (job !== undefined) return;
     if (!canCompile(o.plan)) {
-      await openPaywall(t);
+      track('pro_feature_blocked', { feature: 'compile' });
+      await openPaywall(t, 'locked_feature');
       return;
     }
     if (clips.length < 2) {

@@ -230,6 +230,7 @@ describe('free recording', () => {
     expect(screen.getByText('Som, Modo Foco, sem marca d’água e os melhores momentos compilados em um vídeo só. Com o Pro ou um Passe Avulso.')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: /^Desbloqueie os recursos PRO/ }));
     expect(payments.showPaywall).toHaveBeenCalledWith();
+    expect(track).toHaveBeenCalledWith('paywall_viewed', { source: 'upgrade_card' });
   });
 
   test('with Pro active a recording made on the free plan has no card: Pro unlocks it', async () => {
@@ -482,6 +483,8 @@ describe('batch: save, send or compile the picked clips', () => {
     await pick(1, 2);
     await press('Compilar');
     expect(payments.showPaywall).toHaveBeenCalled();
+    expect(track).toHaveBeenCalledWith('pro_feature_blocked', { feature: 'compile' });
+    expect(track).toHaveBeenCalledWith('paywall_viewed', { source: 'locked_feature' });
     expect(runBatch).not.toHaveBeenCalled();
   });
 

@@ -1,6 +1,9 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
+import { track } from '../../analytics';
 import { useFreeExportGate } from '../useFreeExportGate';
+
+jest.mock('../../analytics', () => ({ track: jest.fn() }));
 
 let gate: ReturnType<typeof useFreeExportGate>;
 function Harness() {
@@ -31,4 +34,12 @@ test('"Liberar" waits for the sheet to close (or the fallback) before the paywal
   expect(choice).toBeUndefined();
   await act(async () => void jest.advanceTimersByTime(900));
   expect(choice).toBe('unlock');
+});
+
+test('opening the free-plan notice reports free_export_limit_hit', async () => {
+  (track as jest.Mock).mockClear();
+  await render(<Harness />);
+  await act(async () => void gate.ask({ focus: true, speed: false, sound: false }));
+  expect(track).toHaveBeenCalledTimes(1);
+  expect(track).toHaveBeenCalledWith('free_export_limit_hit');
 });
