@@ -345,6 +345,7 @@ export const en = {
     plays: { one: '%{count} clip', other: '%{count} clips' },
     detail: '%{time} · %{plays}',
     searching: 'Looking for %{name}…',
+    searchingHint: 'Open Repplay on the camera phone. This remote connects by itself as soon as the app opens there.',
     useOther: 'Use another camera',
     ready: 'Remote connected.',
     starting: 'Starting…',

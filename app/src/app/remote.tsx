@@ -413,6 +413,7 @@ export default function Remote() {
           <View style={styles.center}>
             <PulseRing color={colors.warning} />
             <Text style={styles.status}>{t('remote.searching', { name: screenModel.hostName === null ? hostLabel : screenModel.hostName })}</Text>
+            <Text style={styles.hint}>{t('remote.searchingHint')}</Text>
             <ForgetCamera name={hostLabel} onPress={forgetCamera} />
           </View>
         ) : null}

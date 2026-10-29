@@ -70,7 +70,7 @@ The sheet and the setup tiles read only `DeviceView`, so adding a kind later doe
 The mapping from raw status to `DeviceView` is a pure function per kind (unit-tested without React).
 
 **Controle (remote)**
-- `setup` (never tested): steps 1) "Ligue o controle e deixe em modo de pareamento." 2) "Abra Ajustes > Bluetooth e toque no nome dele." 3) "Volte ao LANCE e aperte um botão do controle." The sheet starts listening on open, so the state is already `waiting`; `setup` only means "no press heard yet".
+- `setup` (never tested): steps 1) "Ligue o controle e deixe em modo de pareamento." 2) "No Iphone abra Ajustes > Bluetooth e toque no nome dele." 3) "Volte ao LANCE e aperte um botão do controle." The sheet starts listening on open, so the state is already `waiting`; `setup` only means "no press heard yet".
 - `waiting`: `PulseRing` and "Aperte um botão do controle…". After 15 s without a press, add a note: "Nada ainda? Confira se o controle aparece como Conectado em Ajustes > Bluetooth. Funciona com controles de selfie (tecla de volume)."
 - `connected` (a press was heard): check badge, "Controle conectado", primary "Pronto" (closes).
 - `offline` (used in a previous launch, no press yet): status "Pareado · aperte um botão", same listening as `waiting`, the note replaces the steps.

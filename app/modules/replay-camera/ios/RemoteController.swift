@@ -19,6 +19,9 @@ final class RemoteController: NSObject {
   /// A phone that turned out not to be ours is left alone this long.
   private static let blockFor: TimeInterval = 30
   private static let pairTimeout: TimeInterval = 20
+  /// How long the pending connection gets to finish once the camera phone is seen advertising, before the remote
+  /// connects to what it saw instead.
+  private static let pendingGrace: TimeInterval = 2
 
   /// Same shape as WatchBridge.emit: (event name, body).
   var emit: ((String, [String: Any]) -> Void)?
@@ -49,6 +52,8 @@ final class RemoteController: NSObject {
   private var pairMode: PairMode?
   private var pairTimer: DispatchWorkItem?
   private var blocked: [UUID: Date] = [:]
+  /// Waiting to see whether the pending connection finishes now that a camera phone is advertising.
+  private var pendingCheck: DispatchWorkItem?
   private let previewClient = PreviewClient()
   private var previewWanted = false
   private var previewLink: (service: String, token: Data, key: Data)?
@@ -413,13 +418,39 @@ extension RemoteController: CBCentralManagerDelegate {
       guard name == RemoteHost.advertisedPairingName else { return }
     }
     if let current = camera {
-      // Its pending connection will finish by itself; a different phone is tried only while ours is not connecting.
-      if current.identifier == peripheral.identifier || current.state == .connecting && pairMode == nil { return }
+      if current.state == .connecting && pairMode == nil {
+        // The pending connection usually finishes by itself. It does not when the camera phone came back under a new
+        // Bluetooth identity (the remote opened first, the camera after): give it a moment, then use what was seen.
+        connectIfStillPending(seen: peripheral)
+        return
+      }
+      if current.identifier == peripheral.identifier { return }
       central.cancelPeripheralConnection(current)
     }
     camera = peripheral
     peripheral.delegate = self
     central.connect(peripheral, options: nil)
+  }
+
+  /// A camera phone is advertising our service but the pending connection has not finished: after `pendingGrace`, drop it
+  /// and connect to the phone that was seen. A phone that is not ours fails the handshake and is left alone for a while.
+  private func connectIfStillPending(seen: CBPeripheral) {
+    guard pendingCheck == nil else { return }
+    let work = DispatchWorkItem { [weak self] in
+      guard let self else { return }
+      self.pendingCheck = nil
+      guard self.active, self.session == nil, self.pairMode == nil, let central = self.central,
+            let current = self.camera, current.state == .connecting else { return }
+      if let since = self.blocked[seen.identifier], Date().timeIntervalSince(since) < Self.blockFor { return }
+      let who = String(seen.identifier.uuidString.prefix(8))
+      Self.log.info("pending connection did not finish: connecting to the advertising phone \(who, privacy: .public)")
+      central.cancelPeripheralConnection(current)
+      self.camera = seen
+      seen.delegate = self
+      central.connect(seen, options: nil)
+    }
+    pendingCheck = work
+    DispatchQueue.main.asyncAfter(deadline: .now() + Self.pendingGrace, execute: work)
   }
 
   func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {

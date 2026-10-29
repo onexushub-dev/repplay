@@ -343,6 +343,7 @@ export const ptBR: Messages = {
     plays: { one: '%{count} lance', other: '%{count} lances' },
     detail: '%{time} · %{plays}',
     searching: 'Procurando %{name}…',
+    searchingHint: 'Abra o Repplay no celular da câmera. Este controle conecta sozinho assim que o app abrir lá.',
     useOther: 'Usar outra câmera',
     ready: 'Controle conectado.',
     starting: 'Iniciando…',
@@ -520,7 +521,7 @@ export const ptBR: Messages = {
   },
   devices: {
     step1: 'Ligue o controle e deixe em modo de pareamento.',
-    step2: 'Abra Ajustes > Bluetooth e toque no nome dele.',
+    step2: 'No Iphone abra Ajustes > Bluetooth e toque no nome dele.',
     step3: 'Volte ao Repplay e aperte um botão do controle.',
     forgetTitle: 'Esquecer o controle?',
     forgetHelp: 'O Repplay deixa de mostrar este controle como pareado. Para desconectar de vez: Ajustes > Bluetooth > ⓘ ao lado do controle > Ignorar este dispositivo.',

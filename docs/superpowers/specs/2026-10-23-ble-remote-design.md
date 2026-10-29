@@ -65,7 +65,7 @@ Crypto and handshake states live in Core (`BleHandshake`), unit-tested with fixe
 ## 6. Reconnection
 
 Remote (central), the part that fixes the field bug:
-- The camera's peripheral identifier is remembered after the first link. On any drop the remote calls `connect(peripheral)` again at once. A pending connect never times out in CoreBluetooth and completes as soon as the camera is in range and advertising.
+- The camera's peripheral identifier is remembered after the first link. On any drop the remote calls `connect(peripheral)` again at once. A pending connect never times out in CoreBluetooth and completes as soon as the camera is in range and advertising. It does not when the camera phone comes back under a new Bluetooth identity (remote opened first, camera after): if the scan sees a camera advertising the service while the pending connect is still open after 2 s, the remote drops it and connects to the phone it saw.
 - In parallel it scans for the service UUID (a camera that reinstalled or rebooted gets a new identifier). The first match that passes the handshake wins; the other attempt is cancelled.
 - `UIBackgroundModes: bluetooth-central` plus state restoration (`CBCentralManagerOptionRestoreIdentifierKey`) keep the link and the pending connect alive while the remote is locked or in the background.
 - When the app comes back to the front: if not connected, restart the scan (the pending connect stays).
