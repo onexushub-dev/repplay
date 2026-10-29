@@ -56,6 +56,16 @@ STANDARD = {
     "stillMinSeen": 4,        # samples needed in the window to call someone still
     "speedUnit": 0.6,         # body heights per second that add 1 to the weight (capped at moveCap)
     "speedWindowMs": 500.0,
+    # lance=1 (experiment, 2026-10-28, needs activity=1): the frame closes on the play instead of on everybody: the
+    # lanceTop fastest people (weight >= lanceMinWeight) set the centre and the width (from their boxes' edges), with
+    # lanceLeadMs of look-ahead (the analysis runs after the clip is saved, so it knows what comes next). With nobody
+    # that fast, the frame opens back to everybody (the activeSpread rule). Meant with a higher maxZoom (2).
+    # zoomIn (FocusTuning.zoomIn, v15 = 1.1 since 2026-10-28): the zoomed rect made this much closer once fitted.
+    "zoomIn": 1.0,
+    "lance": 0.0,
+    "lanceTop": 2,
+    "lanceMinWeight": 2.5,
+    "lanceLeadMs": 800.0,
 }
 
 
@@ -256,6 +266,17 @@ def compute(samples, W, H, aspect, zoom, t):
         cx[i] = sum(c[0] * w for c, w in zip(centres, weights)) / total
         cy[i] = sum(c[1] * w for c, w in zip(centres, weights)) / total
         xs = [c[0] for c in centres]
+        if weights_by_box is not None and t["lance"]:
+            fast = sorted((k for k, w in enumerate(weights) if w >= t["lanceMinWeight"]), key=lambda k: -weights[k])
+            fast = fast[: int(t["lanceTop"])]
+            if fast:
+                wsum = sum(weights[k] for k in fast)
+                cx[i] = sum(centres[k][0] * weights[k] for k in fast) / wsum
+                cy[i] = sum(centres[k][1] * weights[k] for k in fast) / wsum
+                boxes = [people[i][k] for k in fast]
+                spread[i] = max(b[0] + b[2] for b in boxes) - min(b[0] for b in boxes)
+                previous = centres
+                continue
         if weights_by_box is not None and t["activeSpread"]:
             active = [k for k, w in enumerate(weights) if w >= t["activeWeight"]]
             if active:
@@ -273,6 +294,10 @@ def compute(samples, W, H, aspect, zoom, t):
         if t["centerOnSpan"]:
             cx[i] = cx[i] * (1 - t["centerOnSpan"]) + (low + high) / 2 * t["centerOnSpan"]
         previous = centres
+
+    if t["lance"] and t["lanceLeadMs"] > 0:
+        lead = int(round(t["lanceLeadMs"] / step))
+        cx, cy, spread = ([v[min(i + lead, n - 1)] for i in range(n)] for v in (cx, cy, spread))
 
     # 5. Smooth with look-ahead, then limit the pan speed.
     x = gaussian(fill(cx), t["sigmaXMs"] / step)
@@ -299,6 +324,9 @@ def compute(samples, W, H, aspect, zoom, t):
         if h > 1:
             h = 1
             w = ratio * H / W
+        if zoom and t["zoomIn"] > 1:
+            w /= t["zoomIn"]
+            h /= t["zoomIn"]
         left = min(max(x[i] - w / 2, 0), 1 - w)
         top = min(max(y[i] - t["lift"] * h - h / 2, 0), 1 - h)
         out.append((left, top, w, h))
@@ -339,7 +367,7 @@ def main():
     ap.add_argument("--set", action="append", default=[], help="tuning value, e.g. spreadScale=1.1 or maxZoom=2")
     ap.add_argument("--check", action="store_true", help="compare with the app's file")
     ap.add_argument("--preset", choices=["v13", "acao"], default="v13",
-                    help="acao: FocusTuning.action (v14, the app since 2026-10-28) = --set activity=1 --set activeSpread=1")
+                    help="acao: FocusTuning.action (the app since 2026-10-28) = --set activity=1 --set activeSpread=1 --set zoomIn=1.1")
     ap.add_argument("--boxes", choices=["full", "tiled"], default="full",
                     help="people from the whole-frame detector (the app today) or the whole frame + tiles "
                          "(vision-probe.swift from 2026-10-28 on; older people files have broken tiled boxes)")
@@ -347,7 +375,7 @@ def main():
 
     tuning = dict(STANDARD)
     if args.preset == "acao":
-        tuning.update(activity=1.0, activeSpread=1.0)
+        tuning.update(activity=1.0, activeSpread=1.0, zoomIn=1.1)
     for item in args.set:
         name, _, value = item.partition("=")
         if name not in tuning:

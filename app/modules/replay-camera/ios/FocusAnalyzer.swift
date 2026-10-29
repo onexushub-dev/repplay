@@ -141,7 +141,7 @@ enum FocusAnalyzer {
                                 tuning: .action)
 
     var file: [String: Any] = [
-      "v": 1, "rules": "v14-acao", "stepMs": stepMs, "startMs": startMs, "size": [width, height],
+      "v": 1, "rules": "v15-acao-zoom110", "stepMs": stepMs, "startMs": startMs, "size": [width, height],
       "landscape": rows(landscape ? mainRects : otherRects),
       "portrait": rows(landscape ? otherRects : mainRects),
     ]
