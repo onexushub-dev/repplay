@@ -192,6 +192,8 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
     if (s && clip && mode === 'watch' && clip.trim.startMs === s.startMs && clip.trim.endMs === s.endMs) setTrim(clip.trim);
   }
   const snapshot = useRef<EditSnapshot | undefined>(undefined);
+  // One report per tool per clip: flipping between tabs is browsing, not using.
+  const reportedTools = useRef(new Set<string>());
   const [openTool, setOpenTool] = useState<ToolId>(lastTool);
   // A finger held on the video in watch mode: 2x while it stays down.
   const [fast, setFast] = useState(false);
@@ -496,8 +498,6 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
     leaveEdit();
   }
 
-  // One report per tool per clip: flipping between tabs is browsing, not using.
-  const reportedTools = useRef(new Set<string>());
   function pickTool(tool: ToolId) {
     setOpenTool(tool);
     rememberTool(tool);

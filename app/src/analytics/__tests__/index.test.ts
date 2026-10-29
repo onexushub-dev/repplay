@@ -14,7 +14,9 @@ type MockPostHog = { apiKey: string; options: Record<string, unknown>; capture: 
 function load() {
   jest.resetModules();
   // A plain require, not requireMock: that one returns a second copy of the stand-in that the adapter never sees.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- a fresh module registry per test needs a plain require
   const { PostHog } = require('posthog-react-native') as { PostHog: { instances: MockPostHog[] } };
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- same: the singleton must be rebuilt for each test
   const analytics = require('../index') as typeof import('../index');
   return { analytics, instances: PostHog.instances };
 }
