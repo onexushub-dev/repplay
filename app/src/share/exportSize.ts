@@ -7,10 +7,11 @@ export const EXPORT_SIDES: readonly ShortSide[] = [2160, 1440, 1080];
 const NAMES: Record<ShortSide, string> = { 2160: '4K', 1440: '2K', 1080: 'Full HD' };
 
 /**
- * Bit rates assumed for the iOS "highest quality" H.264 export at 30 fps, in Mbit/s, for the size estimate only.
- * Rough figures: calibrate them against real exports when a phone test gives the file sizes.
+ * Bit rates assumed for the iOS "highest quality" H.264 export at 30 fps, in Mbit/s, for the size estimate only (the
+ * sizes are offered for 4K clips, recorded at 30 fps). Full HD measured on an iPhone 16 Pro Max (2026-10-29): 15 Mbit/s
+ * at 30 fps, 23 at 60 fps. 4K and 2K are still rough figures.
  */
-const VIDEO_MBPS: Record<ShortSide, number> = { 2160: 40, 1440: 18, 1080: 10 };
+const VIDEO_MBPS: Record<ShortSide, number> = { 2160: 40, 1440: 18, 1080: 15 };
 const AUDIO_MBPS = 0.128;
 
 export function sideName(side: ShortSide): string {
