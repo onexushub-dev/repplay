@@ -14,6 +14,7 @@ jest.mock('../../data/mmkv', () => ({
 jest.mock('../../../modules/replay-camera', () => ({
   addReplayListener: jest.fn(() => ({ remove: jest.fn() })),
   setScreenEconomy: jest.fn(),
+  getWatchStatus: jest.fn(() => 'unsupported'),
 }));
 jest.mock('../../session/SessionContext', () => ({ useSession: jest.fn() }));
 

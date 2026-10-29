@@ -1,9 +1,9 @@
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { Alert, BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { Alert, BackHandler, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { addReplayListener, setScreenEconomy } from '../../modules/replay-camera';
+import { addReplayListener, getWatchStatus, setScreenEconomy } from '../../modules/replay-camera';
 import { VOICE_WORDS } from '../i18n';
 import { useT } from '../i18n/useT';
 import { removeFile, repo } from '../data/mmkv';
@@ -16,6 +16,12 @@ import { Button } from './Button';
 import { HoldButton } from './HoldButton';
 import { ArmsUpIcon, MicIcon, RemoteIcon, TapIcon, WatchIcon } from './icons';
 import { SavedOverlay } from './SavedOverlay';
+
+/** The watch link as the native side sees it now; read on every render, as the setup screen does. */
+function subscribeWatch(onChange: () => void): () => void {
+  const sub = addReplayListener('onWatchStatus', onChange);
+  return () => sub.remove();
+}
 
 const OVERLAY_MS = 2000;
 /** How long the battery-saving notice stays up when a recording starts with it on. */
@@ -58,6 +64,9 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
   const { state, trigger, undoLast, stop, reset } = useSession();
   // The Bluetooth remote is paid: it saves only in a game whose plan may use it.
   const remoteOn = triggerAllowed('remote', state.paid ? 'paid' : 'free');
+  // The Apple Watch is paid too, and lit only when a paired watch has the app.
+  const watch = useSyncExternalStore(subscribeWatch, getWatchStatus);
+  const watchOn = Platform.OS === 'ios' && watch === 'ready' && triggerAllowed('watch', state.paid ? 'paid' : 'free');
   const { t, locale } = useT();
   const [now, setNow] = useState(() => Date.now());
   const [dismissed, setDismissed] = useState<string>();
@@ -238,7 +247,7 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
                 {voice ? <MicIcon color={colors.accent} size={20} /> : null}
                 {gesture ? <ArmsUpIcon color={colors.accent} size={20} /> : null}
                 <RemoteIcon color={remoteOn ? colors.accent : colors.muted} size={20} />
-                <WatchIcon color={colors.muted} size={20} />
+                <WatchIcon color={watchOn ? colors.accent : colors.muted} size={20} />
               </View>
             </View>
           )}
