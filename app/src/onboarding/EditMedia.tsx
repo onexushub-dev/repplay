@@ -5,9 +5,8 @@ import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { FocusIcon, PlayIcon, RotateIcon, SoundIcon, SpeedIcon, ZoomIcon } from '../components/icons';
 import { useT } from '../i18n/useT';
 import { colors, fonts } from '../theme/tokens';
+import { PHOTOS } from './photos';
 import { Photo, Reveal, useLoop } from './motion';
-
-const FOCUS = require('../../assets/images/onboarding/foco.jpg');
 
 type IconType = ComponentType<{ color?: string; size?: number }>;
 
@@ -43,7 +42,7 @@ export function EditMedia() {
           <Text style={styles.done}>{t('clip.done')}</Text>
         </View>
         <View style={styles.photo}>
-          <Photo source={FOCUS} />
+          <Photo photo={PHOTOS.focus} />
           <View style={styles.focusTag}>
             <View style={styles.focusDot} />
             <Text style={styles.focusText}>{t('clip.focusMode')}</Text>

@@ -4,9 +4,8 @@ import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { BackIcon, DownloadIcon, EditIcon, ShareIcon } from '../components/icons';
 import { useT } from '../i18n/useT';
 import { colors, fonts, radius } from '../theme/tokens';
+import { PHOTOS } from './photos';
 import { Photo, useLoop } from './motion';
-
-const PLAY = require('../../assets/images/onboarding/lance.jpg');
 
 /** The saved clip's screen: the clip full size with its position bar and the three actions, Edit, Save and Send. */
 export function ShareMedia() {
@@ -16,7 +15,7 @@ export function ShareMedia() {
 
   return (
     <View style={styles.frame} pointerEvents="none">
-      <Photo source={PLAY} />
+      <Photo photo={PHOTOS.play} focus={{ x: 0.5, y: 0.56 }} />
       <View style={styles.top}>
         <View style={styles.back}>
           <BackIcon size={20} />

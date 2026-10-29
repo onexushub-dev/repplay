@@ -1,5 +1,5 @@
-import { type ReactNode, useEffect } from 'react';
-import { Image, type ImageSourcePropType, StyleSheet, View, type ViewStyle } from 'react-native';
+import { type ReactNode, useEffect, useState } from 'react';
+import { Image, StyleSheet, View, type ViewStyle } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -10,6 +10,8 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
+
+import { coverPlacement, type PhotoSpec } from './photos';
 
 /** Fades a block in while it rises a little; with Reduce Motion on it is simply there. */
 export function Reveal({ children, delay = 0, style }: { children: ReactNode; delay?: number; style?: ViewStyle }) {
@@ -69,15 +71,23 @@ export function useLoop(duration: number, options: { bounce?: boolean; rest?: nu
   return value;
 }
 
-/** A photo that drifts in slowly, as if the camera were still rolling; it stays put with Reduce Motion on. */
-export function Photo({ source }: { source: ImageSourcePropType }) {
+/**
+ * A photo that fills its box with the point that matters in view (`focus` overrides the photo's own) and drifts in a
+ * little, as if the camera were still rolling; it stays put with Reduce Motion on. The drift is kept small: the
+ * more a photo is enlarged, the softer it looks.
+ */
+export function Photo({ photo, focus }: { photo: PhotoSpec; focus?: { x: number; y: number } }) {
   const zoom = useLoop(10000, { bounce: true, rest: 0 });
-  const drift = useAnimatedStyle(() => ({ transform: [{ scale: 1.04 + 0.08 * zoom.get() }] }));
+  const drift = useAnimatedStyle(() => ({ transform: [{ scale: 1 + 0.05 * zoom.get() }] }));
+  const [box, setBox] = useState({ width: 0, height: 0 });
+  const place = coverPlacement(photo, focus ?? photo.focus, box.width, box.height);
   return (
-    <View style={StyleSheet.absoluteFill}>
+    <View style={StyleSheet.absoluteFill} onLayout={(event) => setBox(event.nativeEvent.layout)}>
       <Animated.View style={[StyleSheet.absoluteFill, drift]}>
-        <Image source={source} style={StyleSheet.absoluteFill} resizeMode="cover" accessibilityElementsHidden />
+        {box.width > 0 ? <Image source={photo.source} style={[styles.photo, place]} accessibilityElementsHidden /> : null}
       </Animated.View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({ photo: { position: 'absolute' } });

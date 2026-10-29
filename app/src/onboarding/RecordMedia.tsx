@@ -4,9 +4,8 @@ import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { ArmsUpIcon, BatteryIcon, MicIcon, QrIcon, RemoteIcon, WatchIcon } from '../components/icons';
 import { useT } from '../i18n/useT';
 import { colors, fonts, radius } from '../theme/tokens';
+import { PHOTOS } from './photos';
 import { Photo, useLoop } from './motion';
-
-const CAMERA = require('../../assets/images/onboarding/camera.jpg');
 
 /** The recording screen as it opens: the camera view, the top buttons and the panel with the ways to save and Start. */
 export function RecordMedia() {
@@ -20,7 +19,7 @@ export function RecordMedia() {
 
   return (
     <View style={styles.frame} pointerEvents="none">
-      <Photo source={CAMERA} />
+      <Photo photo={PHOTOS.camera} />
       <View style={styles.top}>
         <View style={styles.recordings}>
           <Text style={styles.recordingsText}>{t('setup.myRecordings')}</Text>

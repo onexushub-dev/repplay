@@ -5,10 +5,9 @@ import { ArmsUpIcon, CheckIcon, MicIcon, QrIcon, RemoteIcon, TapIcon, WatchIcon 
 import type { MessageKey } from '../i18n';
 import { useT } from '../i18n/useT';
 import { colors, fonts, radius } from '../theme/tokens';
+import { PHOTOS } from './photos';
 import { Photo, Reveal } from './motion';
 import type { WayId } from './slides';
-
-const PLAY = require('../../assets/images/onboarding/lance.jpg');
 
 type IconType = ComponentType<{ color?: string; size?: number }>;
 
@@ -37,7 +36,7 @@ export function SaveMedia({ ways, card, onPick }: Props) {
   return (
     <View style={styles.root} pointerEvents="box-none">
       <View style={styles.photo} pointerEvents="none">
-        <Photo source={PLAY} />
+        <Photo photo={PHOTOS.play} />
         <View style={styles.recording}>
           <View style={styles.recDot} />
           <Text style={styles.recordingText}>{t('recording.recording')}</Text>
