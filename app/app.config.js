@@ -20,6 +20,12 @@
  * The old LANCE_RC_* names still work, so an existing .env.local keeps working.
  *
  * With no key the app runs as free and the paywall reports an error.
+ *
+ * Anonymous usage metrics (PostHog, EU cloud), read into extra.posthog:
+ *
+ *   REPPLAY_POSTHOG_KEY=phc_...            project API key (public, write-only)
+ *
+ * With no key the app sends no metrics at all (dev builds, tests, CI).
  */
 module.exports = ({ config }) => {
   const bundleId = process.env.REPPLAY_BUNDLE_ID || process.env.LANCE_BUNDLE_ID;
@@ -43,6 +49,10 @@ module.exports = ({ config }) => {
       ios: process.env.REPPLAY_RC_IOS_KEY || process.env.LANCE_RC_IOS_KEY,
       android: process.env.REPPLAY_RC_ANDROID_KEY || process.env.LANCE_RC_ANDROID_KEY,
       test: production ? undefined : process.env.REPPLAY_RC_TEST_KEY || process.env.LANCE_RC_TEST_KEY,
+    },
+    posthog: {
+      key: process.env.REPPLAY_POSTHOG_KEY,
+      host: 'https://eu.i.posthog.com',
     },
   });
 
