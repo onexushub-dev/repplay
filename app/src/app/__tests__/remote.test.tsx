@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { Linking } from 'react-native';
+import { Alert, Linking } from 'react-native';
 
 import Remote from '../remote';
 
@@ -16,8 +16,30 @@ jest.mock('../../../modules/replay-camera', () => ({
   remoteControllerPreview: jest.fn(),
   remoteDeviceName: jest.fn(() => 'iPhone XR#1234'),
   remoteSetDeviceName: jest.fn(),
+  setRemoteScreenDim: jest.fn(),
+  isVoiceSupported: jest.fn(() => true),
+  getMicrophonePermission: jest.fn(() => 'granted'),
+  getSpeechPermission: jest.fn(() => 'granted'),
+  requestMicrophonePermission: jest.fn(() => Promise.resolve(true)),
+  requestSpeechPermission: jest.fn(() => Promise.resolve(true)),
+  remoteVoiceSetEnabled: jest.fn(),
   addReplayListener: jest.fn(() => ({ remove: jest.fn() })),
 }));
+jest.mock('../../data/mmkv', () => {
+  let prefs: any = { ...jest.requireActual('../../data/schema').DEFAULT_PREFS };
+  return {
+    repo: {
+      getPrefs: () => prefs,
+      setPrefs: jest.fn((patch: any) => {
+        prefs = { ...prefs, ...patch };
+        return prefs;
+      }),
+    },
+    __resetPrefs: () => {
+      prefs = { ...jest.requireActual('../../data/schema').DEFAULT_PREFS };
+    },
+  };
+});
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), push: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) },
 }));
@@ -60,6 +82,10 @@ beforeEach(() => {
   jest.clearAllMocks();
   jest.useFakeTimers({ now: NOW });
   camera().remoteControllerHost.mockReturnValue(null);
+  camera().isVoiceSupported.mockReturnValue(true);
+  camera().getMicrophonePermission.mockReturnValue('granted');
+  camera().getSpeechPermission.mockReturnValue('granted');
+  jest.requireMock('../../data/mmkv').__resetPrefs();
 });
 
 afterEach(() => jest.useRealTimers());
@@ -516,4 +542,204 @@ test('the camera side of this same phone saying "searching" does not make the re
   await emit('onRemoteStatus', { side: 'camera', link: 'searching', controllers: 0 });
   expect(screen.queryByText('Reconectando a Quadra 1…')).toBeNull();
   expect(screen.getByRole('button', { name: 'SALVAR' })).toBeTruthy();
+});
+
+// The camera phone beats every 5 s while it records; the remote's screen economy waits a minute without a touch.
+async function recordFor(ms: number) {
+  for (let left = ms; left > 0; left -= 5000) {
+    await act(async () => {
+      jest.advanceTimersByTime(Math.min(5000, left));
+    });
+    await emit('onRemoteState', { recording: true, clipCount: 0, startedAt: NOW });
+  }
+}
+
+test('while the camera records, the screen dims after a minute without a touch and the first touch only lights it up', async () => {
+  paired();
+  await render(<Remote />);
+  await emit('onRemoteStatus', { side: 'remote', link: 'connected', peerName: 'Quadra 1' });
+  await emit('onRemoteState', { recording: true, clipCount: 0, startedAt: NOW });
+  expect(screen.getByTestId('economy-notice')).toBeTruthy();
+  await recordFor(55_000);
+  expect(screen.queryByTestId('remote-economy')).toBeNull();
+  await recordFor(5_000);
+  expect(screen.getByTestId('remote-economy')).toBeTruthy();
+  expect(camera().setRemoteScreenDim).toHaveBeenLastCalledWith(true);
+  expect(screen.queryByTestId('economy-notice')).toBeNull();
+
+  await act(async () => {
+    fireEvent(screen.getByTestId('remote-economy'), 'pressIn');
+  });
+  expect(screen.queryByTestId('remote-economy')).toBeNull();
+  expect(camera().setRemoteScreenDim).toHaveBeenLastCalledWith(false);
+  expect(camera().remoteControllerSave).not.toHaveBeenCalled();
+});
+
+test('a lost link lights the screen up by itself', async () => {
+  paired();
+  await render(<Remote />);
+  await emit('onRemoteStatus', { side: 'remote', link: 'connected', peerName: 'Quadra 1' });
+  await emit('onRemoteState', { recording: true, clipCount: 0, startedAt: NOW });
+  await recordFor(60_000);
+  expect(screen.getByTestId('remote-economy')).toBeTruthy();
+  await emit('onRemoteStatus', { side: 'remote', link: 'searching', peerName: 'Quadra 1' });
+  expect(screen.queryByTestId('remote-economy')).toBeNull();
+  expect(camera().setRemoteScreenDim).toHaveBeenLastCalledWith(false);
+});
+
+test('battery saving can be turned off before the recording, and then the screen stays on', async () => {
+  paired();
+  await render(<Remote />);
+  await emit('onRemoteStatus', { side: 'remote', link: 'connected', peerName: 'Quadra 1' });
+  await emit('onRemoteState', { recording: false, clipCount: 0 });
+  await act(async () => {
+    fireEvent.press(screen.getByLabelText('Economia de bateria, Escurece após 1 min sem toque'));
+  });
+  expect(jest.requireMock('../../data/mmkv').repo.setPrefs).toHaveBeenCalledWith({ remoteEconomy: false });
+  expect(screen.getByText('Economia de bateria desligada')).toBeTruthy();
+  expect(screen.getByLabelText('Economia de bateria, Desligada')).toBeTruthy();
+
+  await emit('onRemoteState', { recording: true, clipCount: 0, startedAt: NOW });
+  expect(screen.queryByTestId('economy-notice')).toBeNull();
+  await recordFor(70_000);
+  expect(screen.queryByTestId('remote-economy')).toBeNull();
+  expect(camera().setRemoteScreenDim).not.toHaveBeenCalledWith(true);
+});
+
+async function connected(recording: boolean) {
+  paired();
+  await render(<Remote />);
+  await emit('onRemoteStatus', { side: 'remote', link: 'connected', peerName: 'Quadra 1' });
+  await emit('onRemoteState', recording ? { recording: true, clipCount: 0, startedAt: NOW } : { recording: false, clipCount: 0 });
+}
+
+test('voice listens only while the camera records, and says so under SALVAR', async () => {
+  await connected(false);
+  expect(camera().remoteVoiceSetEnabled).toHaveBeenLastCalledWith(false, 'pt-BR');
+  expect(screen.getByLabelText('Salvar por voz, Diga “salvar” ou “gravar”')).toBeTruthy();
+  await emit('onRemoteState', { recording: true, clipCount: 0, startedAt: NOW });
+  expect(camera().remoteVoiceSetEnabled).toHaveBeenLastCalledWith(true, 'pt-BR');
+  expect(screen.getByText('ou diga “salvar”')).toBeTruthy();
+});
+
+test('a heard command saves like a tap, and a dim screen stays dim', async () => {
+  await connected(true);
+  await recordFor(60_000);
+  expect(screen.getByTestId('remote-economy')).toBeTruthy();
+  await emit('onRemoteVoice', { at: NOW });
+  expect(camera().remoteControllerSave).toHaveBeenCalledTimes(1);
+  expect(haptics().impactAsync).toHaveBeenCalledWith('heavy');
+  expect(screen.getByTestId('remote-economy')).toBeTruthy();
+  await emit('onRemoteResult', { saved: true });
+  expect(screen.getByText('SALVO!')).toBeTruthy();
+});
+
+test('a command heard outside a recording saves nothing', async () => {
+  await connected(false);
+  await emit('onRemoteVoice', { at: NOW });
+  expect(camera().remoteControllerSave).not.toHaveBeenCalled();
+});
+
+test('voice can be turned off before the recording, and then nothing listens', async () => {
+  await connected(false);
+  await act(async () => {
+    fireEvent.press(screen.getByLabelText('Salvar por voz, Diga “salvar” ou “gravar”'));
+  });
+  expect(jest.requireMock('../../data/mmkv').repo.setPrefs).toHaveBeenCalledWith({ remoteVoice: false });
+  expect(screen.getByLabelText('Salvar por voz, Desligada')).toBeTruthy();
+  await emit('onRemoteState', { recording: true, clipCount: 0, startedAt: NOW });
+  expect(camera().remoteVoiceSetEnabled).not.toHaveBeenCalledWith(true, 'pt-BR');
+  expect(screen.queryByText('ou diga “salvar”')).toBeNull();
+});
+
+test('the first time it is connected it explains voice before iOS asks, once', async () => {
+  camera().getMicrophonePermission.mockReturnValue('undetermined');
+  camera().getSpeechPermission.mockReturnValue('undetermined');
+  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  await connected(false);
+  expect(alert).toHaveBeenCalledTimes(1);
+  expect(alert.mock.calls[0][0]).toBe('Salvar falando');
+  const allow = (alert.mock.calls[0][2] as any[]).find((b) => b.text === 'Permitir');
+  await act(async () => {
+    allow.onPress();
+  });
+  expect(camera().requestMicrophonePermission).toHaveBeenCalled();
+  expect(camera().requestSpeechPermission).toHaveBeenCalled();
+  expect(jest.requireMock('../../data/mmkv').repo.getPrefs().remoteVoiceAsked).toBe(true);
+  expect(screen.getByLabelText('Salvar por voz, Diga “salvar” ou “gravar”')).toBeTruthy();
+  alert.mockRestore();
+});
+
+test('"Agora não" turns voice off', async () => {
+  camera().getMicrophonePermission.mockReturnValue('undetermined');
+  camera().getSpeechPermission.mockReturnValue('undetermined');
+  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  await connected(false);
+  const later = (alert.mock.calls[0][2] as any[]).find((b) => b.text === 'Agora não');
+  await act(async () => {
+    later.onPress();
+  });
+  expect(screen.getByLabelText('Salvar por voz, Desligada')).toBeTruthy();
+  expect(camera().requestMicrophonePermission).not.toHaveBeenCalled();
+  alert.mockRestore();
+});
+
+test('a denied permission sends the tile to Settings', async () => {
+  camera().getSpeechPermission.mockReturnValue('denied');
+  const settings = jest.spyOn(Linking, 'openSettings').mockResolvedValue(undefined);
+  await connected(false);
+  await act(async () => {
+    fireEvent.press(screen.getByLabelText('Salvar por voz, Negado · libere em Ajustes'));
+  });
+  expect(settings).toHaveBeenCalled();
+  settings.mockRestore();
+});
+
+test('without offline recognition on this phone there is no voice tile', async () => {
+  camera().isVoiceSupported.mockReturnValue(false);
+  await connected(false);
+  expect(screen.queryByText('Salvar por voz')).toBeNull();
+});
+
+async function holdToEnd() {
+  await fireEvent(screen.getByRole('button', { name: 'Segure para encerrar a gravação' }), 'pressIn');
+  await act(async () => {
+    jest.advanceTimersByTime(1000);
+  });
+}
+
+test('after the hold it says it is ending at once, and asks again until the camera phone stops', async () => {
+  await connected(true);
+  await holdToEnd();
+  expect(camera().remoteControllerEndRecording).toHaveBeenCalledTimes(1);
+  expect(screen.getByText('Encerrando…')).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Segure para encerrar a gravação' })).toBeNull();
+  await act(async () => {
+    jest.advanceTimersByTime(1500);
+  });
+  expect(camera().remoteControllerEndRecording).toHaveBeenCalledTimes(2);
+  await emit('onRemoteState', { recording: false, clipCount: 0 });
+  expect(screen.getByText('Controle conectado.')).toBeTruthy();
+  await act(async () => {
+    jest.advanceTimersByTime(5000);
+  });
+  expect(camera().remoteControllerEndRecording).toHaveBeenCalledTimes(2);
+});
+
+test('if the camera phone never stops, it says so and the hold is back', async () => {
+  await connected(true);
+  await holdToEnd();
+  for (let i = 0; i < 2; i++) {
+    await act(async () => {
+      jest.advanceTimersByTime(4000);
+    });
+    await emit('onRemoteState', { recording: true, clipCount: 0, startedAt: NOW });
+  }
+  expect(screen.getByText('A gravação não encerrou. Confira o celular da câmera e tente de novo.')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Segure para encerrar a gravação' })).toBeTruthy();
+  const asked = camera().remoteControllerEndRecording.mock.calls.length;
+  await act(async () => {
+    jest.advanceTimersByTime(3000);
+  });
+  expect(camera().remoteControllerEndRecording).toHaveBeenCalledTimes(asked);
 });

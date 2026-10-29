@@ -481,6 +481,9 @@ extension RemoteHost: CBPeripheralManagerDelegate {
     // A fresh subscription is a fresh link: whatever this central said before does not count any more.
     links.removeValue(forKey: central.identifier)
     _ = linkFor(central)
+    // Ask for the shortest connection interval: a command and its answer cross faster, and a weak link at a distance
+    // retries sooner. It costs a little more battery on both phones, only while the remote is linked.
+    peripheral.setDesiredConnectionLatency(.low, for: central)
   }
 
   func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didUnsubscribeFrom characteristic: CBCharacteristic) {

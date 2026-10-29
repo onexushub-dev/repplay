@@ -1,12 +1,26 @@
 import * as Haptics from 'expo-haptics';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  AppState,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   addReplayListener,
+  getMicrophonePermission,
+  getSpeechPermission,
+  isVoiceSupported,
   remoteControllerForget,
   remoteControllerHost,
   remoteControllerPairWithCode,
@@ -16,6 +30,10 @@ import {
   remoteControllerSave,
   remoteControllerStart,
   remoteControllerStop,
+  remoteVoiceSetEnabled,
+  requestMicrophonePermission,
+  requestSpeechPermission,
+  setRemoteScreenDim,
 } from '../../modules/replay-camera';
 import type { RemoteLink, RemoteLinkReason, RemotePairFailure, RemotePeer } from '../../modules/replay-camera/src/ReplayCamera.types';
 import { Button } from '../components/Button';
@@ -24,15 +42,20 @@ import { QrScanner } from '../components/QrScanner';
 import { RequirementsChecklist } from '../components/RequirementsChecklist';
 import { RemotePreview } from '../components/RemotePreview';
 import { DeviceNameField } from '../components/DeviceNameField';
+import { EconomyToast } from '../components/EconomyToast';
 import { HoldButton } from '../components/HoldButton';
-import { CameraIcon } from '../components/icons';
+import { BatteryIcon, BatteryOffIcon, CameraIcon, MicIcon } from '../components/icons';
 import { PulseRing } from '../components/PulseRing';
 import { ResultFlash } from '../components/ResultFlash';
+import { TriggerTile } from '../components/TriggerTile';
+import { repo } from '../data/mmkv';
+import type { Prefs } from '../data/schema';
 import { parseCode, parsePairUrl } from '../remote/pairLink';
 import { canSave, connectionTone, remoteScreen } from '../remote/remoteScreen';
 import { cooldownLeft, IDLE, onResult, onTap, tick, type SaveFeedback } from '../remote/saveFeedback';
-import type { TFunction } from '../i18n';
+import { VOICE_WORDS, voiceLocale, type TFunction } from '../i18n';
 import { useT } from '../i18n/useT';
+import { useScreenEconomy } from '../session/useScreenEconomy';
 import { colors, fonts, radius } from '../theme/tokens';
 
 const KEEP_AWAKE_TAG = 'remote';
@@ -40,8 +63,18 @@ const TICK_MS = 250;
 const CONNECT_TIMEOUT_MS = 12_000;
 /** The camera phone has this long to show it is recording before the remote says it did not start. */
 const START_WAIT_MS = 8000;
+/** "Segure para encerrar" is sent again this often until the camera phone shows it stopped (a weak link can lose it). */
+const END_RETRY_MS = 1500;
+/** The camera phone has this long to show it stopped before the remote says it did not end. */
+const END_WAIT_MS = 8000;
 /** How long "Tentar reconexão" waits before it can be tapped again. */
 const RETRY_WAIT_MS = 6000;
+/** Without a touch for this long while the camera records, the remote's screen dims (it is touched more than the camera). */
+const REMOTE_ECONOMY_IDLE_MS = 60_000;
+/** How long the battery-saving notice stays up when a recording starts with it on. */
+const ECONOMY_NOTICE_MS = 5000;
+/** How long the toast after a tap on the battery-saving tile stays up. */
+const ECONOMY_TOAST_MS = 3000;
 
 type Received = { recording: boolean; clipCount: number; startedAt: number | null; receivedAt: number };
 
@@ -103,7 +136,7 @@ function ForgetCamera({ name, onPress }: { name: string; onPress: () => void }) 
 
 /** The second iPhone: shows the camera phone's game and taps Salvar for it. */
 export default function Remote() {
-  const { t } = useT();
+  const { t, locale } = useT();
   const [host, setHost] = useState<RemotePeer | null>(() => remoteControllerHost());
   const [link, setLink] = useState<RemoteLink>('idle');
   const [linkReason, setLinkReason] = useState<RemoteLinkReason | undefined>(undefined);
@@ -122,7 +155,19 @@ export default function Remote() {
   const [lastCode, setLastCode] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [startAskedAt, setStartAskedAt] = useState<number | null>(null);
+  const [endAskedAt, setEndAskedAt] = useState<number | null>(null);
   const connectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [prefs, setPrefsState] = useState<Prefs>(() => repo.getPrefs());
+  const updatePrefs = (patch: Partial<Prefs>) => setPrefsState(repo.setPrefs(patch));
+  const [noticeFor, setNoticeFor] = useState<string | null>(null);
+  const [noticeGone, setNoticeGone] = useState<string | null>(null);
+  const [economyToast, setEconomyToast] = useState(0);
+  // Voice on this phone: offline recognition only, so it exists only where the on-device model does.
+  const voiceSupported = useMemo(() => isVoiceSupported(voiceLocale(locale)), [locale]);
+  const [mic, setMic] = useState(() => getMicrophonePermission());
+  const [speech, setSpeech] = useState(() => getSpeechPermission());
+  // The save of a heard command: the current screen's (set on every render, read by the event listener).
+  const voiceSave = useRef<(() => void) | null>(null);
 
   const stopConnectTimer = () => {
     if (connectTimer.current !== null) clearTimeout(connectTimer.current);
@@ -165,6 +210,7 @@ export default function Remote() {
       const at = Date.now();
       setNow(at);
       if (e.recording) setStartAskedAt(null);
+      else setEndAskedAt(null);
       setReceived({
         recording: e.recording,
         clipCount: e.clipCount,
@@ -177,6 +223,10 @@ export default function Remote() {
       Haptics.notificationAsync(
         e.saved ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error,
       );
+    });
+    const heard = addReplayListener('onRemoteVoice', () => {
+      const saveNow = voiceSave.current;
+      if (saveNow !== null) saveNow();
     });
     const pairing = addReplayListener('onRemotePairing', (e) => {
       if (e.phase !== 'paired' && e.phase !== 'failed') return; // the other phases are for the camera phone
@@ -200,6 +250,7 @@ export default function Remote() {
       status.remove();
       state.remove();
       saved.remove();
+      heard.remove();
       pairing.remove();
     };
   }, [t]);
@@ -234,7 +285,25 @@ export default function Remote() {
     remoteControllerPairWithLink(link.hostId, link.secret, link.hostName);
   };
 
+  // The hold is done: say so at once and keep asking until the camera phone shows the recording ended. The camera phone
+  // ends a recording only once, so the repeats are harmless.
+  const endRecording = () => {
+    setEndAskedAt(Date.now());
+    setNotice(null);
+    remoteControllerEndRecording();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  useEffect(() => {
+    if (endAskedAt === null) return;
+    const id = setInterval(() => {
+      if (Date.now() - endAskedAt < END_WAIT_MS) remoteControllerEndRecording();
+    }, END_RETRY_MS);
+    return () => clearInterval(id);
+  }, [endAskedAt]);
+
   const startRecording = () => {
+    setEndAskedAt(null);
     setStartAskedAt(Date.now());
     setNotice(null);
     remoteControllerStartRecording();
@@ -318,6 +387,130 @@ export default function Remote() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
   };
 
+  const hostLabel =
+    host !== null && host.name.length > 0 ? host.name : peerName === null ? t('remote.genericHost') : peerName;
+  const screenModel = remoteScreen({
+    link,
+    reason: linkReason,
+    hostName: hostLabel,
+    state:
+      received === null
+        ? null
+        : {
+            recording: received.recording,
+            clipCount: received.clipCount,
+            startedAt: received.startedAt,
+            ageSec: Math.max(0, (now - received.receivedAt) / 1000),
+          },
+  });
+
+  // Screen economy, the camera's mechanism with a longer wait and a readable 15% brightness: while the camera records,
+  // the screen dims after a minute without a touch. The touch that lights it up only does that (it saves nothing and
+  // presses nothing); a lost link lights it up by itself, since the screen is then no longer the recording one.
+  const economyOn = host !== null && screenModel.kind === 'recording' && prefs.remoteEconomy;
+  const economy = useScreenEconomy(economyOn, 'nominal', setRemoteScreenDim, REMOTE_ECONOMY_IDLE_MS);
+
+  // Battery saving on: say so when a recording starts (from here or from the camera phone), so a dim screen later is no
+  // surprise; gone by itself.
+  const recordingKey = screenModel.kind === 'recording' ? String(screenModel.startedAt) : null;
+  if (economyOn && recordingKey !== null && noticeFor !== recordingKey) setNoticeFor(recordingKey);
+  useEffect(() => {
+    if (noticeFor === null) return;
+    const hide = setTimeout(() => setNoticeGone(noticeFor), ECONOMY_NOTICE_MS);
+    return () => clearTimeout(hide);
+  }, [noticeFor]);
+  const showEconomyNotice = economyOn && !economy.asleep && noticeFor === recordingKey && noticeGone !== noticeFor;
+
+  useEffect(() => {
+    if (economyToast === 0) return;
+    const hide = setTimeout(() => setEconomyToast(0), ECONOMY_TOAST_MS);
+    return () => clearTimeout(hide);
+  }, [economyToast]);
+  const toggleEconomy = () => {
+    updatePrefs({ remoteEconomy: !prefs.remoteEconomy });
+    setEconomyToast((n) => n + 1);
+  };
+
+  // Voice: "salvar" / "gravar" said near this phone saves like a tap on SALVAR. It listens only while the camera
+  // records, with both permissions and the player's choice (on by default); a dim screen keeps listening.
+  const voiceGranted = mic === 'granted' && speech === 'granted';
+  const voiceDenied = mic === 'denied' || speech === 'denied';
+  const voiceOn = voiceSupported && prefs.remoteVoice && voiceGranted;
+  const listening = voiceOn && host !== null && screenModel.kind === 'recording';
+  const recognizerLocale = voiceLocale(locale);
+  useEffect(() => {
+    remoteVoiceSetEnabled(listening, recognizerLocale);
+  }, [listening, recognizerLocale]);
+  useEffect(() => () => remoteVoiceSetEnabled(false, recognizerLocale), [recognizerLocale]);
+
+  // Back from Settings, a permission may have changed.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+      setMic(getMicrophonePermission());
+      setSpeech(getSpeechPermission());
+    });
+    return () => sub.remove();
+  }, []);
+
+  /** Asks for the microphone, then speech recognition; true when both are granted. */
+  const askVoice = async (): Promise<boolean> => {
+    const micOk = mic === 'granted' || (await requestMicrophonePermission());
+    setMic(micOk ? 'granted' : 'denied');
+    if (!micOk) return false;
+    const speechOk = speech === 'granted' || (await requestSpeechPermission());
+    setSpeech(speechOk ? 'granted' : 'denied');
+    return speechOk;
+  };
+
+  const toggleVoice = async () => {
+    if (voiceOn) return updatePrefs({ remoteVoice: false });
+    // A permission said no before: only Settings can change it now.
+    if (voiceDenied) return void Linking.openSettings();
+    if (await askVoice()) updatePrefs({ remoteVoice: true, remoteVoiceAsked: true });
+  };
+
+  // The first time this phone is connected and ready, voice (on by default) is explained before iOS asks for the
+  // microphone and speech recognition. "Agora não" turns it off; the tile turns it on again later.
+  const waitingNow = host !== null && screenModel.kind === 'waiting';
+  const askNow = waitingNow && voiceSupported && prefs.remoteVoice && !voiceGranted && !voiceDenied && prefs.remoteVoiceAsked !== true;
+  const askedHere = useRef(false);
+  useEffect(() => {
+    if (!askNow || askedHere.current) return;
+    askedHere.current = true;
+    const [first, second] = VOICE_WORDS[locale];
+    // Once per phone: either answer is remembered, so it never comes back.
+    Alert.alert(t('remote.voiceAskTitle'), t('remote.voiceAskBody', { first, second }), [
+      {
+        text: t('remote.voiceAskLater'),
+        style: 'cancel',
+        onPress: () => updatePrefs({ remoteVoice: false, remoteVoiceAsked: true }),
+      },
+      {
+        text: t('remote.voiceAskAllow'),
+        onPress: () => {
+          updatePrefs({ remoteVoiceAsked: true });
+          void askVoice();
+        },
+      },
+    ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [askNow]);
+
+  const voiceStatus = !prefs.remoteVoice
+    ? t('remote.economyStatusOff')
+    : voiceGranted
+      ? t('setup.voiceSay', { first: VOICE_WORDS[locale][0], second: VOICE_WORDS[locale][1] })
+      : voiceDenied
+        ? t('setup.voiceDenied')
+        : t('setup.tapToAllow');
+
+  // A heard command saves only on the recording screen (it can arrive just after the recording ended).
+  const recordingNow = host !== null && screenModel.kind === 'recording';
+  useEffect(() => {
+    voiceSave.current = recordingNow ? save : null;
+  });
+
   if (host === null) {
     return (
       <SafeAreaView style={styles.root}>
@@ -360,21 +553,6 @@ export default function Remote() {
 
   // The button only shows while the link is down or silent, so it simply waits out RETRY_WAIT_MS.
   const retryShown = retrying;
-  const hostLabel = host.name.length > 0 ? host.name : peerName === null ? t('remote.genericHost') : peerName;
-  const screenModel = remoteScreen({
-    link,
-    reason: linkReason,
-    hostName: hostLabel,
-    state:
-      received === null
-        ? null
-        : {
-            recording: received.recording,
-            clipCount: received.clipCount,
-            startedAt: received.startedAt,
-            ageSec: Math.max(0, (now - received.receivedAt) / 1000),
-          },
-  });
   const recordingDetail =
     screenModel.kind === 'recording'
       ? t('remote.detail', {
@@ -385,14 +563,22 @@ export default function Remote() {
   const startWaiting = startAskedAt !== null && !(received !== null && received.recording);
   const startPending = startWaiting && now - startAskedAt < START_WAIT_MS;
   const startFailed = startWaiting && now - startAskedAt >= START_WAIT_MS;
+  const endPending = endAskedAt !== null && now - endAskedAt < END_WAIT_MS;
+  const endFailed = endAskedAt !== null && now - endAskedAt >= END_WAIT_MS;
   const sending = feedback.phase === 'sending';
   const left = cooldownLeft(lastSave, now);
   const flash = feedback.phase === 'saved' || feedback.phase === 'failed' || feedback.phase === 'timeout';
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} onTouchStart={economy.wake}>
       <View style={styles.body}>
         <ConnectionBar tone={connectionTone(screenModel)} name={hostLabel} detail={recordingDetail} />
+        {showEconomyNotice ? (
+          <View pointerEvents="none" accessibilityRole="alert" testID="economy-notice" style={styles.notice}>
+            <Text style={styles.noticeTitle}>{t('remote.economyOnTitle')}</Text>
+            <Text style={styles.noticeBody}>{t('remote.economyNoticeBody')}</Text>
+          </View>
+        ) : null}
         {screenModel.kind === 'recording' ? null : <Text style={styles.role}>{t('remote.roleRemote')}</Text>}
         {notice !== null ? <Text style={styles.warning}>{notice}</Text> : null}
 
@@ -432,6 +618,24 @@ export default function Remote() {
             ) : (
               <Text style={styles.hint}>{t('remote.orStartThere')}</Text>
             )}
+            <View style={styles.options}>
+              <TriggerTile
+                icon={prefs.remoteEconomy ? <BatteryIcon color={colors.accent} /> : <BatteryOffIcon />}
+                title={t('setup.economy')}
+                status={t(prefs.remoteEconomy ? 'remote.economyStatusOn' : 'remote.economyStatusOff')}
+                active={prefs.remoteEconomy}
+                onPress={toggleEconomy}
+              />
+              {voiceSupported ? (
+                <TriggerTile
+                  icon={<MicIcon color={voiceOn ? colors.accent : colors.muted} />}
+                  title={t('remote.voiceTitle')}
+                  status={voiceStatus}
+                  active={voiceOn}
+                  onPress={() => void toggleVoice()}
+                />
+              ) : null}
+            </View>
             <ForgetCamera name={hostLabel} onPress={forgetCamera} />
           </View>
         ) : null}
@@ -485,12 +689,19 @@ export default function Remote() {
           </Pressable>
         ) : null}
 
-        {screenModel.kind === 'recording' ? (
-          <HoldButton
-            label={t('remote.holdToEnd')}
-            holdingLabel={t('remote.holding')}
-            onComplete={remoteControllerEndRecording}
-          />
+        {screenModel.kind === 'recording' && listening ? (
+          <View style={styles.voiceHint}>
+            <MicIcon color={colors.accent} size={16} />
+            <Text style={styles.hint}>{t('recording.orSay', { word: VOICE_WORDS[locale][0] })}</Text>
+          </View>
+        ) : null}
+
+        {screenModel.kind === 'recording' && endFailed ? <Text style={styles.warning}>{t('remote.endFailed')}</Text> : null}
+        {screenModel.kind === 'recording' && endPending ? (
+          <Button label={t('remote.ending')} variant="secondary" loading onPress={() => {}} />
+        ) : null}
+        {screenModel.kind === 'recording' && !endPending ? (
+          <HoldButton label={t('remote.holdToEnd')} holdingLabel={t('remote.holding')} onComplete={endRecording} />
         ) : null}
 
         <View style={styles.footer}>
@@ -509,7 +720,22 @@ export default function Remote() {
           </View>
         </View>
       </View>
-      <RemotePreview visible={previewOpen} onClose={() => setPreviewOpen(false)} />
+      {/* Dim: the picture stops coming (the camera phone stops sending) and comes back with the screen. */}
+      <RemotePreview visible={previewOpen && !economy.asleep} onClose={() => setPreviewOpen(false)} onTouch={economy.wake} />
+      {economy.asleep ? (
+        // Over everything while dim: the touch that lights the screen up reaches no button under it.
+        <Pressable
+          testID="remote-economy"
+          accessibilityRole="button"
+          accessibilityLabel={t('remote.economyAsleep')}
+          onPressIn={economy.wake}
+          style={[StyleSheet.absoluteFill, styles.asleep]}>
+          <View style={styles.asleepPill}>
+            <Text style={styles.asleepText}>{t('remote.economyAsleep')}</Text>
+          </View>
+        </Pressable>
+      ) : null}
+      {economyToast > 0 ? <EconomyToast remote on={prefs.remoteEconomy} bottom={96} /> : null}
       {flash ? <ResultFlash kind={feedback.phase as 'saved' | 'failed' | 'timeout'} /> : null}
     </SafeAreaView>
   );
@@ -527,6 +753,14 @@ const styles = StyleSheet.create({
   sub: { fontFamily: fonts.bodySemi, fontSize: 16, color: colors.warning, textAlign: 'center' },
   hint: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, textAlign: 'center' },
   forget: { alignItems: 'center', gap: 2, marginTop: 8 },
+  options: { alignSelf: 'stretch', flexDirection: 'row', gap: 10 },
+  voiceHint: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  notice: { backgroundColor: 'rgba(15,16,13,0.82)', borderRadius: 14, paddingVertical: 10, paddingHorizontal: 14, alignItems: 'center', gap: 2 },
+  noticeTitle: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.text, textAlign: 'center' },
+  noticeBody: { fontFamily: fonts.body, fontSize: 12, lineHeight: 17, color: colors.soft, textAlign: 'center' },
+  asleep: { alignItems: 'center', paddingTop: 96 },
+  asleepPill: { backgroundColor: 'rgba(15,16,13,0.82)', borderRadius: 14, paddingVertical: 10, paddingHorizontal: 16 },
+  asleepText: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.soft, textAlign: 'center' },
   forgetButton: { minHeight: 44, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center' },
   forgetText: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.warning, textDecorationLine: 'underline' },
   forgetHint: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, textAlign: 'center' },

@@ -13,23 +13,24 @@ const ASK_EVERY_MS = 1000;
 /** No picture for this long: say so instead of showing a frozen or empty view. */
 const STALE_AFTER_MS = 4000;
 
-type Props = { visible: boolean; onClose: () => void };
+/** `onTouch`: any touch on the view (the remote's screen economy counts it as activity). */
+type Props = { visible: boolean; onClose: () => void; onTouch?: () => void };
 
 /** What the camera phone sees, as a full-screen view over the remote, to check the framing from far away. */
-export function RemotePreview({ visible, onClose }: Props) {
+export function RemotePreview({ visible, onClose, onTouch }: Props) {
   return (
     <Modal
       animationType="fade"
       onRequestClose={onClose}
       supportedOrientations={['portrait', 'landscape']}
       visible={visible}>
-      {visible ? <PreviewBody onClose={onClose} /> : null}
+      {visible ? <PreviewBody onClose={onClose} onTouch={onTouch} /> : null}
     </Modal>
   );
 }
 
 // Mounted only while open, so every opening starts without the last picture of the previous one.
-function PreviewBody({ onClose }: { onClose: () => void }) {
+function PreviewBody({ onClose, onTouch }: { onClose: () => void; onTouch?: () => void }) {
   const { t } = useT();
   const [frame, setFrame] = useState<string | null>(null);
   const [lastAt, setLastAt] = useState<number | null>(null);
@@ -55,7 +56,7 @@ function PreviewBody({ onClose }: { onClose: () => void }) {
   const stale = lastAt !== null && now - lastAt > STALE_AFTER_MS;
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} onTouchStart={onTouch}>
       <View style={styles.picture}>
         {frame !== null ? (
           <Image

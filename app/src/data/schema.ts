@@ -113,6 +113,12 @@ export type Prefs = {
   focusIntroSeen?: boolean;
   /** Battery saving while recording: the screen goes dark after a while without a touch (the recording goes on). */
   screenEconomy: boolean;
+  /** Battery saving on the remote phone while the camera records: the screen dims after a minute without a touch. */
+  remoteEconomy: boolean;
+  /** "salvar" / "gravar" by voice on the remote phone while the camera records (iOS, with both permissions). */
+  remoteVoice: boolean;
+  /** The remote screen already explained voice and asked for its permissions once. */
+  remoteVoiceAsked?: boolean;
   /** The player's changes to a mode's defaults, kept per mode. */
   modeSettings?: Partial<Record<ModeId, StoredModeSettings>>;
 };
@@ -126,6 +132,8 @@ export const DEFAULT_PREFS: Prefs = {
   flashOnSave: true,
   voiceEnabled: false,
   screenEconomy: true,
+  remoteEconomy: true,
+  remoteVoice: true,
 };
 
 /** Default cut when a save gives none: the last 30s of the saved 60s window (spec 3.3). Saves pass the clip length. */

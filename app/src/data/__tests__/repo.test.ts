@@ -18,7 +18,7 @@ function setup(sizes: Record<string, number> = {}) {
   return createRepo(memoryKV(), fakeFiles(sizes), () => `id-${++n}`);
 }
 
-test('prefs default to onboarding not done, Quadra, ultra-wide, gesture on, sound and flash on, battery saving on', () => {
+test('prefs default to onboarding not done, Quadra, ultra-wide, gesture on, sound and flash on, battery saving on (camera and remote)', () => {
   expect(setup().getPrefs()).toEqual({
     onboardingDone: false,
     sport: 'quadra',
@@ -28,6 +28,8 @@ test('prefs default to onboarding not done, Quadra, ultra-wide, gesture on, soun
     flashOnSave: true,
     voiceEnabled: false,
     screenEconomy: true,
+    remoteEconomy: true,
+    remoteVoice: true,
   });
 });
 

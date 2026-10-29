@@ -64,3 +64,13 @@ test('leaving the screen gives the brightness back', async () => {
   await unmount();
   expect(setNative).toHaveBeenLastCalledWith(false);
 });
+
+test('a wait of its own replaces both (the remote phone waits a minute, warm or not)', async () => {
+  const setNative = jest.fn();
+  const { result } = await renderHook(() => useScreenEconomy(true, 'fair', setNative, 60_000));
+  await act(async () => jest.advanceTimersByTime(59_999));
+  expect(result.current.asleep).toBe(false);
+  await act(async () => jest.advanceTimersByTime(1));
+  expect(result.current.asleep).toBe(true);
+  expect(setNative).toHaveBeenLastCalledWith(true);
+});

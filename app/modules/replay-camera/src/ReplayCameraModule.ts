@@ -32,6 +32,8 @@ declare class ReplayCameraModule extends NativeModule<ReplayCameraModuleEvents> 
   setZoom?(factor: number, animated: boolean): void;
   // Screen economy while recording (iOS only: missing on Android and in older builds).
   setScreenEconomy?(on: boolean): void;
+  // Screen economy on the remote phone (iOS only: missing on Android and in older builds).
+  setRemoteScreenDim?(on: boolean): void;
   // Whether the phone records a quality (iOS only: missing on Android and in older builds).
   supportsQuality?(quality: Quality): boolean;
   // The phone's real output volume, 0-1 (iOS only: missing on Android and in older builds).
@@ -77,6 +79,9 @@ declare class ReplayCameraModule extends NativeModule<ReplayCameraModuleEvents> 
   remoteControllerEndRecording?(): void;
   remoteControllerStartRecording?(): void;
   remoteControllerPreview?(on: boolean): void;
+  remoteVoiceSetEnabled?(on: boolean, locale: VoiceLocale): void;
+  getMicrophonePermission?(): 'granted' | 'denied' | 'undetermined';
+  requestMicrophonePermission?(): Promise<boolean>;
   remoteDeviceName?(): string;
   remoteSetDeviceName?(name: string): void;
   shareToInstagramStory(videoPath: string, metaAppId: string): Promise<'opened' | 'unavailable'>;
