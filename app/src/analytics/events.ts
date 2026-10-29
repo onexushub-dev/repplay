@@ -1,6 +1,10 @@
 import type { ModeId, TriggerSource } from '../data/schema';
 import type { Quality } from '../../modules/replay-camera/src/ReplayCamera.types';
 
+/** A count sent as a range, so the number of distinct values stays small and nothing is a precise tally. */
+export type CountBucket = '0' | '1' | '2-5' | '6-20' | '21+';
+export type DurationBucket = '<1m' | '1-5m' | '5-30m' | '>30m';
+
 /**
  * Every event the app may send, with the exact shape of its properties. This is the whole catalogue: `track()` accepts
  * nothing else, so a typo or a stray free-text property cannot reach the vendor. An event without properties is `undefined`.
@@ -9,6 +13,16 @@ import type { Quality } from '../../modules/replay-camera/src/ReplayCamera.types
 export type AnalyticsEvents = {
   // Usage and retention
   app_open: { cold_start: boolean };
+  /** Sent once when the app goes to the background; the small things (zoom, guides, economy) live only in here. */
+  session_summary: {
+    clips: CountBucket;
+    exports: CountBucket;
+    zooms: CountBucket;
+    guides: CountBucket;
+    economy: CountBucket;
+    top_trigger: TriggerSource | 'none';
+    duration: DurationBucket;
+  };
 
   // Onboarding
   onboarding_step_viewed: { step: 1 | 2 | 3 | 4 };
