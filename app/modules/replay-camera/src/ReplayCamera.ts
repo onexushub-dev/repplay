@@ -68,6 +68,12 @@ export function setScreenEconomy(on: boolean): void {
   if (typeof set === 'function') set.call(ReplayCameraModule, on);
 }
 
+/** The phone's real output volume (0-1), or undefined where the module can't tell (Android, older builds). */
+export function outputVolume(): number | undefined {
+  const get = ReplayCameraModule.outputVolume;
+  return typeof get === 'function' ? get.call(ReplayCameraModule) : undefined;
+}
+
 /** TEMP(diag-remote): the audio session the Bluetooth remote depends on, in one line; empty where unsupported. */
 export function diagAudioState(): string {
   const get = ReplayCameraModule.diagAudioState;
