@@ -4,6 +4,7 @@ import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '../components/Button';
+import { MetricsSwitch } from '../components/MetricsSwitch';
 import { GameCard } from '../components/GameCard';
 import { EmptyState } from '../components/EmptyState';
 import { UpgradeCard } from '../components/UpgradeCard';
@@ -87,6 +88,7 @@ export default function Games() {
         }
         keyExtractor={(g) => g.session.id}
         contentContainerStyle={styles.list}
+        ListFooterComponent={<MetricsSwitch />}
         ListEmptyComponent={
           <EmptyState icon={<ReplayIcon color={colors.accent} size={40} />} title={t('games.emptyTitle')} message={t('games.emptyMessage')} />
         }

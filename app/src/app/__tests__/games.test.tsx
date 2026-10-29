@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { setLocale } from '../../i18n';
 import Games from '../games';
 
+jest.mock('../../analytics', () => ({ track: jest.fn(), analytics: { isEnabled: jest.fn(() => true), setEnabled: jest.fn() } }));
 jest.mock('expo-router', () => ({ router: { push: jest.fn(), back: jest.fn(), dismissTo: jest.fn() } }));
 jest.mock('../../session/SessionContext', () => ({ useSession: jest.fn() }));
 jest.mock('../../components/useClipThumbnail', () => ({ useClipThumbnail: () => undefined }));
@@ -21,6 +22,7 @@ jest.mock('../../data/mmkv', () => ({
 }));
 
 const { repo } = jest.requireMock('../../data/mmkv');
+const { analytics } = jest.requireMock('../../analytics');
 const { payments } = jest.requireMock('../../payments');
 const { router } = jest.requireMock('expo-router');
 const { useSession } = jest.requireMock('../../session/SessionContext');
@@ -168,5 +170,39 @@ describe('the Pro invitation in the gallery', () => {
     await render(<Games />);
     expect(screen.queryByText('Desbloqueie tudo com o PRO')).toBeNull();
     payments.unlockOption.mockReturnValue({ kind: 'none' });
+  });
+});
+
+describe('anonymous usage metrics switch', () => {
+  beforeEach(() => repo.listSessions.mockReturnValue([]));
+
+  test('it shows on, with what it collects, even before the first recording', async () => {
+    analytics.isEnabled.mockReturnValue(true);
+    await render(<Games />);
+    expect(screen.getByRole('switch', { name: 'Métricas de uso anônimas' }).props.value).toBe(true);
+    expect(screen.getByText('Nada sobre você nem sobre seus vídeos. Ajuda a melhorar o Repplay.')).toBeTruthy();
+  });
+
+  test('turning it off stops the collection and the switch follows', async () => {
+    analytics.isEnabled.mockReturnValue(true);
+    await render(<Games />);
+    analytics.isEnabled.mockReturnValue(false);
+    await fireEvent(screen.getByRole('switch', { name: 'Métricas de uso anônimas' }), 'valueChange', false);
+    expect(analytics.setEnabled).toHaveBeenCalledWith(false);
+    expect(screen.getByRole('switch', { name: 'Métricas de uso anônimas' }).props.value).toBe(false);
+  });
+
+  test('it starts off for someone who already opted out', async () => {
+    analytics.isEnabled.mockReturnValue(false);
+    await render(<Games />);
+    expect(screen.getByRole('switch', { name: 'Métricas de uso anônimas' }).props.value).toBe(false);
+  });
+
+  test('it is in English on an English phone', async () => {
+    setLocale('en');
+    analytics.isEnabled.mockReturnValue(true);
+    await render(<Games />);
+    expect(screen.getByRole('switch', { name: 'Anonymous usage metrics' })).toBeTruthy();
+    setLocale('pt-BR');
   });
 });
