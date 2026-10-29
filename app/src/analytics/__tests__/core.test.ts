@@ -89,7 +89,7 @@ describe('analytics core', () => {
     const { adapter, analytics } = setup();
     for (let i = 0; i < 60; i++) analytics.track('clip_saved', { trigger: 'phone', mode: 'quadra' });
     expect(adapter.calls).toHaveLength(50);
-    for (let i = 0; i < 60; i++) analytics.track('trigger_failed', { trigger: 'watch', reason: 'busy' });
+    for (let i = 0; i < 60; i++) analytics.track('trigger_failed', { trigger: 'watch', reason: 'save_failed' });
     expect(adapter.calls).toHaveLength(100);
   });
 

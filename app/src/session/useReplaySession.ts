@@ -18,6 +18,7 @@ import { planOf } from '../payments/rules';
 import type { Plan, StartDecision } from '../payments/types';
 import { effectiveSettings } from '../modes/registry';
 import { clampZoom, lensFor } from '../modes/zoom';
+import { sessionSummary, track } from '../analytics';
 import { createTriggerBus } from '../triggers/bus';
 import { cutMsFor, keepMsFor } from './cut';
 import { initialState, reducer } from './reducer';
@@ -116,6 +117,8 @@ export function useReplaySession(deps: SessionDeps) {
           ...(saved.shortSide !== undefined ? { shortSide: saved.shortSide } : {}),
         }, cutMs);
         if (deps.onClipSaved) deps.onClipSaved(clip.id);
+        track('clip_saved', { trigger: source, mode: deps.repo.getSession(sessionId)?.sport ?? 'quadra' });
+        sessionSummary.note('clip_saved', source);
         // A save that finished after its game ended must not move the floor of the next game.
         if (stateRef.current.sessionId === sessionId) cutFloors.current = [...cutFloors.current, at];
         deps.haptic();
@@ -123,6 +126,7 @@ export function useReplaySession(deps: SessionDeps) {
         deps.camera.watchSignal(true);
         deps.camera.remoteSignal(true);
       } catch {
+        track('trigger_failed', { trigger: source, reason: 'save_failed' });
         deps.camera.signalSaveFailed({ sound: prefs.soundOnSave });
         deps.camera.watchSignal(false);
         deps.camera.remoteSignal(false);

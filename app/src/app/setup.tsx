@@ -28,6 +28,7 @@ import { EconomyButton } from '../components/EconomyButton';
 import { EconomyToast } from '../components/EconomyToast';
 import { modeTip } from '../components/format';
 import { sourceLabel } from '../components/sourceLabel';
+import { sessionSummary } from '../analytics';
 import { PositionGuide } from '../components/PositionGuide';
 import { RecordingPanel } from '../components/RecordingPanel';
 import { ProBadge } from '../components/ProBadge';
@@ -128,13 +129,17 @@ export default function Setup() {
     },
     onCommit: (next) => {
       setLiveZoom(null);
-      if (Math.abs(next - savedZoom) > 1e-6) updateMode({ zoom: next });
+      if (Math.abs(next - savedZoom) > 1e-6) {
+        updateMode({ zoom: next });
+        sessionSummary.note('zoom');
+      }
     },
   });
   const cycleZoom = () => {
     const next = nextZoomStep(zoom, zoomRange);
     session.setZoom(next, true);
     updateMode({ zoom: next });
+    sessionSummary.note('zoom');
   };
   // The Bluetooth remote: the app cannot see the iOS pairing, only presses (this launch, or heard before).
   const remoteTest = useRemoteTest();

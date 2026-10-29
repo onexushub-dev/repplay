@@ -32,7 +32,7 @@ export type AnalyticsEvents = {
 
   // Recording
   clip_saved: { trigger: TriggerSource; mode: ModeId };
-  trigger_failed: { trigger: TriggerSource; reason: string };
+  trigger_failed: { trigger: TriggerSource; reason: 'save_failed' };
 
   // Editing and output
   clip_edit_tool_used: { tool: string };
