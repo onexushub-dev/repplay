@@ -25,8 +25,12 @@ export type FocusQueue = {
   cancel(clipPath: string): void;
   /** True: nothing new starts (same as `setHold('all')`); false: `setHold('none')`. */
   setPaused(paused: boolean): void;
-  /** What may start while a recording runs: see `focusHold`. */
+  /** What may start while a recording runs: see `focusHold`. `all` also stops a running analysis and queues it again. */
   setHold(hold: FocusHold): void;
+  /** Clips left pending by an app that closed: queued again behind what waits, newest first (the likeliest opened). */
+  restore(clips: Clip[]): void;
+  /** The app is in front (true) or not: Vision cannot run in the background, so nothing starts there. */
+  setForeground(foreground: boolean): void;
 };
 
 /**
@@ -35,26 +39,31 @@ export type FocusQueue = {
 export type FocusHold = 'none' | 'openedOnly' | 'all';
 
 /**
- * The camera comes first (thermal spec, item 1): no analysis while recording, except a clip the player opens with the
- * phone still cool; none at all once it warms up.
+ * The camera comes first (thermal spec, item 1): no analysis at all while recording, whatever the heat; the queue goes
+ * on when the recording ends (2026-10-28: the player's call, replacing "a clip opened with the phone cool may run").
  */
-export function focusHold(recording: boolean, thermal: 'nominal' | 'fair' | 'serious' | 'critical'): FocusHold {
-  if (!recording) return 'none';
-  return thermal === 'nominal' ? 'openedOnly' : 'all';
+export function focusHold(recording: boolean, _thermal: 'nominal' | 'fair' | 'serious' | 'critical'): FocusHold {
+  return recording ? 'all' : 'none';
 }
 
 const codeOf = (e: unknown) => (typeof e === 'object' && e !== null ? (e as { code?: unknown }).code : undefined);
 
-/** Modo Foco analyses, one at a time, in the order the clips were saved or opened (spec §4.1). */
+/**
+ * Modo Foco analyses, one at a time, in the order the clips were saved or opened (spec §4.1), whenever the app is in
+ * front and no recording runs: a clip is usually ready before the player opens it.
+ */
 export function createFocusQueue(deps: FocusQueueDeps): FocusQueue {
   let waiting: string[] = [];
   let running: { id: string; path: string } | undefined;
   let hold: FocusHold = 'none';
+  let foreground = true;
+  /** The running analysis was stopped by a recording: it goes back to the front of the queue. */
+  let stopping: string | undefined;
   /** Clips opened in the editor: they may start during an `openedOnly` hold. */
   const opened = new Set<string>();
 
   function pump() {
-    if (running || hold === 'all') return;
+    if (running || hold === 'all' || !foreground) return;
     while (waiting.length > 0) {
       const index = hold === 'openedOnly' ? waiting.findIndex((id) => opened.has(id)) : 0;
       if (index < 0) return;
@@ -92,13 +101,21 @@ export function createFocusQueue(deps: FocusQueueDeps): FocusQueue {
       })
       .catch((e: unknown) => {
         const code = codeOf(e);
-        if (code === 'CANCELLED') return;
-        // Vision cannot run with the app in the background: left pending, it is redone when the clip is opened.
-        if (code === 'FOCUS_INTERRUPTED') return;
+        if (code === 'CANCELLED') {
+          if (stopping === clip.id && deps.repo.getClip(clip.id)) waiting.unshift(clip.id);
+          return;
+        }
+        // Vision cannot run with the app in the background: still pending, first in line when the app is back.
+        if (code === 'FOCUS_INTERRUPTED') {
+          foreground = false;
+          waiting.unshift(clip.id);
+          return;
+        }
         console.warn('[Repplay] Modo Foco analysis failed', clip.path, e);
         deps.repo.updateClip(clip.id, { focus: { v: 1, status: 'failed' } });
       })
       .finally(() => {
+        if (stopping === clip.id) stopping = undefined;
         running = undefined;
         pump();
       });
@@ -118,8 +135,9 @@ export function createFocusQueue(deps: FocusQueueDeps): FocusQueue {
       if (clip.focus && clip.focus.status !== 'pending') return;
       if (!deps.supported()) return;
       if (running && running.id === clip.id) return;
-      // Opened in the editor: it goes first, and may run during an `openedOnly` hold.
+      // Opened in the editor: it goes first, and may run during an `openedOnly` hold. The app is in front.
       opened.add(clip.id);
+      foreground = true;
       const at = waiting.indexOf(clip.id);
       if (at >= 0) {
         waiting.splice(at, 1);
@@ -147,6 +165,24 @@ export function createFocusQueue(deps: FocusQueueDeps): FocusQueue {
     },
     setHold(value) {
       hold = value;
+      // A recording starts: a running analysis would share the phone's heat with the camera; it is redone afterwards.
+      if (hold === 'all' && running && stopping === undefined) {
+        stopping = running.id;
+        deps.cancel(running.path);
+      }
+      pump();
+    },
+    restore(clips) {
+      if (!deps.supported()) return;
+      const pending = clips
+        .filter((c) => c.focus !== undefined && c.focus.status === 'pending')
+        .filter((c) => !waiting.includes(c.id) && !(running && running.id === c.id))
+        .sort((a, b) => b.createdAt - a.createdAt);
+      waiting.push(...pending.map((c) => c.id));
+      pump();
+    },
+    setForeground(value) {
+      foreground = value;
       pump();
     },
   };

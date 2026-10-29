@@ -8,6 +8,7 @@ import { useEffect } from 'react';
 import { AppState } from 'react-native';
 
 import { isRemoteSupported, remoteHostStart, remoteHostStop } from '../../modules/replay-camera';
+import { startFocusQueue } from '../focus/appFocusQueue';
 import { useLocaleSync } from '../i18n/useT';
 import { payments } from '../payments';
 import { RemoteStartListener } from '../session/RemoteStartListener';
@@ -43,6 +44,9 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded || error) SplashScreen.hideAsync();
   }, [loaded, error]);
+
+  // Modo Foco in the background: clips are analysed while the app is open and no recording runs.
+  useEffect(() => startFocusQueue(), []);
 
   // The camera phone answers its paired remotes for as long as the app is open, whatever screen is in front: tying it to
   // one screen dropped the link every time the player moved between the setup, the recording and the summary.
