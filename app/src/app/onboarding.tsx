@@ -1,9 +1,10 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { requestPermissions } from '../../modules/replay-camera';
+import { track } from '../analytics';
 import { Button } from '../components/Button';
 import { repo } from '../data/mmkv';
 import { useT } from '../i18n/useT';
@@ -34,6 +35,14 @@ export default function Onboarding() {
   const [denied, setDenied] = useState(false);
 
   const slide = SLIDES[stories.index];
+  const step = (slide.step + 1) as 1 | 2 | 3 | 4;
+  // One report per step: the second slide of a step, and going back to a step already seen, are not new views.
+  const seenSteps = useRef(new Set<number>());
+  useEffect(() => {
+    if (seenSteps.current.has(step)) return;
+    seenSteps.current.add(step);
+    track('onboarding_step_viewed', { step });
+  }, [step]);
   const last = stories.index === SLIDES.length - 1;
   const labels = [
     `1 ${t('onboarding.stepRecord')}`,
@@ -44,7 +53,10 @@ export default function Onboarding() {
   const [before, highlighted, after] = splitHighlight(t(`onboarding.${slide.id}.body`));
 
   async function allow() {
-    if (await requestPermissions()) {
+    const granted = await requestPermissions();
+    track('permission_result', { kind: 'camera', granted });
+    if (granted) {
+      track('onboarding_completed');
       repo.setPrefs({ onboardingDone: true });
       router.replace('/setup');
     } else {
@@ -85,7 +97,14 @@ export default function Onboarding() {
             <Image source={BRAND_LOGO} style={styles.logo} resizeMode="contain" accessibilityLabel="Repplay" />
           </View>
           {last ? null : (
-            <Pressable accessibilityRole="button" onPress={() => stories.goTo(SLIDES.length - 1)} style={styles.skip}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                track('onboarding_skipped', { step });
+                stories.goTo(SLIDES.length - 1);
+              }}
+              style={styles.skip}
+            >
               <Text style={styles.skipText}>{t('onboarding.skip')}</Text>
             </Pressable>
           )}
