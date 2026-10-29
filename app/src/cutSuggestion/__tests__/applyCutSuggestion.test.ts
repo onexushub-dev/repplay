@@ -1,8 +1,12 @@
+import { track } from '../../analytics';
 import { createRepo, type KV } from '../../data/repo';
 import { applyCutSuggestion, parseMotion } from '../applyCutSuggestion';
 import type { MotionSample } from '../suggestCut';
 
 jest.mock('expo-file-system', () => ({ File: jest.fn() }));
+jest.mock('../../analytics', () => ({ track: jest.fn() }));
+
+beforeEach(() => jest.clearAllMocks());
 
 function setup() {
   const map = new Map<string, string>();
@@ -48,4 +52,17 @@ test('parseMotion reads the rows and refuses anything else', () => {
   expect(parseMotion('{"v":1}')).toBeUndefined();
   expect(parseMotion('{"motion":[[0,"x"]]}')).toBeUndefined();
   expect(parseMotion('not json')).toBeUndefined();
+});
+
+test('an untouched cut that becomes the suggested one is reported', () => {
+  const { repo, clip, read } = setup();
+  applyCutSuggestion(clip.id, '/c/1.focus.json', { repo, read });
+  expect(track).toHaveBeenCalledWith('cut_suggestion_applied');
+});
+
+test('a cut the player already changed reports nothing', () => {
+  const { repo, clip, read } = setup();
+  repo.updateClip(clip.id, { trim: { startMs: 5_000, endMs: 20_000 } });
+  applyCutSuggestion(clip.id, '/c/1.focus.json', { repo, read });
+  expect(track).not.toHaveBeenCalled();
 });

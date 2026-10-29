@@ -1,5 +1,4 @@
 import type { ModeId, TriggerSource } from '../data/schema';
-import type { Quality } from '../../modules/replay-camera/src/ReplayCamera.types';
 
 /** A count sent as a range, so the number of distinct values stays small and nothing is a precise tally. */
 export type CountBucket = '0' | '1' | '2-5' | '6-20' | '21+';
@@ -35,12 +34,13 @@ export type AnalyticsEvents = {
   trigger_failed: { trigger: TriggerSource; reason: 'save_failed' };
 
   // Editing and output
-  clip_edit_tool_used: { tool: string };
+  clip_edit_tool_used: { tool: 'focus' | 'speed' | 'sound' | 'zoom' | 'rotate' };
   cut_suggestion_applied: undefined;
   focus_mode_used: undefined;
-  export_completed: { quality: Quality | 'other' };
-  export_failed: { reason: string };
-  clip_shared: { destination: string };
+  export_completed: { quality: '1080p' | '1440p' | '2160p' };
+  export_failed: { reason: 'prepare_failed' };
+  /** `photos` is Salvar na galeria; `share_sheet` is Enviar (the share sheet does not say which app was picked). */
+  clip_shared: { destination: 'photos' | 'share_sheet' };
 
   // Devices
   pairing_completed: { method: 'qr' | 'link'; kind: 'remote' | 'watch' };

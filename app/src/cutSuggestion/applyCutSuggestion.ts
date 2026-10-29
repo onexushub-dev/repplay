@@ -1,5 +1,6 @@
 import { File } from 'expo-file-system';
 
+import { track } from '../analytics';
 import type { Repo } from '../data/repo';
 import type { Clip } from '../data/schema';
 import { MIN_CUT_MS, clipWindow } from '../share/trim';
@@ -49,4 +50,5 @@ export function applyCutSuggestion(
   if (!cut || cut.endMs - cut.startMs < MIN_CUT_MS) return;
   const untouched = sameCut(clip.trim, clip.bounds);
   deps.repo.updateClip(clipId, untouched ? { cutSuggestion: cut, trim: cut } : { cutSuggestion: cut });
+  if (untouched) track('cut_suggestion_applied');
 }

@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
+import { sessionSummary, track } from '../../analytics';
 import { setLocale } from '../../i18n';
 import SessionSummary from '../session/[id]';
 
@@ -9,6 +10,7 @@ jest.mock('expo-router', () => ({
   useNavigation: () => ({ getState: () => ({ routes: [{ name: 'setup' }, { name: 'games' }, { name: 'session/[id]' }] }) }),
   useLocalSearchParams: () => ({ id: 's1' }),
 }));
+jest.mock('../../analytics', () => ({ track: jest.fn(), sessionSummary: { note: jest.fn() } }));
 jest.mock('../../components/useClipThumbnail', () => ({ useClipThumbnail: () => undefined }));
 const mockCapturer = { element: null, capture: jest.fn(), release: jest.fn() };
 jest.mock('../../share/OverlayCapturer', () => ({ useOverlayCapturer: () => mockCapturer }));
@@ -423,6 +425,32 @@ describe('batch: save, send or compile the picked clips', () => {
     await press('Salvar (1)');
     expect(screen.getByText('Sem acesso às fotos. Libere em Ajustes.')).toBeTruthy();
     expect(runBatch).not.toHaveBeenCalled();
+  });
+
+  test('Salvar counts each clip in the session summary and reports one clip_shared for the batch', async () => {
+    three();
+    await render(<SessionSummary />);
+    await pick(1, 3);
+    (track as jest.Mock).mockClear();
+    (sessionSummary.note as jest.Mock).mockClear();
+    await press('Salvar (2)');
+    expect((sessionSummary.note as jest.Mock).mock.calls).toEqual([['export'], ['export']]);
+    expect((track as jest.Mock).mock.calls).toEqual([['clip_shared', { destination: 'photos' }]]);
+  });
+
+  test('Enviar counts each clip and reports one clip_shared, and a dismissed sheet reports none', async () => {
+    three();
+    await render(<SessionSummary />);
+    await pick(1, 2, 3);
+    (track as jest.Mock).mockClear();
+    (sessionSummary.note as jest.Mock).mockClear();
+    await press('Enviar (3)');
+    expect((sessionSummary.note as jest.Mock).mock.calls).toHaveLength(3);
+    expect((track as jest.Mock).mock.calls).toEqual([['clip_shared', { destination: 'share_sheet' }]]);
+    native.shareFiles.mockResolvedValueOnce('cancelled');
+    (track as jest.Mock).mockClear();
+    await press('Enviar (3)');
+    expect(track).not.toHaveBeenCalled();
   });
 
   test('Enviar opens one share sheet with every picked clip', async () => {
