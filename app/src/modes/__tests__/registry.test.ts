@@ -58,7 +58,7 @@ test('the buffer is always 60s, whatever an old save holds', () => {
 test('the player\'s clip length is kept, within what the buffer holds', () => {
   expect(effectiveSettings('quadra', prefs(withModeOverride(prefs(), 'quadra', { cutSeconds: 15 }))).cutSeconds).toBe(15);
   expect(effectiveSettings('quadra', prefs({ modeSettings: { quadra: { cutSeconds: 90 } } })).cutSeconds).toBe(60);
-  expect(effectiveSettings('quadra', prefs({ modeSettings: { quadra: { cutSeconds: 0 } } })).cutSeconds).toBe(30);
+  expect(effectiveSettings('quadra', prefs({ modeSettings: { quadra: { cutSeconds: 0 } } })).cutSeconds).toBe(15); // the default
 });
 
 test('saving a zoom writes zoom and never lens', () => {

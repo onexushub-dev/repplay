@@ -460,6 +460,7 @@ test('a save right after another still cuts at least the debounce window, never 
 
 test('undoing a clip gives its span back to the next save', async () => {
   const f = fakeDeps();
+  f.deps.repo.setPrefs({ modeSettings: { quadra: { cutSeconds: 30 } } }); // a Pro player who picked 30s
   f.startDecision.mockResolvedValue({ kind: 'pro' });
   const view = await renderHook(() => useReplaySession(f.deps));
   await act(() => view.result.current.start('quadra'));
