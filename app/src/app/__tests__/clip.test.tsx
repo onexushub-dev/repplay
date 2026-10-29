@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react-native';
 import { Alert, Image } from 'react-native';
+import { sessionSummary, track } from '../../analytics';
 
 import { forgetShapes } from '../../components/clipShape';
 import { forgetAllExportsForTests } from '../../share/exportCache';
@@ -49,6 +50,7 @@ jest.mock('../../../modules/replay-camera', () => ({
   findContentStart: jest.fn(async () => 0),
   isFocusSupported: jest.fn(() => true),
 }));
+jest.mock('../../analytics', () => ({ track: jest.fn(), sessionSummary: { note: jest.fn() } }));
 jest.mock('../../focus/appFocusQueue', () => ({ focusQueue: { ensure: jest.fn() } }));
 jest.mock('../../data/focusFile', () => ({ ...jest.requireActual('../../data/focusFile'), readFocusFile: jest.fn(() => undefined) }));
 jest.mock('../../components/useReduceMotion', () => ({ useReduceMotion: jest.fn(() => false) }));
@@ -1001,5 +1003,60 @@ describe('exports are kept for the whole app session', () => {
     await open();
     await pressAction('Compartilhar');
     expect(camera.exportClip).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('analytics', () => {
+  const events = () => (track as jest.Mock).mock.calls.map(([name, props]) => [name, props]);
+  beforeEach(() => jest.clearAllMocks());
+
+  test('Salvar na galeria reports the export and where it went', async () => {
+    await open();
+    await pressAction('Salvar na galeria');
+    expect(events()).toEqual([
+      ['export_completed', { quality: '1080p' }],
+      ['clip_shared', { destination: 'photos' }],
+    ]);
+    expect(sessionSummary.note).toHaveBeenCalledWith('export');
+  });
+
+  test('Compartilhar reports the export and the share sheet', async () => {
+    await open();
+    await pressAction('Compartilhar');
+    expect(events()).toEqual([
+      ['export_completed', { quality: '1080p' }],
+      ['clip_shared', { destination: 'share_sheet' }],
+    ]);
+  });
+
+  test('a photo access refusal reports no export and no share', async () => {
+    media.requestPermissionsAsync.mockResolvedValueOnce({ granted: false });
+    await open();
+    await pressAction('Salvar na galeria');
+    expect(events()).toEqual([]);
+  });
+
+  test('a failed export reports export_failed with a closed reason, never the error text', async () => {
+    camera.exportClip.mockRejectedValueOnce(new Error('disk full at /private/path'));
+    await open();
+    await pressAction('Compartilhar');
+    expect(events()).toEqual([['export_failed', { reason: 'prepare_failed' }]]);
+  });
+
+  test('opening the same tool twice on one clip reports it once', async () => {
+    await openEdit('Velocidade');
+    await act(async () => fireEvent.press(screen.getByRole('tab', { name: /^Som/ })));
+    await act(async () => fireEvent.press(screen.getByRole('tab', { name: /^Velocidade/ })));
+    expect(events()).toEqual([
+      ['clip_edit_tool_used', { tool: 'speed' }],
+      ['clip_edit_tool_used', { tool: 'sound' }],
+    ]);
+  });
+
+  test('turning Modo Foco on reports it, turning it off does not', async () => {
+    __setClip({ ...base, focus: { v: 1, status: 'ready', file: '/c1.focus.json' }, edit: { muted: false, focus: false } });
+    await openEdit('Foco');
+    await act(async () => fireEvent.press(screen.getByRole('switch', { name: 'Modo Foco' })));
+    expect(events()).toContainEqual(['focus_mode_used', undefined]);
   });
 });

@@ -2,6 +2,7 @@ import { Alert } from 'react-native';
 
 import { repo } from '../data/mmkv';
 import type { TFunction } from '../i18n';
+import type { PaywallSource } from '../analytics/events';
 import { openPaywall } from './feedback';
 import { payments } from '.';
 
@@ -25,10 +26,10 @@ function askUsePass(t: TFunction): Promise<boolean> {
  * agrees to spend it here, and with neither the paywall opens first: what was bought then is offered the same way.
  * Returns whether the recording is paid now.
  */
-export async function unlockRecording(sessionId: string, t: TFunction): Promise<boolean> {
+export async function unlockRecording(sessionId: string, t: TFunction, source: PaywallSource = 'export_limit'): Promise<boolean> {
   let option = payments.unlockOption();
   if (option.kind === 'none') {
-    const outcome = await openPaywall(t);
+    const outcome = await openPaywall(t, source);
     if (outcome !== 'purchased' && outcome !== 'restored') return false;
     option = payments.unlockOption();
   }

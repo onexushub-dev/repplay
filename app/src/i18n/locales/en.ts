@@ -255,6 +255,8 @@ export const en = {
     proTitle: 'Unlock everything with PRO',
     proMessage: 'Clips up to 60 s, 4K resolution, plus Apple Watch and the Bluetooth remote as triggers. Save your recordings with sound, Focus Mode, no watermark, and compile the best moments into one video.',
     proAction: 'See plans',
+    metrics: 'Anonymous usage metrics',
+    metricsNote: 'Nothing about you or your videos. Helps improve Repplay.',
     detail: '%{clips} · %{time}',
     deleteRecording: 'Delete recording',
     deleteRecordingNamed: 'Delete recording %{name}',

@@ -28,6 +28,7 @@ import { EconomyButton } from '../components/EconomyButton';
 import { EconomyToast } from '../components/EconomyToast';
 import { modeTip } from '../components/format';
 import { sourceLabel } from '../components/sourceLabel';
+import { sessionSummary, track } from '../analytics';
 import { PositionGuide } from '../components/PositionGuide';
 import { RecordingPanel } from '../components/RecordingPanel';
 import { ProBadge } from '../components/ProBadge';
@@ -128,13 +129,17 @@ export default function Setup() {
     },
     onCommit: (next) => {
       setLiveZoom(null);
-      if (Math.abs(next - savedZoom) > 1e-6) updateMode({ zoom: next });
+      if (Math.abs(next - savedZoom) > 1e-6) {
+        updateMode({ zoom: next });
+        sessionSummary.note('zoom');
+      }
     },
   });
   const cycleZoom = () => {
     const next = nextZoomStep(zoom, zoomRange);
     session.setZoom(next, true);
     updateMode({ zoom: next });
+    sessionSummary.note('zoom');
   };
   // The Bluetooth remote: the app cannot see the iOS pairing, only presses (this launch, or heard before).
   const remoteTest = useRemoteTest();
@@ -311,12 +316,17 @@ export default function Setup() {
   const startNote =
     preview.decision.kind === 'credit' ? t('setup.passCredits', { count: preview.credits }) : null;
   const busy = useRef(false);
+  /** A tap on something Pro-only: counted as a blocked feature, then the paywall opens. */
+  function lockedFeature(feature: 'quality_4k' | 'clip_length' | 'bluetooth_remote' | 'watch') {
+    track('pro_feature_blocked', { feature });
+    void openPaywall(t, 'locked_feature');
+  }
   async function onStart() {
     if (busy.current) return;
     busy.current = true;
     try {
       if ((await session.start(modeId)) !== 'blocked') return;
-      const outcome = await openPaywall(t);
+      const outcome = await openPaywall(t, 'start_limit');
       // One retry right after a purchase: the player already asked to start. A purchase that shows up later
       // (SDK lag) only changes the status line; the next tap starts.
       if (outcome === 'purchased' || outcome === 'restored') await session.start(modeId);
@@ -469,7 +479,7 @@ export default function Setup() {
                       label={`${seconds}s`}
                       grouped
                       lockedHint={t('setup.proOnly')}
-                      onPress={() => void openPaywall(t)}
+                      onPress={() => lockedFeature('clip_length')}
                     />
                   ),
                 )}
@@ -491,7 +501,7 @@ export default function Setup() {
                   {fourKAllowed ? (
                     <Chip label={t('setup.quality4k')} grouped selected={is4k} onPress={() => updateMode({ quality: '2160p30' })} />
                   ) : (
-                    <Chip label={t('setup.quality4k')} grouped lockedHint={t('setup.proOnly')} onPress={() => void openPaywall(t)} />
+                    <Chip label={t('setup.quality4k')} grouped lockedHint={t('setup.proOnly')} onPress={() => lockedFeature('quality_4k')} />
                   )}
                   <ProBadge label={t('setup.proBadge')} right={6} />
                 </View>
@@ -515,7 +525,7 @@ export default function Setup() {
               onPress={
                 remoteAllowed
                   ? () => router.push({ pathname: '/devices', params: { kind: 'remote' } })
-                  : () => void openPaywall(t)
+                  : () => lockedFeature('bluetooth_remote')
               }
             />
             <TriggerTile
@@ -525,7 +535,7 @@ export default function Setup() {
               active={watchOn}
               disabled={!watchSupported}
               lockedHint={watchLocked ? t('setup.watchProOnly') : undefined}
-              onPress={watchLocked ? () => void openPaywall(t) : watchHelp}
+              onPress={watchLocked ? () => lockedFeature('watch') : watchHelp}
             />
           </View>
           {showPro ? <ProBadge label={t('setup.proBadge')} top={-9} right={6} /> : null}

@@ -260,7 +260,7 @@ export default function SessionSummary() {
           message={t('summary.freeNote')}
           action={t('summary.upgrade')}
           badge={t('setup.proBadge')}
-          onPress={() => void unlockRecording(id, t)}
+          onPress={() => void unlockRecording(id, t, 'upgrade_card')}
         />
       ) : null}
 

@@ -65,6 +65,7 @@ jest.mock('../../data/mmkv', () => {
     },
   };
 });
+jest.mock('../../analytics', () => ({ track: jest.fn(), sessionSummary: { note: jest.fn() } }));
 jest.mock('../../session/SessionContext', () => ({ useSession: jest.fn() }));
 jest.mock('../../share/entitlement', () => ({ usePlan: jest.fn(() => 'paid') }));
 jest.mock('../../payments/feedback', () => ({
@@ -188,6 +189,17 @@ test('each tap goes to the next zoom: 0.5 → 1 → 2 → 5 → 0.5, zooming the
     expect(repo.setPrefs).toHaveBeenLastCalledWith({ modeSettings: { quadra: { zoom: to } } });
     expect(zoomButton(`Zoom ${to}x`)).toBeTruthy();
   }
+});
+
+test('each zoom tap counts once in the session summary and sends no event of its own', async () => {
+  const { sessionSummary, track } = jest.requireMock('../../analytics');
+  sessionSummary.note.mockClear();
+  session({});
+  await render(<Setup />);
+  await fireEvent.press(zoomButton('Zoom 0.5x'));
+  await fireEvent.press(zoomButton('Zoom 1x'));
+  expect(sessionSummary.note.mock.calls).toEqual([['zoom'], ['zoom']]);
+  expect(track).not.toHaveBeenCalled();
 });
 
 test('changing the zoom does not ask the session to reopen the camera when it stays on the same lens', async () => {
@@ -586,6 +598,8 @@ test('on the free tier 4K carries the Pro badge, opens the paywall and the game 
   expect(screen.getByRole('button', { name: 'Full HD' }).props.accessibilityState).toMatchObject({ selected: true });
   await fireEvent.press(screen.getByRole('button', { name: '4K, Disponível no Pro' }));
   expect(openPaywall).toHaveBeenCalledTimes(1);
+  expect(openPaywall).toHaveBeenCalledWith(expect.any(Function), 'locked_feature');
+  expect(jest.requireMock('../../analytics').track).toHaveBeenCalledWith('pro_feature_blocked', { feature: 'quality_4k' });
 });
 
 test('battery saving sits beside the zoom: on by default, a tap turns it off and says what that means', async () => {
@@ -650,8 +664,10 @@ test('on the free tier the Relógio tile shows a Pro badge and opens the paywall
   const tile = screen.getByRole('button', { name: 'Relógio, Pronto, Disponível no Pro' });
   await fireEvent.press(tile);
   expect(openPaywall).toHaveBeenCalledTimes(1);
-  expect(openPaywall.mock.calls[0]).toHaveLength(1);
+  expect(openPaywall.mock.calls[0]).toHaveLength(2);
   expect(openPaywall.mock.calls[0][0]('setup.watchProOnly')).toBe('Disponível no Pro');
+  expect(openPaywall.mock.calls[0][1]).toBe('locked_feature');
+  expect(jest.requireMock('../../analytics').track).toHaveBeenCalledWith('pro_feature_blocked', { feature: 'watch' });
 });
 
 test('on the free tier clip lengths above 15s are locked and open the paywall', async () => {
@@ -665,6 +681,7 @@ test('on the free tier clip lengths above 15s are locked and open the paywall', 
     openPaywall.mockClear();
     await fireEvent.press(screen.getByRole('button', { name: `${label}, Disponível no Pro` }));
     expect(openPaywall).toHaveBeenCalledTimes(1);
+    expect(jest.requireMock('../../analytics').track).toHaveBeenCalledWith('pro_feature_blocked', { feature: 'clip_length' });
   }
   expect(repo.setPrefs).not.toHaveBeenCalledWith(expect.objectContaining({ modeSettings: expect.anything() }));
 });
@@ -704,6 +721,7 @@ test('on the free tier the Bluetooth remote tile is Pro: badge, paywall, and not
   router.push.mockClear?.();
   await fireEvent.press(screen.getByRole('button', { name: /^Controle Bluetooth.*Disponível no Pro$/ }));
   expect(openPaywall).toHaveBeenCalledTimes(1);
+  expect(jest.requireMock('../../analytics').track).toHaveBeenCalledWith('pro_feature_blocked', { feature: 'bluetooth_remote' });
   expect(router.push).not.toHaveBeenCalled();
 });
 
@@ -916,7 +934,7 @@ test('a cancelled paywall keeps the player on the setup screen', async () => {
   const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
   await render(<Setup />);
   await pressStart();
-  expect(openPaywall).toHaveBeenCalledWith(expect.any(Function));
+  expect(openPaywall).toHaveBeenCalledWith(expect.any(Function), 'start_limit');
   expect(s.start).toHaveBeenCalledTimes(1);
   expect(router.push).not.toHaveBeenCalled();
   expect(router.replace).not.toHaveBeenCalled();

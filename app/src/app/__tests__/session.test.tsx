@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
+import { sessionSummary, track } from '../../analytics';
 import { setLocale } from '../../i18n';
 import SessionSummary from '../session/[id]';
 
@@ -9,6 +10,7 @@ jest.mock('expo-router', () => ({
   useNavigation: () => ({ getState: () => ({ routes: [{ name: 'setup' }, { name: 'games' }, { name: 'session/[id]' }] }) }),
   useLocalSearchParams: () => ({ id: 's1' }),
 }));
+jest.mock('../../analytics', () => ({ track: jest.fn(), sessionSummary: { note: jest.fn() } }));
 jest.mock('../../components/useClipThumbnail', () => ({ useClipThumbnail: () => undefined }));
 const mockCapturer = { element: null, capture: jest.fn(), release: jest.fn() };
 jest.mock('../../share/OverlayCapturer', () => ({ useOverlayCapturer: () => mockCapturer }));
@@ -228,6 +230,7 @@ describe('free recording', () => {
     expect(screen.getByText('Som, Modo Foco, sem marca d’água e os melhores momentos compilados em um vídeo só. Com o Pro ou um Passe Avulso.')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: /^Desbloqueie os recursos PRO/ }));
     expect(payments.showPaywall).toHaveBeenCalledWith();
+    expect(track).toHaveBeenCalledWith('paywall_viewed', { source: 'upgrade_card' });
   });
 
   test('with Pro active a recording made on the free plan has no card: Pro unlocks it', async () => {
@@ -425,6 +428,32 @@ describe('batch: save, send or compile the picked clips', () => {
     expect(runBatch).not.toHaveBeenCalled();
   });
 
+  test('Salvar counts each clip in the session summary and reports one clip_shared for the batch', async () => {
+    three();
+    await render(<SessionSummary />);
+    await pick(1, 3);
+    (track as jest.Mock).mockClear();
+    (sessionSummary.note as jest.Mock).mockClear();
+    await press('Salvar (2)');
+    expect((sessionSummary.note as jest.Mock).mock.calls).toEqual([['export'], ['export']]);
+    expect((track as jest.Mock).mock.calls).toEqual([['clip_shared', { destination: 'photos' }]]);
+  });
+
+  test('Enviar counts each clip and reports one clip_shared, and a dismissed sheet reports none', async () => {
+    three();
+    await render(<SessionSummary />);
+    await pick(1, 2, 3);
+    (track as jest.Mock).mockClear();
+    (sessionSummary.note as jest.Mock).mockClear();
+    await press('Enviar (3)');
+    expect((sessionSummary.note as jest.Mock).mock.calls).toHaveLength(3);
+    expect((track as jest.Mock).mock.calls).toEqual([['clip_shared', { destination: 'share_sheet' }]]);
+    native.shareFiles.mockResolvedValueOnce('cancelled');
+    (track as jest.Mock).mockClear();
+    await press('Enviar (3)');
+    expect(track).not.toHaveBeenCalled();
+  });
+
   test('Enviar opens one share sheet with every picked clip', async () => {
     three();
     await render(<SessionSummary />);
@@ -454,6 +483,8 @@ describe('batch: save, send or compile the picked clips', () => {
     await pick(1, 2);
     await press('Compilar');
     expect(payments.showPaywall).toHaveBeenCalled();
+    expect(track).toHaveBeenCalledWith('pro_feature_blocked', { feature: 'compile' });
+    expect(track).toHaveBeenCalledWith('paywall_viewed', { source: 'locked_feature' });
     expect(runBatch).not.toHaveBeenCalled();
   });
 

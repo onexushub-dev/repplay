@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Platform } from 'react-native';
 
+import { track } from '../analytics';
 import type { FreeLosses } from '../share/exportOptions';
 import { FreeExportSheet, type FreeExportChoice } from './FreeExportSheet';
 
@@ -34,6 +35,7 @@ export function useFreeExportGate(): { ask: (o: FreeLosses) => Promise<FreeExpor
   const ask = useCallback(
     (o: FreeLosses) =>
       new Promise<FreeExportChoice>((resolve) => {
+        track('free_export_limit_hit');
         resolver.current = resolve;
         setOpen(o);
       }),

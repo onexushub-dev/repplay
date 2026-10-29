@@ -39,6 +39,7 @@ import { TrimBar } from '../../components/TrimBar';
 import { knownShape, rememberShape } from '../../components/clipShape';
 import { useClipThumbnail } from '../../components/useClipThumbnail';
 import { useReduceMotion } from '../../components/useReduceMotion';
+import { sessionSummary, track as trackEvent } from '../../analytics';
 import { readFocusFile } from '../../data/focusFile';
 import { removeFile, repo } from '../../data/mmkv';
 import { focusQueue } from '../../focus/appFocusQueue';
@@ -191,6 +192,8 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
     if (s && clip && mode === 'watch' && clip.trim.startMs === s.startMs && clip.trim.endMs === s.endMs) setTrim(clip.trim);
   }
   const snapshot = useRef<EditSnapshot | undefined>(undefined);
+  // One report per tool per clip: flipping between tabs is browsing, not using.
+  const reportedTools = useRef(new Set<string>());
   const [openTool, setOpenTool] = useState<ToolId>(lastTool);
   // A finger held on the video in watch mode: 2x while it stays down.
   const [fast, setFast] = useState(false);
@@ -462,6 +465,7 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
 
   function toggleFocus() {
     if (focusActive) return setEdit({ focus: false });
+    trackEvent('focus_mode_used');
     setEdit({ focus: true, zoom: undefined });
     setZoomKey((k) => k + 1);
   }
@@ -497,6 +501,9 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
   function pickTool(tool: ToolId) {
     setOpenTool(tool);
     rememberTool(tool);
+    if (reportedTools.current.has(`${id}:${tool}`)) return;
+    reportedTools.current.add(`${id}:${tool}`);
+    trackEvent('clip_edit_tool_used', { tool });
   }
 
   /** Watch mode, like Reels: 2x (silent) while a finger is held on the video; the clip's own speed after. */
@@ -624,7 +631,9 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
         setTimeout(() => setJob((j) => (j && j.kind === 'share' ? undefined : j)), SHARE_HANDOFF_MS);
       }
       await action(path);
-    } catch {
+    } catch (error) {
+      // A screen closed mid-export is the player leaving, not a failure.
+      if (!(error instanceof Error && error.message === 'closed')) trackEvent('export_failed', { reason: 'prepare_failed' });
       setNotice('clip.prepareFailed');
     } finally {
       exporting.current = false;
@@ -633,17 +642,26 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
     }
   }
 
+  /** The export reached the player (the gallery or the share sheet): one report of its size and where it went. */
+  function reportDelivered(destination: 'photos' | 'share_sheet') {
+    trackEvent('export_completed', { quality: `${side}p` });
+    trackEvent('clip_shared', { destination });
+    sessionSummary.note('export');
+  }
+
   const save = () =>
     run('save', async (path) => {
       const { granted } = await requestPermissionsAsync(true, ['video']);
       if (!granted) return setNotice('clip.noPhotos');
       await Asset.create(`file://${path}`);
+      reportDelivered('photos');
       repo.updateClip(id, { savedAt: Date.now() });
       setSaved(true);
     });
 
   const share = () => run('share', async (path) => {
       await shareAsync(`file://${path}`, { mimeType: 'video/mp4', UTI: 'public.mpeg-4' });
+      reportDelivered('share_sheet');
       repo.updateClip(id, { sharedAt: Date.now() });
     });
 

@@ -116,3 +116,19 @@ Itens adiados nas revisões finais. Nada aqui bloqueia o uso, mas vale resolver 
 - Teste longo de calor: 1 h de jogo real com gesto ligado, pela `/spike` (relatório mostra o tempo em cada nível). Se chegar a critical: avisar no serious, reduzir gesto/Modo Foco antes de cortar a gravação ou começar em 30 fps.
 - Android: o gesto ainda é o v1 (ML Kit, uma pessoa, quadro de 640x360) — sem partes do quadro, acompanhamento por pessoa nem FireGate.
 - A `/spike` ganhou o teste do gesto (`src/diag/gestureTest.ts`): sai junto com a rota antes da loja (item do Plano 1).
+
+## Métricas de uso anônimas (PostHog, 2026-10-28)
+Antes de lançar com a chave:
+- No projeto do PostHog, ligar "Discard client IP data" (o app já desliga o GeoIP, mas o IP da requisição só deixa de ser guardado com essa opção).
+- Criar o projeto no PostHog Cloud (host EU) e colocar a chave pública em `REPPLAY_POSTHOG_KEY` (`app/.env.local` e no EAS). Sem a chave o app não envia nada.
+- Gerar um novo dev client: o SDK (`posthog-react-native`, `expo-application`) é nativo.
+- Passar pelo app com a chave e conferir em Live Events: cada evento uma vez, só com as propriedades do spec, nenhum perfil de pessoa criado, nenhum IP.
+- Política de privacidade: uma linha sobre métricas anônimas de uso e a chave em "Minhas gravações".
+- Etiqueta de privacidade da App Store: dados de uso não vinculados ao usuário; sem pedido de rastreamento (ATT).
+- Montar os painéis: retenção, funil do onboarding (etapa 1 até concluir, paywall, compra) e uso das features pelo `session_summary`.
+
+Adiado:
+- `session_summary.guides` fica sempre em 0: o app não tem chave de guia.
+- `paywall_viewed` com origem `onboarding` não existe ainda: nenhuma tela das stories abre o paywall.
+- Exportação em lote conta no `session_summary`, mas não gera `export_completed` por clipe.
+- `cut_suggestion_applied` conta quando o corte sugerido substitui um corte intocado, não quando a pessoa o escolhe depois.

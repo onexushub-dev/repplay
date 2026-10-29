@@ -253,6 +253,8 @@ export const ptBR: Messages = {
     proTitle: 'Desbloqueie tudo com o PRO',
     proMessage: 'Clipes de até 60s, resolução 4K, além de Apple Watch e controle Bluetooth disponíveis como gatilhos. Salve suas gravações com Som, Modo Foco, sem marca d’água e compile os melhores momentos em um vídeo só.',
     proAction: 'Ver planos',
+    metrics: 'Métricas de uso anônimas',
+    metricsNote: 'Nada sobre você nem sobre seus vídeos. Ajuda a melhorar o Repplay.',
     detail: '%{clips} · %{time}',
     deleteRecording: 'Apagar gravação',
     deleteRecordingNamed: 'Apagar gravação %{name}',

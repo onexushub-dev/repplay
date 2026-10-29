@@ -1,8 +1,14 @@
 import { act, renderHook } from '@testing-library/react-native';
 
+import { sessionSummary } from '../../analytics';
 import { ECONOMY_IDLE_MS, ECONOMY_WARM_IDLE_MS, useScreenEconomy } from '../useScreenEconomy';
 
-beforeEach(() => jest.useFakeTimers());
+jest.mock('../../analytics', () => ({ sessionSummary: { note: jest.fn() } }));
+
+beforeEach(() => {
+  jest.useFakeTimers();
+  jest.clearAllMocks();
+});
 afterEach(() => jest.useRealTimers());
 
 async function setup(props: { active: boolean; thermal: 'nominal' | 'fair' | 'serious' | 'critical' }) {
@@ -63,4 +69,15 @@ test('leaving the screen gives the brightness back', async () => {
   await act(async () => jest.advanceTimersByTime(ECONOMY_IDLE_MS));
   await unmount();
   expect(setNative).toHaveBeenLastCalledWith(false);
+});
+
+test('each time the screen goes dark it counts once in the session summary, and a touch that wakes it does not', async () => {
+  const { result } = await setup({ active: true, thermal: 'nominal' });
+  await act(async () => jest.advanceTimersByTime(ECONOMY_IDLE_MS));
+  expect(sessionSummary.note).toHaveBeenCalledTimes(1);
+  expect(sessionSummary.note).toHaveBeenCalledWith('economy');
+  await act(async () => result.current.wake());
+  expect(sessionSummary.note).toHaveBeenCalledTimes(1);
+  await act(async () => jest.advanceTimersByTime(ECONOMY_IDLE_MS));
+  expect(sessionSummary.note).toHaveBeenCalledTimes(2);
 });

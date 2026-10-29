@@ -8,6 +8,7 @@ import { useEffect } from 'react';
 import { AppState } from 'react-native';
 
 import { isRemoteSupported, remoteHostStart, remoteHostStop } from '../../modules/replay-camera';
+import { analytics, initAnalytics, sessionSummary, track } from '../analytics';
 import { useLocaleSync } from '../i18n/useT';
 import { payments } from '../payments';
 import { RemoteStartListener } from '../session/RemoteStartListener';
@@ -18,6 +19,8 @@ import { colors } from '../theme/tokens';
 SplashScreen.preventAutoHideAsync();
 // Exports from the last run (a crash or a kill leaves them) go once per start; within a run they are reused.
 clearExportsFolder();
+// Anonymous usage metrics: starts the first session and sends app_open. Without a key in the build it sends nothing.
+initAnalytics();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -34,8 +37,19 @@ export default function RootLayout() {
   useEffect(() => {
     payments.start();
     // The month may have turned while the app was in the background: the free allowance starts over.
+    // The session ends when the app leaves the front; coming back starts a new one (the cold start's was begun by initAnalytics).
+    let wasBackground = false;
     const sub = AppState.addEventListener('change', (next) => {
       if (next === 'active') payments.recheckMonth();
+      if (next === 'background') {
+        wasBackground = true;
+        sessionSummary.flush();
+      } else if (next === 'active' && wasBackground) {
+        wasBackground = false;
+        analytics.startSession();
+        sessionSummary.start();
+        track('app_open', { cold_start: false });
+      }
     });
     return () => sub.remove();
   }, []);

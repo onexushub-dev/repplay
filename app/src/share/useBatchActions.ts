@@ -6,6 +6,7 @@ import { concatVideos, exportClip, shareFiles } from '../../modules/replay-camer
 import type { ExportJob } from '../components/ExportProgress';
 import type { Clip } from '../data/schema';
 import { repo } from '../data/mmkv';
+import { sessionSummary, track } from '../analytics';
 import { useT } from '../i18n/useT';
 import { openPaywall } from '../payments/feedback';
 import { canCompile } from '../payments/limits';
@@ -110,7 +111,9 @@ export function useBatchActions(o: { plan: Plan; labelOf: (clip: Clip) => string
       for (const made of batch.done) {
         await Asset.create(`file://${made.path}`);
         repo.updateClip(made.clip.id, { savedAt: Date.now() });
+        sessionSummary.note('export');
       }
+      if (batch.done.length > 0) track('clip_shared', { destination: 'photos' });
       if (alive.current) {
         setCard({ text: batch.failed.length === 0 ? t('batch.saved', { count: batch.done.length }) : partial(batch, clips.length), timing: batch.timing });
       }
@@ -129,7 +132,13 @@ export function useBatchActions(o: { plan: Plan; labelOf: (clip: Clip) => string
       if (batch.done.length > 0) {
         setJob({ kind: 'share', stage: 'delivering' });
         const outcome = await shareFiles(batch.done.map((made) => made.path));
-        if (outcome === 'shared') batch.done.forEach((made) => repo.updateClip(made.clip.id, { sharedAt: Date.now() }));
+        if (outcome === 'shared') {
+          batch.done.forEach((made) => {
+            repo.updateClip(made.clip.id, { sharedAt: Date.now() });
+            sessionSummary.note('export');
+          });
+          track('clip_shared', { destination: 'share_sheet' });
+        }
       }
       if (alive.current && batch.failed.length > 0) setCard({ text: partial(batch, clips.length), timing: batch.timing });
     } catch (error) {
@@ -142,7 +151,8 @@ export function useBatchActions(o: { plan: Plan; labelOf: (clip: Clip) => string
   const compile = async (clips: Clip[]) => {
     if (job !== undefined) return;
     if (!canCompile(o.plan)) {
-      await openPaywall(t);
+      track('pro_feature_blocked', { feature: 'compile' });
+      await openPaywall(t, 'locked_feature');
       return;
     }
     if (clips.length < 2) {
@@ -164,7 +174,10 @@ export function useBatchActions(o: { plan: Plan; labelOf: (clip: Clip) => string
       if (!alive.current) return;
       // The share sheet already offers "Salvar vídeo" and every app: no card of our own in between.
       setJob({ kind: 'compile', stage: 'delivering' });
-      await shareFiles([joined.path]);
+      if ((await shareFiles([joined.path])) === 'shared') {
+        batch.done.forEach(() => sessionSummary.note('export'));
+        track('clip_shared', { destination: 'share_sheet' });
+      }
       if (alive.current && batch.failed.length > 0) setCard({ text: partial(batch, clips.length), timing: batch.timing });
     } catch (error) {
       if (alive.current) setCard({ ...failure(error), text: t('clip.prepareFailed') });

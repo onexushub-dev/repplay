@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, userEvent } from '@testing-library/reac
 import { Linking } from 'react-native';
 
 import { requestPermissions } from '../../../modules/replay-camera';
+import { track } from '../../analytics';
 import { repo } from '../../data/mmkv';
 import { setLocale } from '../../i18n';
 import { SLIDES } from '../../onboarding/slides';
@@ -12,6 +13,7 @@ const { router } = jest.requireMock('expo-router');
 jest.mock('../../../modules/replay-camera', () => ({ requestPermissions: jest.fn(async () => true) }));
 jest.mock('expo-router', () => ({ router: { replace: jest.fn() } }));
 jest.mock('../../data/mmkv', () => ({ repo: { setPrefs: jest.fn() } }));
+jest.mock('../../analytics', () => ({ track: jest.fn() }));
 
 const allow = requestPermissions as jest.Mock;
 
@@ -126,4 +128,53 @@ test('is in English on an English phone', async () => {
   expect(screen.getByText('1 Record')).toBeTruthy();
   await fireEvent.press(screen.getByText('Skip'));
   expect(screen.getByText('SHARE.')).toBeTruthy();
+});
+
+describe('analytics', () => {
+  const sent = () => (track as jest.Mock).mock.calls.map(([name, props]) => [name, props]);
+
+  test('opening the stories reports step 1 once', async () => {
+    await render(<Onboarding />);
+    expect(sent()).toEqual([['onboarding_step_viewed', { step: 1 }]]);
+  });
+
+  test('each step is reported once, even going on to the second slide of a step and back', async () => {
+    await render(<Onboarding />);
+    await fireEvent.press(next()); // Save, free ways: step 2
+    await fireEvent.press(next()); // Save, Pro ways: still step 2
+    await fireEvent.press(previous());
+    await fireEvent.press(previous()); // back on step 1
+    expect(sent()).toEqual([
+      ['onboarding_step_viewed', { step: 1 }],
+      ['onboarding_step_viewed', { step: 2 }],
+    ]);
+  });
+
+  test('Skip reports the step it was pressed on, and the last step then counts as viewed', async () => {
+    await render(<Onboarding />);
+    await fireEvent.press(next());
+    await fireEvent.press(screen.getByText('Pular'));
+    expect(sent()).toContainEqual(['onboarding_skipped', { step: 2 }]);
+    expect(sent()).toContainEqual(['onboarding_step_viewed', { step: 4 }]);
+  });
+
+  test('allowing the camera reports the permission and then the completion', async () => {
+    await render(<Onboarding />);
+    await fireEvent.press(screen.getByText('Pular'));
+    (track as jest.Mock).mockClear();
+    await act(async () => fireEvent.press(screen.getByText('Permitir câmera e começar')));
+    expect(sent()).toEqual([
+      ['permission_result', { kind: 'camera', granted: true }],
+      ['onboarding_completed', undefined],
+    ]);
+  });
+
+  test('a refused camera reports the permission and no completion', async () => {
+    allow.mockResolvedValue(false);
+    await render(<Onboarding />);
+    await fireEvent.press(screen.getByText('Pular'));
+    (track as jest.Mock).mockClear();
+    await act(async () => fireEvent.press(screen.getByText('Permitir câmera e começar')));
+    expect(sent()).toEqual([['permission_result', { kind: 'camera', granted: false }]]);
+  });
 });
