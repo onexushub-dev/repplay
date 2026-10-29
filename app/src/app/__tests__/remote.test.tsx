@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { Linking } from 'react-native';
+import { track } from '../../analytics';
 
 import Remote from '../remote';
 
@@ -31,6 +32,7 @@ jest.mock('expo-camera', () => {
     useCameraPermissions: () => [{ granted: true, canAskAgain: true }, jest.fn()],
   };
 });
+jest.mock('../../analytics', () => ({ track: jest.fn() }));
 jest.mock('expo-keep-awake', () => ({
   activateKeepAwakeAsync: jest.fn(() => Promise.resolve()),
   deactivateKeepAwake: jest.fn(),
@@ -516,4 +518,32 @@ test('the camera side of this same phone saying "searching" does not make the re
   await emit('onRemoteStatus', { side: 'camera', link: 'searching', controllers: 0 });
   expect(screen.queryByText('Reconectando a Quadra 1…')).toBeNull();
   expect(screen.getByRole('button', { name: 'SALVAR' })).toBeTruthy();
+});
+
+describe('analytics', () => {
+  test('a pairing by code reports the code method', async () => {
+    await render(<Remote />);
+    await fireEvent.changeText(screen.getByLabelText('Código de 6 números'), '042517');
+    await emit('onRemotePairing', { phase: 'paired', peer: { id: 'h1', name: 'Quadra 1' } });
+    expect(track).toHaveBeenCalledWith('pairing_completed', { method: 'code', kind: 'remote' });
+  });
+
+  test('a pairing by QR reports the QR method', async () => {
+    await render(<Remote />);
+    await act(async () => mockScanner.onBarcodeScanned?.({ data: LINK }));
+    await emit('onRemotePairing', { phase: 'paired', peer: { id: 'h1', name: 'Quadra 1' } });
+    expect(track).toHaveBeenCalledWith('pairing_completed', { method: 'qr', kind: 'remote' });
+  });
+
+  test('a failure and a silent camera phone report their reasons', async () => {
+    await render(<Remote />);
+    await fireEvent.changeText(screen.getByLabelText('Código de 6 números'), '042517');
+    await emit('onRemotePairing', { phase: 'failed', reason: 'expired' });
+    expect(track).toHaveBeenCalledWith('pairing_failed', { reason: 'expired' });
+    await fireEvent.changeText(screen.getByLabelText('Código de 6 números'), '042518');
+    await act(async () => {
+      jest.advanceTimersByTime(12_000);
+    });
+    expect(track).toHaveBeenCalledWith('pairing_failed', { reason: 'notFound' });
+  });
 });

@@ -1,3 +1,4 @@
+import type { RemotePairFailure } from '../../modules/replay-camera/src/ReplayCamera.types';
 import type { ModeId, TriggerSource } from '../data/schema';
 
 /** Where the paywall was opened from; `locked_feature` is a tap on something Pro-only (see pro_feature_blocked). */
@@ -46,8 +47,9 @@ export type AnalyticsEvents = {
   clip_shared: { destination: 'photos' | 'share_sheet' };
 
   // Devices
-  pairing_completed: { method: 'qr' | 'link'; kind: 'remote' | 'watch' };
-  pairing_failed: { reason: string };
+  /** Reported by the remote phone, the one that pairs (the camera phone only offers the code). The Apple Watch pairs through iOS, not here. */
+  pairing_completed: { method: 'qr' | 'code'; kind: 'remote' };
+  pairing_failed: { reason: RemotePairFailure | 'invalid_link' };
 
   // Monetization
   paywall_viewed: { source: PaywallSource };

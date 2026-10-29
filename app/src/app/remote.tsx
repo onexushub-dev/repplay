@@ -18,6 +18,7 @@ import {
   remoteControllerStop,
 } from '../../modules/replay-camera';
 import type { RemoteLink, RemoteLinkReason, RemotePairFailure, RemotePeer } from '../../modules/replay-camera/src/ReplayCamera.types';
+import { track } from '../analytics';
 import { Button } from '../components/Button';
 import { ConnectionBar } from '../components/ConnectionBar';
 import { QrScanner } from '../components/QrScanner';
@@ -123,6 +124,8 @@ export default function Remote() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [startAskedAt, setStartAskedAt] = useState<number | null>(null);
   const connectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // How the pairing in progress was started, for the metrics (the camera phone's answer does not say).
+  const pairMethod = useRef<'code' | 'qr'>('code');
 
   const stopConnectTimer = () => {
     if (connectTimer.current !== null) clearTimeout(connectTimer.current);
@@ -187,8 +190,10 @@ export default function Remote() {
         setFailure(null);
         setReceived(null);
         setHost(remoteControllerHost());
+        track('pairing_completed', { method: pairMethod.current, kind: 'remote' });
         return;
       }
+      track('pairing_failed', { reason: e.reason });
       if (e.reason === 'denied') {
         setHost(null);
         setReceived(null);
@@ -215,11 +220,13 @@ export default function Remote() {
       setConnecting(false);
       setFailure('notFound');
       setNotice(failureText('notFound', t));
+      track('pairing_failed', { reason: 'notFound' });
     }, CONNECT_TIMEOUT_MS);
   };
 
   const submit = (digits: string) => {
     setLastCode(digits);
+    pairMethod.current = 'code';
     beginConnecting();
     remoteControllerPairWithCode(digits);
   };
@@ -230,6 +237,7 @@ export default function Remote() {
     const link = parsePairUrl(text);
     if (link === null) return;
     setLastCode(null);
+    pairMethod.current = 'qr';
     beginConnecting();
     remoteControllerPairWithLink(link.hostId, link.secret, link.hostName);
   };
