@@ -3,7 +3,7 @@ import { render } from '@testing-library/react-native';
 import { colors } from '../../theme/tokens';
 import { TrashIcon } from '../icons';
 
-/** react-native-svg stores a colour as an ARGB number: '#FF5A36' → 0xFFFF5A36. */
+/** react-native-svg stores a colour as an ARGB number: '#FF453A' → 0xFFFF453A. */
 const argb = (hex: string) => (0xff000000 + parseInt(hex.slice(1), 16)) >>> 0;
 
 test('the delete icon is red by default, so every screen shows it the same', async () => {

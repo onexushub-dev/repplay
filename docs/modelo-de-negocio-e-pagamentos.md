@@ -1,24 +1,26 @@
 # Modelo de negócio e pagamentos
 
-> **Fonte da verdade** das regras de plano. Se um spec ou plano antigo em `docs/superpowers/` disser outra coisa (5 gravações grátis, 720p no grátis, controle Bluetooth e celular controle pagos), vale este documento. Atualizado em 2026-10-24.
+> **Fonte da verdade** das regras de plano. Se um spec ou plano antigo em `docs/superpowers/` disser outra coisa (5 gravações grátis, 720p no grátis, celular controle pago, som só no Pro), vale este documento. Atualizado em 2026-10-30.
 
 ## Planos
 
 | Recurso | Grátis | Pro |
 |---|---|---|
 | Gravações | **3 por mês** (mês civil local) | Ilimitadas, com todos os recursos |
-| Exportação | **Full HD (1080×1920)** | Full HD (1080×1920) |
+| Qualidade | **Full HD (1080×1920) a 60 fps**, na gravação e na exportação | Full HD a 60 fps ou 4K a 30 fps; exporta em 4K, 2K ou Full HD |
 | Duração do clipe | Só **15 s** | Acima de 15 s |
-| Som | Toca no editor, mas **não vai no vídeo salvo/enviado** | Vai no vídeo |
+| Som | Vai no vídeo | Vai no vídeo |
 | Marca d'água | Sim, em todo clipe | **Removida** |
 | Modo Foco | Funciona no editor (para experimentar), mas **não vai no vídeo salvo/enviado** | Liberado, vai no vídeo |
 | Velocidade | Funciona no editor, mas o vídeo sai sempre em **1x** | Vai no vídeo |
 | Compilar clipes | Bloqueado (abre o paywall) | Liberado |
-| Gatilhos | Voz, gesto, toque na tela, controle Bluetooth e celular controle | Todos, **incluindo o relógio** |
+| Gatilhos | Voz, gesto, toque na tela e celular controle | Todos, **incluindo o relógio e o controle Bluetooth** |
 
-Só o **relógio** (Apple Watch) é um gatilho pago. Os demais estão liberados no grátis.
+O **relógio** (Apple Watch) e o **controle Bluetooth** são os gatilhos pagos. Os demais estão liberados no grátis.
 
 Continuam livres nos dois planos: zoom, girar, cortar, salvar e enviar (um clipe ou em lote). No grátis, salvar e enviar mostram antes o aviso do que o vídeo não terá.
+
+Enquanto `FIELD_TEST_UNLOCK_ALL` (`payments/fieldTest.ts`) estiver `true`, tudo fica liberado em todos os planos. Voltar para `false` antes de publicar.
 
 ## Como se paga
 
@@ -43,16 +45,16 @@ O plano da gravação fica **fixado no início** (`Session.paid`). Uma gravaçã
 |---|---|
 | Limite mensal (`FREE_RECORDINGS_PER_MONTH = 3`) | `payments/rules.ts` |
 | 15 s no grátis (`FREE_MAX_SECONDS`), aplicado na captura | `payments/limits.ts` (`captureConfig`) e seletor de duração em `app/setup.tsx` |
-| Gatilho pago (`PAID_TRIGGERS = ['watch']`) | `payments/limits.ts` (`triggerAllowed`), usado em `app/setup.tsx` e `session/SessionContext.tsx` |
-| Aviso antes de exportar no grátis (salvar, enviar, compilar) | `components/FreeExportSheet.tsx` + `components/useFreeExportGate.tsx`; usado em `run()` de `app/clip/[id].tsx`. Lista só o que o clipe tinha e o vídeo não terá (`freeLosses` em `share/exportOptions.ts`: som, velocidade, Foco) e sempre a marca d'água e oferece Liberar com o Pro / Continuar no plano grátis / Cancelar. A compilação deve chamar o mesmo `ask` |
+| Gatilhos pagos (`PAID_TRIGGERS = ['watch', 'remote']`) | `payments/limits.ts` (`triggerAllowed`), usado em `app/setup.tsx` e `session/SessionContext.tsx` |
+| Aviso antes de exportar no grátis (salvar, enviar, compilar) | `components/FreeExportSheet.tsx` + `components/useFreeExportGate.tsx`; usado em `run()` de `app/clip/[id].tsx`. Lista só o que o clipe tinha e o vídeo não terá (`freeLosses` em `share/exportOptions.ts`: velocidade e Foco) e sempre a marca d'água e oferece Liberar com o Pro / Continuar no plano grátis / Cancelar. A compilação deve chamar o mesmo `ask` |
 | Compilar pago | `share/useBatchActions.ts` (`compile`: no grátis abre o paywall) e `canCompile` em `payments/limits.ts`. Salvar/enviar em lote no grátis passam pelo mesmo aviso de exportação em `app/session/[id].tsx` |
-| Resolução, som, velocidade, Foco e marca d'água na exportação | `share/exportOptions.ts` (`exportOptions`); a marca é desenhada por `share/ShareOverlay.tsx` |
+| Resolução, velocidade, Foco e marca d'água na exportação (o som vai nos dois planos) | `share/exportOptions.ts` (`exportOptions`); a marca é desenhada por `share/ShareOverlay.tsx` |
 
 Quem decide o plano na tela: `usePlan` (antes de gravar e durante a gravação) e `useViewPlan` (clipe já gravado), em `share/entitlement.ts`.
 
 ## Textos que mencionam as regras
 
-`app/src/i18n/locales/pt-BR.ts` e `en.ts`: `summary.freeNote`, `games.proMessage`, `unlock.message`, `clip.focusPro`, `clip.speedFree`, `clip.soundFree`, `freeExport.*`, `setup.watchProOnly`, `setup.proOnly`.
+`app/src/i18n/locales/pt-BR.ts` e `en.ts`: `summary.freeNote`, `games.proMessage`, `unlock.message`, `onboarding.edit.proNote`, `clip.focusPro`, `clip.speedFree`, `freeExport.*`, `setup.watchProOnly`, `setup.proOnly`.
 
 Fora do código (a atualizar nas lojas e no RevenueCat quando publicar): descrição do paywall, textos da App Store / Google Play e o paywall publicado no painel do RevenueCat, que devem listar as regras da tabela acima.
 

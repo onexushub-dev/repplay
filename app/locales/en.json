@@ -1,9 +1,9 @@
 {
   "ios": {
-    "NSCameraUsageDescription": "Repplay uses the camera to record your clips.",
-    "NSMicrophoneUsageDescription": "Repplay records the sound of your clips.",
-    "NSSpeechRecognitionUsageDescription": "Repplay listens for you to say \"save\" or \"record\" so you can save a clip without touching your phone.",
-    "NSPhotoLibraryAddUsageDescription": "Repplay saves the clips you export to your photo library.",
-    "NSLocalNetworkUsageDescription": "Repplay uses your local network to show the camera image on the phone you use as a remote."
+    "NSCameraUsageDescription": "Revi uses the camera to record your clips.",
+    "NSMicrophoneUsageDescription": "Revi records the sound of your clips.",
+    "NSSpeechRecognitionUsageDescription": "Revi listens for you to say \"save\" or \"record\" so you can save a clip without touching your phone.",
+    "NSPhotoLibraryAddUsageDescription": "Revi saves the clips you export to your photo library.",
+    "NSLocalNetworkUsageDescription": "Revi uses your local network to show the camera image on the phone you use as a remote."
   }
 }

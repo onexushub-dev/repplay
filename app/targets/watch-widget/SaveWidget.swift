@@ -4,8 +4,8 @@ import WidgetKit
 // Texts are English keys looked up in this target's Localizable.xcstrings (English and Brazilian Portuguese), like
 // the watch app's; the brand is never translated.
 
-private let ground = Color(red: 0.043, green: 0.043, blue: 0.035) // #0B0B09
-private let accent = Color(red: 0.839, green: 0.949, blue: 0.247) // #D6F23F
+private let ground = Color(red: 0.039, green: 0.039, blue: 0.039) // #0A0A0A
+private let accent = Color(red: 1.0, green: 0.690, blue: 0.0) // #FFB000
 
 struct SaveEntry: TimelineEntry {
   let date: Date
@@ -30,7 +30,7 @@ struct SaveProvider: TimelineProvider {
   }
 }
 
-/// What the widget draws: the word Repplay (so it is plainly ours) and, while a game runs, its timer and clip count.
+/// What the widget draws: the word Revi (so it is plainly ours) and, while a game runs, its timer and clip count.
 /// Tapping it only opens the app (a widget cannot reach the phone by itself): saving is the big button there.
 struct RepplayCard: View {
   let state: WatchSharedState
@@ -40,12 +40,12 @@ struct RepplayCard: View {
     case .accessoryCircular:
       VStack(spacing: 0) {
         Image(systemName: state.recording ? "record.circle" : "bookmark.fill").font(.title3)
-        Text(verbatim: "Repplay").font(.system(size: 9, weight: .heavy, design: .rounded))
+        Text(verbatim: "Revi").font(.system(size: 9, weight: .heavy, design: .rounded))
       }
     default:
       VStack(alignment: .leading, spacing: 1) {
         HStack {
-          Text(verbatim: "Repplay").font(.system(.caption, design: .rounded).weight(.heavy)).widgetAccentable()
+          Text(verbatim: "Revi").font(.system(.caption, design: .rounded).weight(.heavy)).widgetAccentable()
           Spacer(minLength: 4)
           if state.recording, let start = state.startedAtMs {
             Text(Date(timeIntervalSince1970: start / 1000), style: .timer)
@@ -70,8 +70,8 @@ struct RepplayWidget: Widget {
         .foregroundStyle(ground)
         .containerBackground(accent, for: .widget)
     }
-    .configurationDisplayName("Repplay")
-    .description(Text("Shows the recording's time and clips and opens Repplay with a tap."))
+    .configurationDisplayName("Revi")
+    .description(Text("Shows the recording's time and clips and opens Revi with a tap."))
     .supportedFamilies([.accessoryRectangular, .accessoryCircular])
   }
 }

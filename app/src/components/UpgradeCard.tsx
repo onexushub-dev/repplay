@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
     borderColor: colors.accent,
     backgroundColor: colors.surface,
   },
-  icon: { width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(214, 242, 63, 0.12)', alignItems: 'center', justifyContent: 'center' },
+  icon: { width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,176,0, 0.12)', alignItems: 'center', justifyContent: 'center' },
   text: { flex: 1, minWidth: 0, gap: 4 },
   title: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.text },
   message: { fontFamily: fonts.body, fontSize: 12, lineHeight: 17, color: colors.muted },

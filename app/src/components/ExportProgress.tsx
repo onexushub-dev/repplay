@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 24,
     borderRadius: radius.card,
-    backgroundColor: 'rgba(15,16,13,0.92)',
+    backgroundColor: 'rgba(15,15,15,0.92)',
     borderWidth: 1,
     borderColor: colors.border,
   },

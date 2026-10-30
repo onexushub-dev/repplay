@@ -740,18 +740,16 @@ describe('Modo Foco', () => {
       await pressAction('Salvar na galeria');
       expect(camera.exportClip).not.toHaveBeenCalled();
       expect(screen.getByText('No plano grátis, o vídeo sai com limites')).toBeTruthy();
-      expect(screen.getByText('Full HD (1080p) incluso')).toBeTruthy();
-      expect(screen.getByText('Sem som')).toBeTruthy();
+      expect(screen.getByText('Full HD (1080p) e som inclusos')).toBeTruthy();
       expect(screen.getByText('Sem o Modo Foco')).toBeTruthy();
-      expect(screen.getByText('Com a marca do Repplay')).toBeTruthy();
+      expect(screen.getByText('Com a marca do Revi')).toBeTruthy();
     });
 
-    test('"Continuar no plano grátis" exports Full HD at 1x with the mark, no sound and no framing', async () => {
+    test('"Continuar no plano grátis" exports Full HD at 1x with the mark and no framing', async () => {
       __setClip({ ...base, focus: ready, edit: { speed: 2, muted: false } });
       await open();
       await pressAction('Salvar na galeria');
       expect(screen.getByText('Sem a velocidade escolhida')).toBeTruthy();
-      expect(screen.queryByText('Sem som')).toBeNull(); // 2x is silent anyway
       await fireEvent.press(screen.getByRole('button', { name: 'Continuar no plano grátis' }));
       await act(async () => {});
       expect(camera.exportClip).toHaveBeenCalledTimes(1);
@@ -775,7 +773,7 @@ describe('Modo Foco', () => {
       await open();
       await pressAction('Salvar na galeria');
       expect(screen.queryByText('Sem o Modo Foco')).toBeNull();
-      expect(screen.getByText('Sem som')).toBeTruthy();
+      expect(screen.getByText('Com a marca do Revi')).toBeTruthy();
     });
   });
 

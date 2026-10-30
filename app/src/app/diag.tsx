@@ -30,7 +30,7 @@ export default function Diag() {
       Alert.alert('Não foi possível abrir o arquivo do diagnóstico.');
       return;
     }
-    shareAsync(uri, { mimeType: 'text/plain', UTI: 'public.plain-text', dialogTitle: 'Diagnóstico do Repplay' }).catch(
+    shareAsync(uri, { mimeType: 'text/plain', UTI: 'public.plain-text', dialogTitle: 'Diagnóstico do Revi' }).catch(
       () => {},
     );
   };

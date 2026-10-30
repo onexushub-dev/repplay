@@ -85,7 +85,7 @@ export const ShareOverlay = forwardRef<ComponentRef<typeof View>, Props>(functio
             },
           ]}>
           <Image
-            accessibilityLabel="Repplay"
+            accessibilityLabel="Revi"
             fadeDuration={0}
             resizeMode="contain"
             source={BRAND_LOGO}
@@ -99,5 +99,5 @@ export const ShareOverlay = forwardRef<ComponentRef<typeof View>, Props>(functio
 
 const styles = StyleSheet.create({
   band: { backgroundColor: colors.ground },
-  mark: { position: 'absolute', backgroundColor: 'rgba(15,16,13,0.8)', borderRadius: 999 },
+  mark: { position: 'absolute', backgroundColor: 'rgba(15,15,15,0.8)', borderRadius: 999 },
 });

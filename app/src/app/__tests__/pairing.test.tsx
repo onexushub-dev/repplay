@@ -39,20 +39,20 @@ test('tells the player to read the code with the Camera app of the remote phone,
   await render(<Pairing />);
   expect(screen.getByText('Conectar um celular de controle')).toBeTruthy();
   expect(screen.getByText('ESTE IPHONE É A CÂMERA')).toBeTruthy();
-  expect(screen.getByText('No outro celular, abra o Repplay e toque em “Usar este celular como controle”.')).toBeTruthy();
+  expect(screen.getByText('No outro celular, abra o Revi e toque em “Usar este celular como controle”.')).toBeTruthy();
   expect(screen.getByText('Aponte a câmera dele para este código QR.')).toBeTruthy();
   expect(screen.getByText('042517')).toBeTruthy();
   expect(
     screen.getByText("Prefere digitar? No outro celular, digite este código:"),
   ).toBeTruthy();
-  expect(screen.getByText('O Repplay precisa estar instalado no outro celular.')).toBeTruthy();
+  expect(screen.getByText('O Revi precisa estar instalado no outro celular.')).toBeTruthy();
   expect(screen.getByLabelText('Código QR para parear')).toBeTruthy();
 });
 
 test('the instruction is there even when no code could be made', async () => {
   camera().remoteHostBeginPairing.mockReturnValue(null);
   await render(<Pairing />);
-  expect(screen.getByText('No outro celular, abra o Repplay e toque em “Usar este celular como controle”.')).toBeTruthy();
+  expect(screen.getByText('No outro celular, abra o Revi e toque em “Usar este celular como controle”.')).toBeTruthy();
 });
 
 test('while the code is good it shows that the camera phone is waiting for the remote', async () => {
@@ -142,7 +142,7 @@ test('each remote says whether it is linked right now', async () => {
   expect(screen.getByText('Conectado')).toBeTruthy();
   expect(screen.getByText('Offline')).toBeTruthy();
   expect(screen.getByText('Pronto para salvar lances')).toBeTruthy();
-  expect(screen.getByText('Abra o Repplay neste celular para reconectar')).toBeTruthy();
+  expect(screen.getByText('Abra o Revi neste celular para reconectar')).toBeTruthy();
   // The list follows the link: when the status changes it is read again.
   camera().remoteHostPeers.mockReturnValue([
     { id: 'a', name: 'iPhone da Ana', connected: true },
@@ -178,7 +178,7 @@ test('a remote that does not answer says so in the popup, which stays 4 s and cl
   await fireEvent.press(screen.getByRole('button', { name: 'Verificar conexão de iPhone da Ana' }));
   await act(async () => listener('onRemoteCheck').forEach((l: any) => l({ id: 'a', ok: false, ms: 0 })));
   expect(screen.getByText('iPhone da Ana não respondeu')).toBeTruthy();
-  expect(screen.getByText('Abra o Repplay nesse celular e tente de novo.')).toBeTruthy();
+  expect(screen.getByText('Abra o Revi nesse celular e tente de novo.')).toBeTruthy();
   await act(async () => {
     jest.advanceTimersByTime(3900);
   });

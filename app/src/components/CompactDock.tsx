@@ -60,11 +60,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  settings: { backgroundColor: 'rgba(15,16,13,0.75)' },
+  settings: { backgroundColor: 'rgba(15,15,15,0.75)' },
   settingsText: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text },
   record: { backgroundColor: colors.accent, paddingHorizontal: 30 },
   recordText: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.onAccent },
   busy: { opacity: 0.5 },
-  error: { backgroundColor: 'rgba(15,16,13,0.85)', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 16, marginHorizontal: 16 },
+  error: { backgroundColor: 'rgba(15,15,15,0.85)', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 16, marginHorizontal: 16 },
   errorText: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.warning },
 });

@@ -96,7 +96,7 @@ export function createFocusQueue(deps: FocusQueueDeps): FocusQueue {
         try {
           deps.analyzed?.(clip.id, outPath);
         } catch (e) {
-          console.warn('[Repplay] after the analysis', clip.path, e);
+          console.warn('[Revi] after the analysis', clip.path, e);
         }
       })
       .catch((e: unknown) => {
@@ -111,7 +111,7 @@ export function createFocusQueue(deps: FocusQueueDeps): FocusQueue {
           waiting.unshift(clip.id);
           return;
         }
-        console.warn('[Repplay] Modo Foco analysis failed', clip.path, e);
+        console.warn('[Revi] Modo Foco analysis failed', clip.path, e);
         deps.repo.updateClip(clip.id, { focus: { v: 1, status: 'failed' } });
       })
       .finally(() => {

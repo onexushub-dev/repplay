@@ -52,8 +52,8 @@ test('muted keeps normal speed', () => {
   expect(exportOptions('pro', { slowmo: false, muted: true }, trim)).toMatchObject({ speed: 1, muted: true });
 });
 
-test('free exports carry no sound, whatever the clip has', () => {
-  expect(exportOptions('free', { speed: 1, muted: false }, trim).muted).toBe(true);
+test('free exports keep the sound, like paid ones', () => {
+  expect(exportOptions('free', { speed: 1, muted: false }, trim).muted).toBe(false);
   expect(exportOptions('pro', { speed: 1, muted: false }, trim).muted).toBe(false);
 });
 
@@ -98,10 +98,8 @@ test('Modo Foco is a paid edit: a free export never follows, a paid one does', (
 test('freeLosses: what a free export drops, only if the clip had it', () => {
   const ready = { v: 1, status: 'ready', file: '/c.focus.json' } as Clip['focus'];
   const losses = (edit: Clip['edit'], focus: Clip['focus'] = ready) => freeLosses({ edit, focus });
-  expect(losses({ muted: false })).toEqual({ focus: true, speed: false, sound: true });
-  expect(losses({ muted: true })).toEqual({ focus: true, speed: false, sound: false });
-  // Away from 1x the video is silent anyway: speed is lost, sound is not.
-  expect(losses({ muted: false, speed: 2 })).toEqual({ focus: true, speed: true, sound: false });
+  expect(losses({ muted: false })).toEqual({ focus: true, speed: false });
+  expect(losses({ muted: false, speed: 2 })).toEqual({ focus: true, speed: true });
   expect(losses({ muted: false, focus: false }).focus).toBe(false);
   expect(losses({ muted: false, rotation: 90 }).focus).toBe(false);
   expect(losses({ muted: false, zoom: { scale: 2, cx: 0.5, cy: 0.5 } }).focus).toBe(false);

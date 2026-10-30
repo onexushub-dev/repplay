@@ -170,7 +170,7 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
   const [exportSide, setExportSide] = useState<ShortSide>(1080);
 
   const [trim, setTrim] = useState(() => (clip ? clip.trim : { startMs: 0, endMs: 0 }));
-  // Speed, sound and Modo Foco work in the app for every plan; a free export drops them (see the notice in `run`).
+  // Speed and Modo Foco work in the app for every plan; a free export drops them (see the notice in `run`). Sound is kept.
   const edit = readEdit(clip?.edit);
   const soundOff = edit.muted;
   const floor = clip?.contentStartMs ?? 0;
@@ -596,7 +596,7 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
     if (exporting.current || !sizeKnown) return;
     // The free-plan notice says what the video loses: nothing while the field test unlocks it all (accessPlan).
     if (accessPlan(plan) === 'free') {
-      const choice = await freeGate.ask({ focus: focusActive, speed: edit.speed !== 1, sound: !edit.muted && edit.speed === 1 });
+      const choice = await freeGate.ask({ focus: focusActive, speed: edit.speed !== 1 });
       if (choice === 'unlock') void unlockRecording(clip!.sessionId, t);
       if (choice !== 'go') return;
       if (exporting.current) return;

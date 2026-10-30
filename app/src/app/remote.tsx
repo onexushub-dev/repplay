@@ -571,5 +571,5 @@ const styles = StyleSheet.create({
   saveText: { fontFamily: fonts.displayBold, fontSize: 72, letterSpacing: 2, color: colors.onAccent },
   sendingText: { fontFamily: fonts.displayBold, fontSize: 40, letterSpacing: 1, color: colors.onAccent },
   // A thin line along the bottom edge that shortens over the 3 s gap: it says "wait a moment" without looking like a loader.
-  cooldown: { position: 'absolute', bottom: 0, left: 0, height: 8, backgroundColor: 'rgba(15,16,13,0.55)' },
+  cooldown: { position: 'absolute', bottom: 0, left: 0, height: 8, backgroundColor: 'rgba(15,15,15,0.55)' },
 });

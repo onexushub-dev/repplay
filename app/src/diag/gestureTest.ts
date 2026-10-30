@@ -192,7 +192,7 @@ export function buildReport(
   const maxEst = Math.max(-1, ...recognized.map((a) => attemptStats(a).estM ?? -1));
 
   const lines: string[] = [];
-  lines.push('TESTE DO GESTO — Repplay');
+  lines.push('TESTE DO GESTO — Revi');
   lines.push(`gerado ${new Date(now).toISOString()} · aparelho ${meta.device}`);
   lines.push(
     `câmera: zoom ${meta.zoom}x · ${meta.quality} · quadro ${first === undefined ? '-' : first.frame.join('x')} · ` +

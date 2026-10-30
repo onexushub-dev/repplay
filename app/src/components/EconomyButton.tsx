@@ -25,5 +25,5 @@ export function EconomyButton({ on, onPress }: Props) {
 const styles = StyleSheet.create({
   button: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
   on: { backgroundColor: colors.accent },
-  off: { backgroundColor: 'rgba(15,16,13,0.75)', borderWidth: 1, borderColor: colors.border },
+  off: { backgroundColor: 'rgba(15,15,15,0.75)', borderWidth: 1, borderColor: colors.border },
 });

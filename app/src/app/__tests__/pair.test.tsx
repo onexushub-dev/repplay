@@ -59,7 +59,7 @@ test('each failure says what happened', async () => {
   expect(screen.getByText('Muitas tentativas. Gere um novo código.')).toBeTruthy();
   await emit({ phase: 'failed', reason: 'notFound' });
   expect(
-    screen.getByText('Não encontrei o celular da câmera. Chegue mais perto e confira se o Repplay está aberto lá.'),
+    screen.getByText('Não encontrei o celular da câmera. Chegue mais perto e confira se o Revi está aberto lá.'),
   ).toBeTruthy();
   await emit({ phase: 'failed', reason: 'denied' });
   expect(screen.getByText('Este celular não está mais pareado com a câmera. Pareie de novo.')).toBeTruthy();
@@ -89,7 +89,7 @@ test('a camera phone that does not answer ends in "not found" instead of spinnin
     jest.advanceTimersByTime(15_000);
   });
   expect(
-    screen.getByText('Não encontrei o celular da câmera. Chegue mais perto e confira se o Repplay está aberto lá.'),
+    screen.getByText('Não encontrei o celular da câmera. Chegue mais perto e confira se o Revi está aberto lá.'),
   ).toBeTruthy();
 });
 

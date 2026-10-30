@@ -6,7 +6,7 @@ import type { FreeLosses } from '../share/exportOptions';
 import { useT } from '../i18n/useT';
 import { colors, fonts, radius } from '../theme/tokens';
 import { Button } from './Button';
-import { CheckIcon, ClipIcon, FocusIcon, LockIcon, SoundIcon, SpeedIcon } from './icons';
+import { CheckIcon, ClipIcon, FocusIcon, LockIcon, SpeedIcon } from './icons';
 
 export type FreeExportChoice = 'unlock' | 'go' | 'cancel';
 
@@ -61,9 +61,6 @@ export function FreeExportSheet({ visible, losses, onChoose, onDismissed }: Prop
           </View>
 
           <View style={styles.list}>
-            {losses.sound ? (
-              <Row icon={<SoundIcon color={colors.soft} size={20} />} title={t('freeExport.sound')} note={t('freeExport.soundNote')} />
-            ) : null}
             {losses.speed ? (
               <Row icon={<SpeedIcon color={colors.soft} size={20} />} title={t('freeExport.speed')} note={t('freeExport.speedNote')} />
             ) : null}

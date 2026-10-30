@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 import type { FreeLosses } from '../share/exportOptions';
 import { FreeExportSheet, type FreeExportChoice } from './FreeExportSheet';
 
-const NONE: FreeLosses = { focus: false, speed: false, sound: false };
+const NONE: FreeLosses = { focus: false, speed: false };
 
 /** Longest wait for the sheet to finish closing on iOS before going on anyway. */
 const DISMISS_FALLBACK_MS = 800;

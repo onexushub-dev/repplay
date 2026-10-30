@@ -53,7 +53,7 @@ export function RecordMedia() {
 }
 
 const styles = StyleSheet.create({
-  frame: { flex: 1, minHeight: 160, borderRadius: 18, overflow: 'hidden', backgroundColor: '#12130F' },
+  frame: { flex: 1, minHeight: 160, borderRadius: 18, overflow: 'hidden', backgroundColor: '#121212' },
   top: { position: 'absolute', top: 12, left: 12, right: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   recordings: { minHeight: 40, paddingHorizontal: 16, borderRadius: 999, backgroundColor: colors.accent, justifyContent: 'center' },
   recordingsText: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.onAccent },
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(15,16,13,0.75)',
+    backgroundColor: 'rgba(15,15,15,0.75)',
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center',

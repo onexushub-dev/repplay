@@ -49,16 +49,16 @@ export function ShareMedia() {
 }
 
 const styles = StyleSheet.create({
-  frame: { flex: 1, minHeight: 200, borderRadius: 18, overflow: 'hidden', backgroundColor: '#12130F' },
+  frame: { flex: 1, minHeight: 200, borderRadius: 18, overflow: 'hidden', backgroundColor: '#121212' },
   top: { position: 'absolute', top: 10, left: 10, right: 10, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  back: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(11,11,9,0.6)', alignItems: 'center', justifyContent: 'center' },
+  back: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(10,10,10,0.6)', alignItems: 'center', justifyContent: 'center' },
   name: {
     flex: 1,
     minHeight: 42,
     borderRadius: 21,
-    backgroundColor: 'rgba(11,11,9,0.6)',
+    backgroundColor: 'rgba(10,10,10,0.6)',
     borderWidth: 1,
-    borderColor: 'rgba(243,237,225,0.14)',
+    borderColor: 'rgba(255,255,255,0.14)',
     justifyContent: 'center',
     paddingHorizontal: 14,
   },
@@ -70,13 +70,13 @@ const styles = StyleSheet.create({
     bottom: 8,
     padding: 12,
     borderRadius: 20,
-    backgroundColor: 'rgba(11,11,9,0.74)',
+    backgroundColor: 'rgba(10,10,10,0.74)',
     borderWidth: 1,
-    borderColor: 'rgba(243,237,225,0.14)',
+    borderColor: 'rgba(255,255,255,0.14)',
     gap: 12,
   },
   count: { textAlign: 'center', fontFamily: fonts.body, fontSize: 13, color: colors.text, opacity: 0.85 },
-  bar: { height: 4, borderRadius: 2, backgroundColor: 'rgba(243,237,225,0.25)' },
+  bar: { height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.25)' },
   dot: { position: 'absolute', top: -4, width: 12, height: 12, marginLeft: -6, borderRadius: 6, backgroundColor: colors.text },
   actions: { flexDirection: 'row', gap: 8 },
   action: {

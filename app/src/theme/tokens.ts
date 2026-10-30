@@ -1,18 +1,18 @@
-// Design tokens from the Repplay brand kit (docs/brand/repplay): ground is Ink, text is Paper, accent is Lima. surface, border, muted and rec are the app interface colors of the kit. recordingGround, screenOff, soft and the warning pair are app-only. The UI is always dark.
+// Design tokens from the Revi brand guide: ground is Ink, text is White, accent is Amber. surface, border, muted and rec are the app interface colors of the kit. recordingGround, screenOff, soft and the warning pair are app-only. The UI is always dark.
 
 export const colors = {
-  ground: '#0B0B09',
-  recordingGround: '#070806',
+  ground: '#0A0A0A',
+  recordingGround: '#070707',
   /** Pure black for screen economy while recording: OLED pixels switch off. */
   screenOff: '#000000',
-  surface: '#1B1D18',
-  border: '#3A3D34',
-  text: '#F3EDE1',
-  muted: '#A9A79C',
-  soft: '#CFCBBF',
-  accent: '#D6F23F',
-  onAccent: '#0B0B09',
-  rec: '#FF5A36',
+  surface: '#141414',
+  border: '#2E2E2E',
+  text: '#FFFFFF',
+  muted: '#B3B3B3',
+  soft: '#CCCCCC',
+  accent: '#FFB000',
+  onAccent: '#0A0A0A',
+  rec: '#FF453A',
   warning: '#FF8A3D',
   warningGround: '#3A1D10',
 } as const;

@@ -163,19 +163,19 @@
         }
       }
     },
-    "Open Repplay on your iPhone": {
+    "Open Revi on your iPhone": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open Repplay on your iPhone"
+            "value": "Open Revi on your iPhone"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abra o Repplay no iPhone"
+            "value": "Abra o Revi no iPhone"
           }
         }
       }

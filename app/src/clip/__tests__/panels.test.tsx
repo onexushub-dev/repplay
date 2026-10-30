@@ -98,11 +98,11 @@ test('Foco: a switch when ready, a wait while preparing, a message when it canno
   expect(screen.queryByRole('switch', { name: 'Modo Foco' })).toBeNull();
 });
 
-test('on a free recording the sound works, and the hint says it does not leave the app', async () => {
+test('on a free recording the sound works like on a paid one', async () => {
   const c = ctx({ plan: 'free' });
   const Panel = panel('sound');
   await render(<Panel ctx={c} />);
-  expect(screen.getByText('No plano grátis o som toca aqui, mas não vai no vídeo salvo ou enviado.')).toBeTruthy();
+  expect(screen.getByText('Ative ou desative o som do clipe.')).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: 'Som' }));
   expect(c.setEdit).toHaveBeenCalledWith({ muted: true });
   expect(c.unlock).not.toHaveBeenCalled();
