@@ -82,7 +82,7 @@ export default function Onboarding() {
 
         <View style={styles.header} pointerEvents="box-none">
           <View pointerEvents="none">
-            <Image source={BRAND_LOGO} style={styles.logo} resizeMode="contain" accessibilityLabel="Repplay" />
+            <Image source={BRAND_LOGO} style={styles.logo} resizeMode="contain" accessibilityLabel="Revi" />
           </View>
           {last ? null : (
             <Pressable accessibilityRole="button" onPress={() => stories.goTo(SLIDES.length - 1)} style={styles.skip}>
@@ -158,17 +158,17 @@ const styles = StyleSheet.create({
   number: { fontFamily: fonts.displayBold, fontSize: 22, color: colors.accent, paddingBottom: 12 },
   word: { fontFamily: fonts.displayBold, fontSize: 84, lineHeight: 84, color: colors.text },
   title: { fontFamily: fonts.bodyBold, fontSize: 20, lineHeight: 25, color: colors.text, marginTop: 6 },
-  body: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: 'rgba(243,237,225,0.86)', marginTop: 6 },
+  body: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: 'rgba(255,255,255,0.86)', marginTop: 6 },
   highlight: { fontFamily: fonts.bodySemi, color: colors.accent },
   media: { flex: 1, minHeight: 0 },
   footer: { gap: 10, paddingTop: 12 },
-  note: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: 'rgba(243,237,225,0.86)' },
+  note: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: 'rgba(255,255,255,0.86)' },
   denied: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.warning, textAlign: 'center' },
   next: {
     height: 54,
     borderRadius: radius.button,
     borderWidth: 1.5,
-    borderColor: 'rgba(243,237,225,0.5)',
+    borderColor: 'rgba(255,255,255,0.5)',
     backgroundColor: colors.ground,
     alignItems: 'center',
     justifyContent: 'center',

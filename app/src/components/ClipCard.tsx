@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   thumb: { height: 128, borderRadius: 14, overflow: 'hidden', backgroundColor: colors.surface },
   tag: {
     position: 'absolute',
-    backgroundColor: 'rgba(15,16,13,0.85)',
+    backgroundColor: 'rgba(15,15,15,0.85)',
     paddingVertical: 3,
     paddingHorizontal: 8,
     borderRadius: 999,
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     borderWidth: 2,
     borderColor: colors.text,
-    backgroundColor: 'rgba(15,16,13,0.6)',
+    backgroundColor: 'rgba(15,15,15,0.6)',
     alignItems: 'center',
     justifyContent: 'center',
   },

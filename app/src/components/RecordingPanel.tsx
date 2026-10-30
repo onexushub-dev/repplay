@@ -264,7 +264,7 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
   );
 }
 
-const glass = 'rgba(15,16,13,0.72)';
+const glass = 'rgba(15,15,15,0.72)';
 
 const styles = StyleSheet.create({
   dark: { backgroundColor: colors.screenOff },
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   bannerText: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.text },
-  notice: { backgroundColor: 'rgba(15,16,13,0.82)', borderRadius: 14, paddingVertical: 10, paddingHorizontal: 14, alignItems: 'center', gap: 2 },
+  notice: { backgroundColor: 'rgba(15,15,15,0.82)', borderRadius: 14, paddingVertical: 10, paddingHorizontal: 14, alignItems: 'center', gap: 2 },
   noticeTitle: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.text, textAlign: 'center' },
   noticeBody: { fontFamily: fonts.body, fontSize: 12, lineHeight: 17, color: colors.soft, textAlign: 'center' },
   bold: { fontFamily: fonts.bodyBold },

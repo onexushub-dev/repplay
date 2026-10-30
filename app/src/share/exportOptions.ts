@@ -24,14 +24,13 @@ export type ExportOptions = {
 type Tier = Plan | 'pass' | 'pro';
 
 /**
- * Both plans export 1080x1920. Free: no sound (the clip may have it: it is locked here, so a recording already made can
- * be unlocked later), speed always 1x, no Modo Foco, and the app mark. Paid (a paid plan, pass, pro): its sound, any
- * speed, Modo Foco, no app mark. A landscape clip gets the same frame turned on its side, so it fills the screen when
+ * Both plans export 1080x1920. Free: its sound, speed always 1x, no Modo Foco, and the app mark. Paid (a paid plan, pass,
+ * pro): its sound, any speed, Modo Foco, no app mark. A landscape clip gets the same frame turned on its side, so it fills the screen when
  * the phone is held sideways, like any video in Photos. Any speed other than 1x plays without sound. Modo Foco applies
  * when on, ready, not turned and not zoomed by hand.
  */
 /**
- * true: every clip carries the Repplay mark, on every plan. false (the rule since 2026-10-27): only free recordings
+ * true: every clip carries the Revi mark, on every plan. false (the rule since 2026-10-27): only free recordings
  * carry it, Pro and the Single Pass never do.
  */
 export const WATERMARK_ON_EVERY_PLAN = false as boolean;
@@ -60,7 +59,7 @@ export function exportOptions(
     startMs: trim.startMs,
     endMs: trim.endMs,
     speed,
-    muted: muted || speed !== 1 || !paid,
+    muted: muted || speed !== 1,
     crop: zoom && zoom.scale > 1 ? cropRect(zoom) : undefined,
     rotation,
     // The mark follows the plan as it is, also during the field test: it is the release look, not a locked feature.
@@ -69,15 +68,13 @@ export function exportOptions(
   };
 }
 
-/** What a free export drops from this clip: the framing, the speed, the sound (only what the clip actually had). */
-export type FreeLosses = { focus: boolean; speed: boolean; sound: boolean };
+/** What a free export drops from this clip: the framing and the speed (only what the clip actually had). The sound stays. */
+export type FreeLosses = { focus: boolean; speed: boolean };
 
 export function freeLosses(clip: Pick<Clip, 'edit' | 'focus'>): FreeLosses {
-  const { focus, rotation, zoom, speed, muted } = readEdit(clip.edit);
+  const { focus, rotation, zoom, speed } = readEdit(clip.edit);
   return {
     focus: clip.focus !== undefined && clip.focus.status === 'ready' && focus && rotation === 0 && !(zoom !== undefined && zoom.scale > 1),
     speed: speed !== 1,
-    // Away from 1x the video is silent anyway, so there is no sound to lose.
-    sound: !muted && speed === 1,
   };
 }

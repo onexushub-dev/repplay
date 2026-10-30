@@ -16,7 +16,7 @@ final class WatchLink: NSObject, ObservableObject, WCSessionDelegate {
   @Published private(set) var reachable = false
   /// "Começar gravação" was tapped and the phone has not answered yet.
   @Published private(set) var starting = false
-  /// The phone did not answer a start: the Repplay app is not open on it. Shown as a message, then cleared.
+  /// The phone did not answer a start: the Revi app is not open on it. Shown as a message, then cleared.
   @Published private(set) var startFailed = false
   /// The phone's word on the watch trigger (paid): false hides Save. Allowed until the phone says otherwise.
   @Published private(set) var saveAllowed = true

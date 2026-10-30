@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 24,
   },
-  card: { backgroundColor: 'rgba(15,16,13,0.88)', borderRadius: 20, padding: 16, gap: 12 },
+  card: { backgroundColor: 'rgba(15,15,15,0.88)', borderRadius: 20, padding: 16, gap: 12 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   badge: {
     width: 48,

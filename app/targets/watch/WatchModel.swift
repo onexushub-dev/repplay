@@ -44,7 +44,7 @@ enum WatchModel {
   }
 
   /// A start the watch asked for (`askedAt`, `now` in seconds) is answered by the phone reporting a recording. No answer
-  /// in `startWait` means the Repplay app is not open on the phone.
+  /// in `startWait` means the Revi app is not open on the phone.
   static func startOutcome(askedAt: Double, now: Double, recording: Bool) -> StartOutcome {
     if recording { return .started }
     return now - askedAt >= startWait ? .failed : .waiting

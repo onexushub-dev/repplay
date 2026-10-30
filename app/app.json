@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Repplay",
+    "name": "Revi",
     "slug": "repplay",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -11,19 +11,19 @@
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "app.repplay.mobile",
       "infoPlist": {
-        "NSCameraUsageDescription": "Repplay uses the camera to record your clips.",
-        "NSMicrophoneUsageDescription": "Repplay records the sound of your clips.",
-        "NSSpeechRecognitionUsageDescription": "Repplay listens for you to say \"save\" or \"record\" so you can save a clip without touching your phone.",
+        "NSCameraUsageDescription": "Revi uses the camera to record your clips.",
+        "NSMicrophoneUsageDescription": "Revi records the sound of your clips.",
+        "NSSpeechRecognitionUsageDescription": "Revi listens for you to say \"save\" or \"record\" so you can save a clip without touching your phone.",
         "LSApplicationQueriesSchemes": [
           "instagram-stories"
         ],
-        "NSPhotoLibraryAddUsageDescription": "Repplay saves the clips you export to your photo library.",
-        "NSLocalNetworkUsageDescription": "Repplay uses your local network to show the camera image on the phone you use as a remote.",
+        "NSPhotoLibraryAddUsageDescription": "Revi saves the clips you export to your photo library.",
+        "NSLocalNetworkUsageDescription": "Revi uses your local network to show the camera image on the phone you use as a remote.",
         "CFBundleAllowMixedLocalizations": true,
         "NSBonjourServices": [
           "_repplay-remote._tcp"
         ],
-        "NSBluetoothAlwaysUsageDescription": "O Repplay usa o Bluetooth para conversar com o outro celular que serve de controle.",
+        "NSBluetoothAlwaysUsageDescription": "O Revi usa o Bluetooth para conversar com o outro celular que serve de controle.",
         "UIBackgroundModes": [
           "bluetooth-central"
         ]
@@ -32,7 +32,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0B0B09",
+        "backgroundColor": "#0A0A0A",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -53,7 +53,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0B0B09",
+          "backgroundColor": "#0A0A0A",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200
         }

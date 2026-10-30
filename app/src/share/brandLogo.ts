@@ -4,7 +4,7 @@ import { Image, type ImageSourcePropType } from 'react-native';
  * The mark every exported clip carries. To change the brand image, replace this file (or point `BRAND_LOGO` at
  * another one): the overlay reads its proportions from the image itself.
  */
-export const BRAND_LOGO: ImageSourcePropType = require('../../assets/images/brand/repplay-logo.png');
+export const BRAND_LOGO: ImageSourcePropType = require('../../assets/images/brand/revi-logo.png');
 
 /** Used only when the image size cannot be read (tests, a source without dimensions). */
 const FALLBACK_ASPECT = 6;

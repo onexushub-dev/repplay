@@ -93,7 +93,7 @@ export function SaveMedia({ ways, card, onPick }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, gap: 10 },
-  photo: { flex: 1, minHeight: 120, borderRadius: 18, overflow: 'hidden', backgroundColor: '#12130F' },
+  photo: { flex: 1, minHeight: 120, borderRadius: 18, overflow: 'hidden', backgroundColor: '#121212' },
   recording: {
     position: 'absolute',
     top: 10,
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 999,
-    backgroundColor: 'rgba(15,16,13,0.72)',
+    backgroundColor: 'rgba(15,15,15,0.72)',
   },
   recDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.rec },
   recordingText: { fontFamily: fonts.bodyBold, fontSize: 12, color: colors.text },
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     paddingLeft: 6,
     paddingRight: 10,
     borderRadius: 14,
-    backgroundColor: 'rgba(15,16,13,0.9)',
+    backgroundColor: 'rgba(15,15,15,0.9)',
     borderWidth: 2,
     borderColor: colors.accent,
   },

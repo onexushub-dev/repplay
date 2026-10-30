@@ -811,7 +811,7 @@ test('"Conectar um celular controle" says how many remotes are connected, and th
   await openSettings();
   expect(screen.getByRole('button', { name: 'Conectar um celular controle, 1 controle conectado' })).toBeTruthy();
   const title = screen.getByText('Conectar um celular controle');
-  expect(JSON.stringify(title.props.style)).not.toContain('#D6F23F');
+  expect(JSON.stringify(title.props.style)).not.toContain('#FFB000');
   // The count follows the link.
   const listener = camera().addReplayListener.mock.calls.filter((c: any[]) => c[0] === 'onRemoteStatus').map((c: any[]) => c[1]);
   await act(async () => listener.forEach((l: any) => l({ link: 'connected', controllers: 2 })));

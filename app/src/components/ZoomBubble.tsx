@@ -21,7 +21,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 999,
     alignItems: 'center',
-    backgroundColor: 'rgba(15,16,13,0.75)',
+    backgroundColor: 'rgba(15,15,15,0.75)',
   },
   text: { fontFamily: fonts.bodyBold, fontSize: 18, color: colors.accent },
 });

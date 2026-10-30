@@ -21,7 +21,7 @@ function usedKeys(source: string): string[] {
 test('every text the watch shows is in the catalog, in English and Portuguese', () => {
   const keys = usedKeys(view);
   expect(keys).toEqual(
-    expect.arrayContaining(['%lld clips', 'No connection', 'Open Repplay on your iPhone', 'Save', 'Start recording', 'Stop']),
+    expect.arrayContaining(['%lld clips', 'No connection', 'Open Revi on your iPhone', 'Save', 'Start recording', 'Stop']),
   );
   expect(catalog.sourceLanguage).toBe('en');
   for (const key of keys) {
@@ -49,7 +49,7 @@ test('the Portuguese copy is what the watch said before', () => {
   expect(pt('Start recording')).toBe('Começar gravação');
   expect(pt('Starting…')).toBe('Começando…');
   expect(pt('No connection')).toBe('Sem conexão');
-  expect(pt('Open Repplay on your iPhone')).toBe('Abra o Repplay no iPhone');
+  expect(pt('Open Revi on your iPhone')).toBe('Abra o Revi no iPhone');
   expect(pt('Connecting to your iPhone…')).toBe('Conectando ao iPhone…');
   expect(pt('Stop')).toBe('Parar');
   expect(pt('Hold')).toBe('Segure');

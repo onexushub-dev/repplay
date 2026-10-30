@@ -54,7 +54,7 @@ export default function SessionSummary() {
     labelOf: (c) => (c.name ? c.name : t('batch.clipNumber', { number: clipNumber(c, clips.indexOf(c)) })),
   });
   const working = batch.job !== undefined;
-  // A free recording's clips leave without sound, Modo Foco and the app mark off: say so before saving or sending them.
+  // A free recording's clips leave without Modo Foco and speed, and with the app mark: say so before saving or sending them.
   const freeGate = useFreeExportGate();
   const exportAfterNotice = async (clips: typeof pickedClips, go: (clips: typeof pickedClips) => Promise<void>) => {
     // Nothing is lost while the field test unlocks it all (accessPlan): no notice then.
@@ -62,7 +62,6 @@ export default function SessionSummary() {
       const choice = await freeGate.ask({
         focus: clips.some((c) => freeLosses(c).focus),
         speed: clips.some((c) => freeLosses(c).speed),
-        sound: clips.some((c) => freeLosses(c).sound),
       });
       if (choice === 'unlock') void unlockRecording(id, t);
       if (choice !== 'go') return;

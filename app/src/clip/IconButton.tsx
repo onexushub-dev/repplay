@@ -3,8 +3,8 @@ import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 
 import { colors } from '../theme/tokens';
 
-export const SCRIM = 'rgba(15,16,13,0.74)';
-export const EDGE = 'rgba(243,239,228,0.22)';
+export const SCRIM = 'rgba(15,15,15,0.74)';
+export const EDGE = 'rgba(255,255,255,0.22)';
 
 /** A round icon button over the video; `loading` shows a spinner in place of the icon while its job runs. */
 export function IconButton({

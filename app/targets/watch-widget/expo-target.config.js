@@ -6,7 +6,7 @@ const group = `group.${bundleId}.watch`;
 module.exports = {
   type: 'watch-widget',
   name: 'Repplay Watch Widget',
-  displayName: 'Repplay',
+  displayName: 'Revi',
   bundleIdentifier: '.watch.widget',
   deploymentTarget: '11.0',
   frameworks: ['SwiftUI', 'WidgetKit'],
@@ -14,6 +14,6 @@ module.exports = {
     'com.apple.security.application-groups': [group],
   },
   colors: {
-    $accent: '#D6F23F',
+    $accent: '#FFB000',
   },
 };

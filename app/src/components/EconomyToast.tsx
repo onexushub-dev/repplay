@@ -24,7 +24,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     gap: 2,
-    backgroundColor: 'rgba(15,16,13,0.82)',
+    backgroundColor: 'rgba(15,15,15,0.82)',
   },
   title: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.text, textAlign: 'center' },
   body: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.soft, textAlign: 'center' },

@@ -13,7 +13,7 @@ afterEach(() => jest.useRealTimers());
 test('"Cancelar" resolves at once', async () => {
   await render(<Harness />);
   let choice: string | undefined;
-  await act(async () => void gate.ask({ focus: false, speed: false, sound: true }).then((c) => (choice = c)));
+  await act(async () => void gate.ask({ focus: false, speed: false }).then((c) => (choice = c)));
   await fireEvent.press(screen.getByRole('button', { name: 'Cancelar' }));
   await act(async () => {
     await new Promise((r) => setTimeout(r, 10));
@@ -25,7 +25,7 @@ test('"Liberar" waits for the sheet to close (or the fallback) before the paywal
   jest.useFakeTimers();
   await render(<Harness />);
   let choice: string | undefined;
-  await act(async () => void gate.ask({ focus: false, speed: false, sound: true }).then((c) => (choice = c)));
+  await act(async () => void gate.ask({ focus: false, speed: false }).then((c) => (choice = c)));
   await fireEvent.press(screen.getByRole('button', { name: 'Liberar tudo com o Pro' }));
   await act(async () => {});
   expect(choice).toBeUndefined();

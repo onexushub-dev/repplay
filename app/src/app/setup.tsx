@@ -615,7 +615,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   pill: {
-    backgroundColor: 'rgba(15,16,13,0.75)',
+    backgroundColor: 'rgba(15,15,15,0.75)',
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 999,
@@ -633,7 +633,7 @@ const styles = StyleSheet.create({
   },
   tip: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(15,16,13,0.8)',
+    backgroundColor: 'rgba(15,15,15,0.8)',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 999,

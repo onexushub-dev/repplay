@@ -3,8 +3,8 @@ import SwiftUI
 // Every text is an English key looked up in Localizable.xcstrings (English and Brazilian Portuguese); the watch
 // shows the watch's own language.
 
-private let ground = Color(red: 0.043, green: 0.043, blue: 0.035) // #0B0B09
-private let accent = Color(red: 0.839, green: 0.949, blue: 0.247) // #D6F23F
+private let ground = Color(red: 0.039, green: 0.039, blue: 0.039) // #0A0A0A
+private let accent = Color(red: 1.0, green: 0.690, blue: 0.0) // #FFB000
 
 struct ContentView: View {
   @StateObject private var link = WatchLink()
@@ -46,7 +46,7 @@ struct ContentView: View {
     }
   }
 
-  /// Nothing is recording: one big Start recording button. Without the Repplay app open on the phone it cannot work, so
+  /// Nothing is recording: one big Start recording button. Without the Revi app open on the phone it cannot work, so
   /// the screen says to open it instead: nothing to tap that would go nowhere.
   @ViewBuilder private var idleView: some View {
     if !link.reachable || link.startFailed {
@@ -168,7 +168,7 @@ private struct CameraToggle: View {
 }
 
 
-/// The Repplay app is not open on the phone, so nothing here can record or save: say so, large, and say what to do.
+/// The Revi app is not open on the phone, so nothing here can record or save: say so, large, and say what to do.
 private struct PhoneClosedView: View {
   /// A recording that lost its phone, rather than a watch that never had one.
   let lostRecording: Bool
@@ -177,7 +177,7 @@ private struct PhoneClosedView: View {
       Header { if lostRecording { Text("No connection").foregroundStyle(.red) } }
       VStack(spacing: 8) {
         Image(systemName: "iphone.gen3").font(.system(size: 42, weight: .semibold)).foregroundStyle(accent)
-        Text("Open Repplay on your iPhone")
+        Text("Open Revi on your iPhone")
           .font(.system(.title3, design: .rounded).weight(.heavy))
           .multilineTextAlignment(.center)
           .foregroundStyle(.white)

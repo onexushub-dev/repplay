@@ -41,7 +41,7 @@ test('first time: tells how to pair the remote, step by step, and tells the setu
   expect(screen.getByText('Toque para conectar')).toBeTruthy();
   expect(screen.getByText('Ligue o controle e deixe em modo de pareamento.')).toBeTruthy();
   expect(screen.getByText('No Iphone abra Ajustes > Bluetooth e toque no nome dele.')).toBeTruthy();
-  expect(screen.getByText('Volte ao Repplay e aperte um botão do controle.')).toBeTruthy();
+  expect(screen.getByText('Volte ao Revi e aperte um botão do controle.')).toBeTruthy();
   expect(screen.getByText('Aperte um botão do controle…')).toBeTruthy();
   expect(isRemoteSheetOpen()).toBe(true);
 });

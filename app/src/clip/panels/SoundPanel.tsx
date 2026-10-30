@@ -10,8 +10,7 @@ export function SoundPanel({ ctx }: { ctx: ToolContext }) {
   const on = !ctx.edit.muted && !locked;
   return (
     <View style={{ gap: 10 }}>
-      {/* On a free recording the sound plays here, but it does not leave the app: the hint says so. */}
-      <PanelHead title={t('clip.sound')} hint={ctx.plan === 'free' ? t('clip.soundFree') : t('clip.soundHint')} />
+      <PanelHead title={t('clip.sound')} hint={t('clip.soundHint')} />
       <View style={panelStyles.row}>
         <Choice
           label={on ? t('clip.soundOn') : t('clip.muted')}

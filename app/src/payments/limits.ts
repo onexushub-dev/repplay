@@ -9,9 +9,8 @@ export const FREE_MAX_SECONDS = 15;
 export type CaptureConfig = { quality: Quality; bufferSeconds: number; cutSeconds: number; audio: boolean };
 
 /**
- * What the camera runs with. The free plan records what the player chose, with sound, but keeps 15 s at most: sound is
- * locked when a clip leaves the app (export), so a Single Pass or Pro can still unlock a recording that is already
- * made. The 15 s ceiling cannot be given back later, so it stays at capture.
+ * What the camera runs with. The free plan records what the player chose, with sound, but keeps 15 s at most and Full HD at
+ * 60 fps. The 15 s ceiling cannot be given back later, so it stays at capture.
  */
 export function captureConfig(settings: ModeSettings, plan: Plan): CaptureConfig {
   if (accessPlan(plan) === 'paid') {

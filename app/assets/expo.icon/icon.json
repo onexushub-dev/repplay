@@ -1,13 +1,13 @@
 {
   "fill" : {
-    "solid" : "extended-srgb:0.04314,0.04314,0.03529,1.00000"
+    "solid" : "extended-srgb:0.03922,0.03922,0.03922,1.00000"
   },
   "groups" : [
     {
       "layers" : [
         {
-          "image-name" : "repplay-symbol.svg",
-          "name" : "repplay-symbol"
+          "image-name" : "revi-symbol.svg",
+          "name" : "revi-symbol"
         }
       ],
       "shadow" : {

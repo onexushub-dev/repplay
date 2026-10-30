@@ -10,7 +10,7 @@ final class WatchBridge: NSObject, WCSessionDelegate {
   var emit: ((String, [String: Any]) -> Void)?
   private var session: WCSession? { WCSession.isSupported() ? WCSession.default : nil }
 
-  /// "unsupported": no paired watch · "notInstalled": paired but without the Repplay app · "ready".
+  /// "unsupported": no paired watch · "notInstalled": paired but without the Revi app · "ready".
   var status: String {
     guard let session, session.isPaired else { return "unsupported" }
     return session.isWatchAppInstalled ? "ready" : "notInstalled"

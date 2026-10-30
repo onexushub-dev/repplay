@@ -6,7 +6,7 @@ const group = `group.${bundleId}.watch`;
 module.exports = {
   type: 'watch',
   name: 'Repplay Watch',
-  displayName: 'Repplay',
+  displayName: 'Revi',
   icon: '../../assets/images/icon.png',
   bundleIdentifier: '.watch',
   deploymentTarget: '11.0',
@@ -15,6 +15,6 @@ module.exports = {
     'com.apple.security.application-groups': [group],
   },
   colors: {
-    $accent: '#D6F23F',
+    $accent: '#FFB000',
   },
 };

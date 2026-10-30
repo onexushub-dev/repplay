@@ -60,19 +60,19 @@
         }
       }
     },
-    "Shows the recording's time and clips and opens Repplay with a tap.": {
+    "Shows the recording's time and clips and opens Revi with a tap.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Shows the recording's time and clips and opens Repplay with a tap."
+            "value": "Shows the recording's time and clips and opens Revi with a tap."
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mostra o tempo e os clipes da gravação e abre o Repplay com um toque."
+            "value": "Mostra o tempo e os clipes da gravação e abre o Revi com um toque."
           }
         }
       }

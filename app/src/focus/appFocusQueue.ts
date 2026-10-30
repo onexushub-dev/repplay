@@ -51,7 +51,7 @@ export function startFocusQueue(): () => void {
     try {
       focusQueue.restore(allClips());
     } catch (e) {
-      console.warn('[Repplay] Modo Foco restore failed', e);
+      console.warn('[Revi] Modo Foco restore failed', e);
     }
   }, RESTORE_AFTER_MS);
   return () => {
