@@ -18,8 +18,14 @@ export type ScreenEconomy = {
  * Screen economy while a game is recorded: after a while without a touch the preview goes away, the screen turns
  * black and the brightness goes down (`setNative(true)`); a touch brings it back. The camera, the triggers and the
  * saves keep working. Outside a recording, or when the screen goes away, the brightness is given back.
+ * `idleMs` replaces both waits (the remote phone, which does not heat up like the camera, waits longer).
  */
-export function useScreenEconomy(active: boolean, thermal: ThermalLevel, setNative: (on: boolean) => void): ScreenEconomy {
+export function useScreenEconomy(
+  active: boolean,
+  thermal: ThermalLevel,
+  setNative: (on: boolean) => void,
+  idleMs?: number,
+): ScreenEconomy {
   const [asleep, setAsleep] = useState(false);
   const [touches, setTouches] = useState(0);
   const warm = thermal !== 'nominal';
@@ -50,9 +56,10 @@ export function useScreenEconomy(active: boolean, thermal: ThermalLevel, setNati
 
   useEffect(() => {
     if (!active || asleep) return;
-    const timer = setTimeout(() => setAsleep(true), warm ? ECONOMY_WARM_IDLE_MS : ECONOMY_IDLE_MS);
+    const wait = idleMs !== undefined ? idleMs : warm ? ECONOMY_WARM_IDLE_MS : ECONOMY_IDLE_MS;
+    const timer = setTimeout(() => setAsleep(true), wait);
     return () => clearTimeout(timer);
-  }, [active, asleep, warm, touches]);
+  }, [active, asleep, warm, touches, idleMs]);
 
   const wake = useCallback(() => {
     setAsleep(false);

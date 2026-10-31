@@ -76,6 +76,8 @@ export type ReplayCameraModuleEvents = {
   onRemoteStart: () => void;
   /** Remote phone only: one picture of the camera phone's view, a JPEG in base64. */
   onRemoteFrame: (e: { jpeg: string }) => void;
+  /** Remote phone only: the save command was heard here (`remoteVoiceSetEnabled`); the screen saves as for a tap. */
+  onRemoteVoice: (e: { at: number }) => void;
   /**
    * `paired` / `failed`: the end of a pairing, on either phone. Camera phone only: `connecting` (a remote proved the code
    * and is linking up), `released` (that link failed, the code is free again) and `offerEnded` (five wrong tries).

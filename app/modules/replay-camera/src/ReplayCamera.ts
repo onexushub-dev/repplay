@@ -68,6 +68,12 @@ export function setScreenEconomy(on: boolean): void {
   if (typeof set === 'function') set.call(ReplayCameraModule, on);
 }
 
+/** Screen economy on the remote phone (iOS): the brightness goes down to 15% (never up); false gives it back. */
+export function setRemoteScreenDim(on: boolean): void {
+  const set = ReplayCameraModule.setRemoteScreenDim;
+  if (typeof set === 'function') set.call(ReplayCameraModule, on);
+}
+
 /** The phone's real output volume (0-1), or undefined where the module can't tell (Android, older builds). */
 export function outputVolume(): number | undefined {
   const get = ReplayCameraModule.outputVolume;
@@ -293,6 +299,21 @@ export function remoteControllerStartRecording(): void {
 /** Remote phone: ask for pictures of the camera view (say it again every second while open) or stop them. */
 export function remoteControllerPreview(on: boolean): void {
   if (ReplayCameraModule.remoteControllerPreview) ReplayCameraModule.remoteControllerPreview(on);
+}
+
+/** Remote phone: listen for the save command (heard ones arrive as `onRemoteVoice`) or stop. */
+export function remoteVoiceSetEnabled(on: boolean, locale: VoiceLocale): void {
+  if (ReplayCameraModule.remoteVoiceSetEnabled) ReplayCameraModule.remoteVoiceSetEnabled(on, locale);
+}
+
+/** Current microphone permission, without asking ('denied' where the module cannot tell). */
+export function getMicrophonePermission(): 'granted' | 'denied' | 'undetermined' {
+  return ReplayCameraModule.getMicrophonePermission ? ReplayCameraModule.getMicrophonePermission() : 'denied';
+}
+
+/** Asks for the microphone; resolves true when granted. */
+export function requestMicrophonePermission(): Promise<boolean> {
+  return ReplayCameraModule.requestMicrophonePermission ? ReplayCameraModule.requestMicrophonePermission() : Promise.resolve(false);
 }
 
 /** The name this phone shows to the other one while pairing ("iPhone XR#1234" unless the person renamed it). */

@@ -3,13 +3,18 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useT } from '../i18n/useT';
 import { colors, fonts } from '../theme/tokens';
 
-/** What a tap on the battery-saving button did, over the preview for a moment (like the zoom bubble). */
-export function EconomyToast({ on, bottom }: { on: boolean; bottom: number }) {
+/**
+ * What a tap on the battery-saving button did, over the preview for a moment (like the zoom bubble). `remote`: the
+ * remote phone's own battery saving (its own wait and words).
+ */
+export function EconomyToast({ on, bottom, remote = false }: { on: boolean; bottom: number; remote?: boolean }) {
   const { t } = useT();
+  const title = remote ? (on ? 'remote.economyOnTitle' : 'remote.economyOffTitle') : on ? 'setup.economyOnTitle' : 'setup.economyOffTitle';
+  const body = remote ? (on ? 'remote.economyOnBody' : 'remote.economyOffBody') : on ? 'setup.economyOnBody' : 'setup.economyOffBody';
   return (
     <View testID="economy-toast" accessibilityRole="alert" pointerEvents="none" style={[styles.wrap, { bottom }]}>
-      <Text style={styles.title}>{t(on ? 'setup.economyOnTitle' : 'setup.economyOffTitle')}</Text>
-      <Text style={styles.body}>{t(on ? 'setup.economyOnBody' : 'setup.economyOffBody')}</Text>
+      <Text style={styles.title}>{t(title)}</Text>
+      <Text style={styles.body}>{t(body)}</Text>
     </View>
   );
 }

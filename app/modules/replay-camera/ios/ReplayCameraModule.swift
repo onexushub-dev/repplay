@@ -97,13 +97,14 @@ public class ReplayCameraModule: Module {
 
     Events("onTrigger", "onThermalChange", "onInterrupted", "onResumed", "onError", "onGestureDebug", "onGestureTrace", "onWatchStatus",
            "onRemoteStatus", "onRemoteState", "onRemoteResult", "onRemotePairing", "onRemoteStop",
-           "onRemoteStart", "onRemoteFrame", "onRemoteCheck", "onDiag") // onDiag: TEMP(diag-remote)
+           "onRemoteStart", "onRemoteFrame", "onRemoteCheck", "onRemoteVoice", "onDiag") // onDiag: TEMP(diag-remote)
 
     OnCreate {
       self.engine.emit = { [weak self] name, body in self?.sendEvent(name, body) }
       WatchBridge.shared.emit = { [weak self] name, body in self?.sendEvent(name, body) }
       RemoteHost.shared.emit = { [weak self] name, body in self?.sendEvent(name, body) }
       RemoteController.shared.emit = { [weak self] name, body in self?.sendEvent(name, body) }
+      RemoteVoice.shared.emit = { [weak self] name, body in self?.sendEvent(name, body) }
       WatchBridge.shared.preview = self.engine.watchPreview
       self.engine.remotePreview.onFrame = { RemoteHost.shared.sendFrame($0) }
       RemoteHost.shared.onPreview = { [weak self] on in self?.engine.remotePreview.ask(on) }
@@ -145,6 +146,13 @@ public class ReplayCameraModule: Module {
     // Screen economy while recording: preview off and brightness down; false gives both back.
     Function("setScreenEconomy") { (on: Bool) in
       DispatchQueue.main.async { MainActor.assumeIsolated { ScreenEconomy.set(on) } }
+    }
+
+    // Screen economy on the remote phone: brightness down to a level that can still be read; false gives it back.
+    Function("setRemoteScreenDim") { (on: Bool) in
+      DispatchQueue.main.async {
+        MainActor.assumeIsolated { ScreenEconomy.set(on, brightness: ScreenEconomy.remoteBrightness, pausePreview: false) }
+      }
     }
 
     // The phone's real output volume. The volume remote reads presses as volume changes and parks the volume after
@@ -300,6 +308,23 @@ public class ReplayCameraModule: Module {
     Function("remoteControllerStartRecording") { RemoteController.shared.startRecording() }
 
     Function("remoteControllerPreview") { (on: Bool) in RemoteController.shared.preview(on) }
+
+    // The save command by voice on the remote phone; heard commands arrive as `onRemoteVoice`.
+    Function("remoteVoiceSetEnabled") { (on: Bool, locale: String) in
+      RemoteVoice.shared.set(on, locale: VoiceLocale(rawValue: locale) ?? .enUS)
+    }
+
+    Function("getMicrophonePermission") { () -> String in
+      switch AVCaptureDevice.authorizationStatus(for: .audio) {
+      case .authorized: return "granted"
+      case .notDetermined: return "undetermined"
+      default: return "denied"
+      }
+    }
+
+    AsyncFunction("requestMicrophonePermission") { (promise: Promise) in
+      AVCaptureDevice.requestAccess(for: .audio) { promise.resolve($0) }
+    }
 
     // The name this phone shows to the other one while pairing, and the way to change it.
     Function("remoteDeviceName") { () -> String in DeviceIdentity.name }

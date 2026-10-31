@@ -2,25 +2,36 @@ import UIKit
 
 /// Screen economy while recording (thermal work, item 2): the camera preview stops drawing and the screen brightness
 /// goes down; turning it off gives both back. Capture, segment writing, triggers and saves are not touched.
+/// The remote phone uses it too, with a brighter level and no camera preview to stop (`set(_:brightness:pausePreview:)`).
 /// Main thread only.
 @MainActor
 enum ScreenEconomy {
   /// Brightness while dark (0..1). The JS side also covers the screen in black, so this only has to be low.
   static let dimBrightness: CGFloat = 0.02
+  /// Brightness of the remote phone while dark: low, but the screen can still be read.
+  static let remoteBrightness: CGFloat = 0.15
 
   private static var on = false
+  /// The level of the current dark state.
+  private static var level: CGFloat = dimBrightness
+  /// Whether the current dark state stopped the camera preview (to give it back).
+  private static var previewPaused = false
   /// The brightness to give back; nil while not dimmed.
   private static var saved: CGFloat?
   private static var observers: [NSObjectProtocol] = []
 
-  static func set(_ value: Bool) {
+  static func set(_ value: Bool, brightness: CGFloat = ScreenEconomy.dimBrightness, pausePreview: Bool = true) {
     if value == on { return }
     on = value
-    ReplayCameraView.setPreviewEnabled(!value)
     if value {
+      level = brightness
+      previewPaused = pausePreview
+      if pausePreview { ReplayCameraView.setPreviewEnabled(false) }
       dim()
       observe()
     } else {
+      if previewPaused { ReplayCameraView.setPreviewEnabled(true) }
+      previewPaused = false
       restore()
       stopObserving()
     }
@@ -34,7 +45,8 @@ enum ScreenEconomy {
   private static func dim() {
     guard let screen = screen else { return }
     if saved == nil { saved = screen.brightness }
-    screen.brightness = min(screen.brightness, dimBrightness)
+    // Never brighter than the player's own setting.
+    screen.brightness = min(screen.brightness, level)
   }
 
   private static func restore() {
