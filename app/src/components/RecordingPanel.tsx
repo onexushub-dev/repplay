@@ -100,8 +100,10 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
   const showEconomyNotice =
     economyOn && !economy.asleep && noticeFor !== undefined && noticeFor === state.sessionId && noticeGone !== noticeFor;
 
-  // Heat tip: the first time the phone gets warm in this recording, a few words on what helps; gone by itself.
-  const warm = state.phase === 'recording' && state.thermal.level === 'fair' && !state.thermal.degraded;
+  // Heat tip: the first time the phone gets warm in this recording, a few words on what helps; gone by itself. Also when
+  // it gets hot without a step down (a Full HD 30 recording is never lowered: the floor since 2026-10-31).
+  const hot = state.thermal.level === 'fair' || state.thermal.level === 'serious';
+  const warm = state.phase === 'recording' && hot && !state.thermal.degraded;
   const [tipFor, setTipFor] = useState<string>();
   const [tipGone, setTipGone] = useState<string>();
   if (warm && state.sessionId !== undefined && tipFor !== state.sessionId) setTipFor(state.sessionId);
