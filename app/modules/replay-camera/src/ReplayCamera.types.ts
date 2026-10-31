@@ -96,6 +96,14 @@ export type ReplayCameraModuleEvents = {
   onThermalChange: (e: { level: ThermalLevel; degraded: boolean; quality?: string }) => void;
   onInterrupted: () => void;
   onResumed: () => void;
+  /**
+   * A volume button (or a Bluetooth selfie remote, which presses "volume up") pressed as a capture event while
+   * `setCaptureButtons(true)` and the camera runs. iOS 17.2+ only. `primary`: volume down, Action button, Camera
+   * Control; `secondary`: volume up.
+   */
+  onCaptureButton: (e: { button: 'primary' | 'secondary' }) => void;
+  /** The audio route changed or the camera is restarting: the volume moves by itself for a moment. iOS only. */
+  onAudioChange: (e: { reason: string }) => void;
   /** TEMP(diag-remote): one line for the in-app diagnostic log. iOS only. */
   onDiag: (e: { message: string }) => void;
   onError: (e: { code: ReplayErrorCode; message: string }) => void;
