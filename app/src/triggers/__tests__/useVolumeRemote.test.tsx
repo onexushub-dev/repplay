@@ -5,7 +5,23 @@ import { AppState } from 'react-native';
 import { ARM_MS, SETTLE_MS, WATCH_MS, useVolumeRemote } from '../useVolumeRemote';
 
 // The phone's real volume (iOS): undefined by default, so the tests above run the library-only path (Android).
-jest.mock('../../../modules/replay-camera', () => ({ outputVolume: jest.fn(() => undefined) }));
+// Native events (`onCaptureButton`, `onAudioChange`) are kept by name so a test can fire them.
+jest.mock('../../../modules/replay-camera', () => {
+  const events: Record<string, ((e: unknown) => void) | undefined> = {};
+  return {
+    __events: events,
+    outputVolume: jest.fn(() => undefined),
+    setCaptureButtons: jest.fn(() => true),
+    addReplayListener: jest.fn((event: string, fn: (e: unknown) => void) => {
+      events[event] = fn;
+      return {
+        remove: () => {
+          if (events[event] === fn) events[event] = undefined;
+        },
+      };
+    }),
+  };
+});
 
 type Listener = (r: { volume: number }) => void;
 
@@ -31,6 +47,10 @@ jest.mock('react-native-volume-manager', () => {
 const lib = jest.requireMock('react-native-volume-manager');
 const camera = jest.requireMock('../../../modules/replay-camera');
 const press = (volume: number) => lib.__state.listeners.forEach((l: Listener) => l({ volume }));
+const fire = (event: string, body: unknown) => {
+  const fn = camera.__events[event];
+  if (fn) fn(body);
+};
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -128,6 +148,60 @@ test('coming back to the front, the volume change iOS makes is ignored, and a pr
   await act(async () => press(0.3625));
   expect(onPress).toHaveBeenCalledTimes(1);
   jest.restoreAllMocks();
+});
+
+describe('2026-10-31 field logs', () => {
+  test('a jump to the earpiece volume (1.00) when the camera restarts is not a press', async () => {
+    const onPress = jest.fn();
+    await renderHook(() => useVolumeRemote(true, onPress));
+    jest.spyOn(Date, 'now').mockReturnValue(Date.now() + ARM_MS + 500);
+    await act(async () => press(1));
+    expect(onPress).not.toHaveBeenCalled();
+    jest.restoreAllMocks();
+  });
+
+  test('after the camera restarts or the audio route changes, volume changes are ignored for a moment', async () => {
+    const onPress = jest.fn();
+    await renderHook(() => useVolumeRemote(true, onPress));
+    const t0 = Date.now() + ARM_MS + 500;
+    const now = jest.spyOn(Date, 'now').mockReturnValue(t0);
+    await act(async () => fire('onAudioChange', { reason: 'cameraRestart' }));
+    now.mockReturnValue(t0 + 300);
+    await act(async () => press(0.5625)); // one step, but it is the system's
+    expect(onPress).not.toHaveBeenCalled();
+    now.mockReturnValue(t0 + ARM_MS + 500);
+    await act(async () => press(0.625));
+    expect(onPress).toHaveBeenCalledTimes(1);
+    jest.restoreAllMocks();
+  });
+
+  test('a press that arrives as a capture event counts at once and leaves the volume alone', async () => {
+    const onPress = jest.fn();
+    await renderHook(() => useVolumeRemote(true, onPress));
+    await act(async () => {});
+    lib.VolumeManager.setVolume.mockClear();
+    await act(async () => fire('onCaptureButton', { button: 'secondary' }));
+    expect(onPress).toHaveBeenCalledTimes(1);
+    expect(lib.VolumeManager.setVolume).not.toHaveBeenCalled();
+  });
+
+  test('capture buttons stay on until the last screen listening stops', async () => {
+    const first = await renderHook(() => useVolumeRemote(true, jest.fn()));
+    const second = await renderHook(() => useVolumeRemote(true, jest.fn()));
+    expect(camera.setCaptureButtons).toHaveBeenCalledWith(true);
+    await act(async () => first.unmount());
+    expect(camera.setCaptureButtons).not.toHaveBeenCalledWith(false);
+    await act(async () => second.unmount());
+    expect(camera.setCaptureButtons).toHaveBeenLastCalledWith(false);
+  });
+
+  test('no capture event counts once the hook stops', async () => {
+    const onPress = jest.fn();
+    const { unmount } = await renderHook(() => useVolumeRemote(true, onPress));
+    await act(async () => unmount());
+    await act(async () => fire('onCaptureButton', { button: 'primary' }));
+    expect(onPress).not.toHaveBeenCalled();
+  });
 });
 
 describe('iOS: the library slider goes stale (2026-10-28 field log)', () => {

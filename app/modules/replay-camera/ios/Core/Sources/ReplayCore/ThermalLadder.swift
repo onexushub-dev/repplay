@@ -16,11 +16,13 @@ public enum ThermalLevel: Int, Comparable {
   public static func < (a: ThermalLevel, b: ThermalLevel) -> Bool { a.rawValue < b.rawValue }
 }
 
-/// How a recording steps down when the phone heats up (thermal work, item 3). The resolution Modo Foco needs is kept as
-/// long as possible: first the frame rate halves (1080p30), and only if the phone stays `serious` for
-/// `holdBeforeNextStep` does it drop to 720p30. `critical` stops the recording. It never steps back up during a session:
-/// every step restarts the writer, so going back and forth would cost saves.
+/// How a recording steps down when the phone heats up (thermal work, item 3). The player's call (2026-10-31): keep the
+/// quality as long as possible and never go below Full HD. So a step down (anything above 1080p30 becomes 1080p30, the
+/// floor) only comes once the phone has stayed `serious` for `holdBeforeNextStep`: a short hot spell costs nothing.
+/// `critical` stops the recording at once. It never steps back up during a session: every step restarts the writer
+/// (and empties the buffer), so going back and forth would cost saves.
 public struct ThermalLadder {
+  /// How long the phone must stay `serious`, without cooling to `fair` or below, before the quality goes down.
   public static let holdBeforeNextStep: TimeInterval = 120
 
   public enum Action: Equatable {
@@ -34,13 +36,11 @@ public struct ThermalLadder {
   /// When the current `serious` stretch began (or the last step was taken in it); nil while cooler.
   private var seriousSince: TimeInterval?
 
+  /// A phone already hot at the start still records what was asked: the wait starts now.
   public init(requested: String, state: ThermalLevel, now: TimeInterval) {
     self.requested = requested
     quality = requested
-    if state >= .serious, let lower = Self.step(below: requested) {
-      quality = lower
-      seriousSince = now
-    }
+    if state >= .serious { seriousSince = now }
   }
 
   /// True once the recording runs below what was asked for.
@@ -52,23 +52,20 @@ public struct ThermalLadder {
       seriousSince = nil
       return .none
     }
-    let firstStep = quality == requested
-    if !firstStep, let since = seriousSince, now - since < Self.holdBeforeNextStep { return .none }
-    if !firstStep, seriousSince == nil {
+    guard let since = seriousSince else {
       seriousSince = now
       return .none
     }
-    guard let lower = Self.step(below: quality) else { return .none }
+    guard now - since >= Self.holdBeforeNextStep, let lower = Self.step(below: quality) else { return .none }
     quality = lower
     seriousSince = now
     return .reconfigure(lower)
   }
 
-  /// The next quality down, or nil at the bottom. Anything above Full HD goes to 1080p30 first.
+  /// The next quality down, or nil at the floor (1080p30, and anything already below it). Anything above goes to 1080p30.
   public static func step(below quality: String) -> String? {
     switch quality {
-    case "720p30": return nil
-    case "1080p30": return "720p30"
+    case "720p30", "1080p30": return nil
     default: return "1080p30"
     }
   }
