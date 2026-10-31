@@ -755,11 +755,11 @@ const styles = StyleSheet.create({
   forget: { alignItems: 'center', gap: 2, marginTop: 8 },
   options: { alignSelf: 'stretch', flexDirection: 'row', gap: 10 },
   voiceHint: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  notice: { backgroundColor: 'rgba(15,16,13,0.82)', borderRadius: 14, paddingVertical: 10, paddingHorizontal: 14, alignItems: 'center', gap: 2 },
+  notice: { backgroundColor: 'rgba(12,12,12,0.82)', borderRadius: 14, paddingVertical: 10, paddingHorizontal: 14, alignItems: 'center', gap: 2 },
   noticeTitle: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.text, textAlign: 'center' },
   noticeBody: { fontFamily: fonts.body, fontSize: 12, lineHeight: 17, color: colors.soft, textAlign: 'center' },
   asleep: { alignItems: 'center', paddingTop: 96 },
-  asleepPill: { backgroundColor: 'rgba(15,16,13,0.82)', borderRadius: 14, paddingVertical: 10, paddingHorizontal: 16 },
+  asleepPill: { backgroundColor: 'rgba(12,12,12,0.82)', borderRadius: 14, paddingVertical: 10, paddingHorizontal: 16 },
   asleepText: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.soft, textAlign: 'center' },
   forgetButton: { minHeight: 44, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center' },
   forgetText: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.warning, textDecorationLine: 'underline' },
@@ -805,5 +805,5 @@ const styles = StyleSheet.create({
   saveText: { fontFamily: fonts.displayBold, fontSize: 72, letterSpacing: 2, color: colors.onAccent },
   sendingText: { fontFamily: fonts.displayBold, fontSize: 40, letterSpacing: 1, color: colors.onAccent },
   // A thin line along the bottom edge that shortens over the 3 s gap: it says "wait a moment" without looking like a loader.
-  cooldown: { position: 'absolute', bottom: 0, left: 0, height: 8, backgroundColor: 'rgba(15,16,13,0.55)' },
+  cooldown: { position: 'absolute', bottom: 0, left: 0, height: 8, backgroundColor: 'rgba(12,12,12,0.55)' },
 });

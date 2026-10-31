@@ -15,15 +15,15 @@ export interface FileProbe {
 }
 
 const key = {
-  prefs: 'repplay:v1:prefs',
-  session: (id: string) => `repplay:v1:session:${id}`,
-  clip: (id: string) => `repplay:v1:clip:${id}`,
-  clipsOf: (sessionId: string) => `repplay:v1:clips-of:${sessionId}`,
-  sessions: 'repplay:v1:sessions',
-  spentPasses: 'repplay:v1:spentPasses',
-  freeCount: (month: string) => `repplay:v1:freeCount:${month}`,
+  prefs: 'reprize:v1:prefs',
+  session: (id: string) => `reprize:v1:session:${id}`,
+  clip: (id: string) => `reprize:v1:clip:${id}`,
+  clipsOf: (sessionId: string) => `reprize:v1:clips-of:${sessionId}`,
+  sessions: 'reprize:v1:sessions',
+  spentPasses: 'reprize:v1:spentPasses',
+  freeCount: (month: string) => `reprize:v1:freeCount:${month}`,
 };
-const SESSION_PREFIX = 'repplay:v1:session:';
+const SESSION_PREFIX = 'reprize:v1:session:';
 
 /** Sessions and clips stored on the phone, one JSON value per record. IDs are UUIDs, ready for a future account. */
 export function createRepo(kv: KV, files: FileProbe, newId: () => string) {

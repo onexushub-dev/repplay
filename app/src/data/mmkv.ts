@@ -6,7 +6,7 @@ import { focusPath } from './focusFile';
 import { createRepo, type FileProbe, type KV } from './repo';
 import { thumbnailPath } from './thumbnailPath';
 
-const storage = createMMKV({ id: 'repplay' });
+const storage = createMMKV({ id: 'reprize' });
 
 export const kv: KV = {
   getString: (k) => storage.getString(k),

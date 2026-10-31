@@ -16,7 +16,7 @@ export function PanelHead({ title, hint, right }: { title: string; hint: string;
   );
 }
 
-/** A choice in a panel row: lime when it is the current one. */
+/** A choice in a panel row: amber when it is the current one. */
 export function Choice({
   label,
   a11y,

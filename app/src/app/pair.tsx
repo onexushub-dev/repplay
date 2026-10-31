@@ -49,7 +49,7 @@ function failureText(reason: RemotePairFailure, t: TFunction): string {
   }
 }
 
-/** Where the `repplay://pair?...` link (read by the Camera app from the QR code) lands. */
+/** Where the `reprize://pair?...` link (read by the Camera app from the QR code) lands. */
 export default function Pair() {
   const { t } = useT();
   const params = useLocalSearchParams<{ h?: string; s?: string; n?: string }>();

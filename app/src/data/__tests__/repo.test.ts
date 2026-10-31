@@ -179,9 +179,9 @@ test('updateClip stores the new trim and edit', () => {
 test('listSessions finds games stored before the game index existed', () => {
   const map = new Map<string, string>();
   const old = { id: 'old', sport: 'beachTennis', startedAt: 5, endedAt: 9 };
-  map.set('repplay:v1:session:old', JSON.stringify(old));
-  map.set('repplay:v1:clip:c1', JSON.stringify({ id: 'c1', sessionId: 'old', createdAt: 6, source: 'screen', path: '/a.mp4', durationMs: 1, trim: { startMs: 0, endMs: 1 } }));
-  map.set('repplay:v1:clips-of:old', JSON.stringify(['c1']));
+  map.set('reprize:v1:session:old', JSON.stringify(old));
+  map.set('reprize:v1:clip:c1', JSON.stringify({ id: 'c1', sessionId: 'old', createdAt: 6, source: 'screen', path: '/a.mp4', durationMs: 1, trim: { startMs: 0, endMs: 1 } }));
+  map.set('reprize:v1:clips-of:old', JSON.stringify(['c1']));
   const repo = createRepo(memoryKV(map), fakeFiles({ '/a.mp4': 1 }), () => 'x');
   expect(repo.listSessions().map((g) => g.session.id)).toEqual(['old']);
 });
@@ -239,11 +239,11 @@ test('deleteSession removes the game, its clips and the index entry, and returns
 
 test('spentPasses migrates from existing sessions when the key is missing', () => {
   const map = new Map<string, string>();
-  map.set('repplay:v1:session:a', JSON.stringify({ id: 'a', sport: 'quadra', startedAt: 1, passTransactionId: 'old' }));
-  map.set('repplay:v1:session:b', JSON.stringify({ id: 'b', sport: 'quadra', startedAt: 2 }));
+  map.set('reprize:v1:session:a', JSON.stringify({ id: 'a', sport: 'quadra', startedAt: 1, passTransactionId: 'old' }));
+  map.set('reprize:v1:session:b', JSON.stringify({ id: 'b', sport: 'quadra', startedAt: 2 }));
   const repo = createRepo(memoryKV(map), fakeFiles({}), () => 'x');
   expect([...repo.spentPasses()]).toEqual(['old']);
-  expect(map.has('repplay:v1:spentPasses')).toBe(true);
+  expect(map.has('reprize:v1:spentPasses')).toBe(true);
 });
 
 test('spendPasses dedupes and only notifies on change', () => {
@@ -259,7 +259,7 @@ test('spendPasses dedupes and only notifies on change', () => {
 
 const legacy = () => {
   const map = new Map<string, string>();
-  map.set('repplay:v1:session:a', JSON.stringify({ id: 'a', sport: 'quadra', startedAt: 1, passTransactionId: 'old' }));
+  map.set('reprize:v1:session:a', JSON.stringify({ id: 'a', sport: 'quadra', startedAt: 1, passTransactionId: 'old' }));
   return map;
 };
 const repoOver = (map: Map<string, string>) => createRepo(memoryKV(map), fakeFiles({}), () => 'new');
@@ -273,14 +273,14 @@ test('deleting a legacy paid game before any ledger read keeps its id spent', ()
 test('spentPasses rebuilds from games when the ledger is corrupt or not an array', () => {
   for (const bad of ['{not json', '{"a":1}']) {
     const map = legacy();
-    map.set('repplay:v1:spentPasses', bad);
+    map.set('reprize:v1:spentPasses', bad);
     expect([...repoOver(map).spentPasses()]).toEqual(['old']);
   }
 });
 
 test('a corrupt game record does not break migration or startSession', () => {
   const map = legacy();
-  map.set('repplay:v1:session:bad', '{oops');
+  map.set('reprize:v1:session:bad', '{oops');
   const repo = repoOver(map);
   expect(() => repo.startSession('quadra', 5, { paid: true, passTransactionId: 'tx-9' })).not.toThrow();
   expect(repo.spentPasses().has('old')).toBe(true);
@@ -293,7 +293,7 @@ test('fresh install: empty ledger', () => {
 
 test('an existing ledger key is left alone', () => {
   const map = legacy();
-  map.set('repplay:v1:spentPasses', JSON.stringify(['kept']));
+  map.set('reprize:v1:spentPasses', JSON.stringify(['kept']));
   expect([...repoOver(map).spentPasses()]).toEqual(['kept']);
 });
 
@@ -345,7 +345,7 @@ test('startSession does not write the first-session marker', () => {
   const map = new Map<string, string>();
   const repo = createRepo(memoryKV(map), fakeFiles({}), () => 'id-1');
   repo.startSession('quadra', 1, { paid: false });
-  expect(map.get('repplay:v1:firstSessionUsed')).toBeUndefined();
+  expect(map.get('reprize:v1:firstSessionUsed')).toBeUndefined();
 });
 
 test('a legacy game has no paid flag and the migration still ledgers its pass', () => {
@@ -384,11 +384,11 @@ describe('free monthly counter', () => {
     repo.deleteSession(b.id);
     expect(repo.freeCount(t)).toBe(2);
     expect(repo.freeCount(t2)).toBe(0);
-    expect(map.get('repplay:v1:freeCount:2026-10')).toBe('2');
+    expect(map.get('reprize:v1:freeCount:2026-10')).toBe('2');
   });
 
   test.each(['abc', '-3', '1.5'])('corrupt value %s reads 0 and the next start writes 1', (bad) => {
-    const map = new Map<string, string>([['repplay:v1:freeCount:2026-10', bad]]);
+    const map = new Map<string, string>([['reprize:v1:freeCount:2026-10', bad]]);
     const repo = createRepo(memoryKV(map), fakeFiles({}), () => 'x');
     expect(repo.freeCount(t)).toBe(0);
     repo.startSession('quadra', t, { paid: false });
@@ -396,7 +396,7 @@ describe('free monthly counter', () => {
   });
 
   test('old sessions without a counter do not count', () => {
-    const map = new Map<string, string>([['repplay:v1:session:old', JSON.stringify({ id: 'old', sport: 'quadra', startedAt: t })]]);
+    const map = new Map<string, string>([['reprize:v1:session:old', JSON.stringify({ id: 'old', sport: 'quadra', startedAt: t })]]);
     const repo = createRepo(memoryKV(map), fakeFiles({}), () => 'x');
     expect(repo.freeCount(t)).toBe(0);
   });

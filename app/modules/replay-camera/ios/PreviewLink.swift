@@ -11,10 +11,10 @@ import os
 /// sends the token, and reads `[length, 4 bytes big-endian][sealed JPEG]` packets (`BleSession`, so nobody nearby can
 /// watch or inject pictures). A slow link drops pictures instead of queueing them.
 enum PreviewLink {
-  static let serviceType = "_repplay-remote._tcp"
+  static let serviceType = "_reprize-remote._tcp"
   static let tokenSize = 16
   static let maxPacket = 2_000_000
-  static let log = Logger(subsystem: "Repplay", category: "Preview")
+  static let log = Logger(subsystem: "Reprize", category: "Preview")
 
   static func parameters() -> NWParameters {
     let parameters = NWParameters.tcp
@@ -47,7 +47,7 @@ final class PreviewServer {
   }
 
   let serviceName = "lance-" + String(UUID().uuidString.prefix(8)).lowercased()
-  private let queue = DispatchQueue(label: "repplay.preview.server")
+  private let queue = DispatchQueue(label: "reprize.preview.server")
   private var listener: NWListener?
   /// One grant per remote id, kept while the remote is paired so a reconnect reuses it.
   private var grants: [String: Grant] = [:]
@@ -164,7 +164,7 @@ final class PreviewClient {
     let key: Data
   }
 
-  private let queue = DispatchQueue(label: "repplay.preview.client")
+  private let queue = DispatchQueue(label: "reprize.preview.client")
   private var target: Target?
   private var connection: NWConnection?
   private var session: BleSession?

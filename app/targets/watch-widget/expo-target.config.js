@@ -1,12 +1,12 @@
 // The watch app and its widget share one app group, named after the watch app's bundle id (see WatchSharedState).
-const bundleId = process.env.REPPLAY_BUNDLE_ID || process.env.LANCE_BUNDLE_ID || 'app.repplay.mobile';
+const bundleId = process.env.REPRIZE_BUNDLE_ID || process.env.REPPLAY_BUNDLE_ID || process.env.LANCE_BUNDLE_ID || 'app.reprize.mobile';
 const group = `group.${bundleId}.watch`;
 
 /** @type {import('@bacons/apple-targets/app.plugin').Config} */
 module.exports = {
   type: 'watch-widget',
-  name: 'Repplay Watch Widget',
-  displayName: 'Repplay',
+  name: 'Reprize Watch Widget',
+  displayName: 'Reprize',
   bundleIdentifier: '.watch.widget',
   deploymentTarget: '11.0',
   frameworks: ['SwiftUI', 'WidgetKit'],
@@ -14,6 +14,6 @@ module.exports = {
     'com.apple.security.application-groups': [group],
   },
   colors: {
-    $accent: '#D6F23F',
+    $accent: '#FFB000',
   },
 };

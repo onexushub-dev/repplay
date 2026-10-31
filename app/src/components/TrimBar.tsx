@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: colors.accent,
     borderRadius: 10,
-    backgroundColor: 'rgba(214,242,63,0.12)',
+    backgroundColor: 'rgba(255,176,0,0.12)',
   },
   handle: { position: 'absolute', top: 0, bottom: 0, width: HANDLE, alignItems: 'center', justifyContent: 'center' },
   grip: { width: 12, height: 32, borderRadius: 4, backgroundColor: colors.accent },

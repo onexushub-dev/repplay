@@ -31,7 +31,7 @@ type Tier = Plan | 'pass' | 'pro';
  * when on, ready, not turned and not zoomed by hand.
  */
 /**
- * true: every clip carries the Repplay mark, on every plan. false (the rule since 2026-10-27): only free recordings
+ * true: every clip carries the Reprize mark, on every plan. false (the rule since 2026-10-27): only free recordings
  * carry it, Pro and the Single Pass never do.
  */
 export const WATERMARK_ON_EVERY_PLAN = false as boolean;

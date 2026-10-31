@@ -17,7 +17,7 @@ enum FocusAnalyzer {
 
   static let stepMs = 100.0
   static let minConfidence: VNConfidence = 0.3
-  private static let work = DispatchQueue(label: "repplay.focus", qos: .utility)
+  private static let work = DispatchQueue(label: "reprize.focus", qos: .utility)
   private static let lock = NSLock()
   nonisolated(unsafe) private static var cancelled = Set<String>() // guarded by `lock`
 

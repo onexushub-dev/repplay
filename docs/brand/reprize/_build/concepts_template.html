@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reprize: conceitos de logo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@800&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root { --ink:#0B0B09; --paper:#F3EDE1; --lime:#D6F23F; --olive:#5F7D0B; --olive-text:#4E6609; --bg:#ECEBE6; --fg:#14150F; --muted:#55584F; --rule:#D3D1C8; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.6 Manrope, system-ui, sans-serif; }
+.hero { background:var(--ink); color:var(--paper); padding:48px 24px 56px; }
+.hero > div, main { max-width:1180px; margin:0 auto; }
+main { padding:0 24px 112px; }
+.eyebrow { font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#A9A79C; }
+.hero .lk { width:min(760px, 90vw); height:auto; display:block; margin:56px 0 44px; }
+.hero h1 { font:800 clamp(36px, 5vw, 60px)/1 "Barlow Condensed", sans-serif; text-transform:uppercase; margin:0; max-width:22ch; }
+.hero h1 em { font-style:normal; color:var(--lime); }
+.hero p { color:#CFCBBF; max-width:66ch; margin:18px 0 0; }
+section { padding-top:64px; }
+h3 { font:800 40px/1 "Barlow Condensed", sans-serif; text-transform:uppercase; margin:0 0 12px; }
+.lead { max-width:68ch; color:#33352E; margin:0 0 28px; }
+.cards { display:grid; gap:28px; }
+.c { background:#fff; border:1px solid var(--rule); border-radius:24px; padding:28px; display:grid; gap:14px; }
+.c.rec { border:2px solid var(--fg); }
+.ch { display:flex; align-items:center; gap:14px; }
+.ch .l { font:800 32px/1 "Barlow Condensed", sans-serif; color:var(--olive-text); }
+.ch h2 { margin:0; font-size:24px; }
+.tag { margin-left:auto; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; background:var(--lime); color:var(--ink); padding:5px 12px; border-radius:99px; }
+.tile { border-radius:16px; display:flex; align-items:center; justify-content:center; padding:36px 28px; }
+.tile.dark { background:var(--ink); } .tile.light { background:#F7F6F1; border:1px solid var(--rule); }
+.tile .lk { width:min(640px, 100%); height:auto; }
+.row { display:grid; grid-template-columns:1.6fr 1fr; gap:14px; }
+.row .lk { width:100%; }
+.small { flex-direction:column; gap:12px; } .small .wo { width:140px; height:auto; } .small small { color:var(--muted); font-size:12.5px; font-weight:600; }
+.idea { font-size:17px; font-weight:600; max-width:72ch; margin:8px 0 0; }
+.c ul { margin:0; padding-left:20px; color:#33352E; } .c li { margin-bottom:4px; }
+.risk { color:#33352E; margin:0; } .risk b { color:var(--fg); }
+.zooms { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; }
+.zooms figure { margin:0; } .zoom svg { width:100%; height:auto; } .zoom { padding:24px; }
+.zooms figcaption { font-weight:700; margin-top:10px; }
+.app { display:flex; gap:40px; align-items:center; flex-wrap:wrap; }
+.app > svg { width:150px; height:150px; filter:drop-shadow(0 14px 22px rgba(0,0,0,.18)); }
+.store { display:flex; gap:18px; align-items:center; background:#fff; border:1px solid var(--rule); border-radius:22px; padding:22px; }
+.store .aicon svg { width:104px; height:104px; display:block; }
+.store .t { font-weight:800; font-size:20px; line-height:1.2; } .store .st { color:#6B6B70; margin:2px 0 14px; }
+.store .get { display:inline-block; background:#0A84FF; color:#fff; font-weight:700; font-size:15px; padding:5px 22px; border-radius:99px; }
+.note { background:#fff; border:1px solid var(--rule); border-radius:16px; padding:18px 22px; color:#33352E; max-width:80ch; }
+@media (max-width:760px) { .row { grid-template-columns:1fr; } }
+</style></head>
+<body>
+<header class="hero"><div>
+  <div class="eyebrow">Reprize · conceitos de logo · rodada 1</div>
+  %HERO%
+  <h1>O R continua. <em>O z vira a assinatura.</em></h1>
+  <p>O símbolo é o mesmo R do kit atual, com o retroceder e o play. O nome usa as letras r, e e p do logotipo do Repplay; o i e o z foram desenhados no mesmo traço. Três caminhos para o detalhe que dá identidade ao nome.</p>
+</div></header>
+<main>
+<section>
+  <h3>Três caminhos</h3>
+  <p class="lead">Cada caminho aparece no fundo escuro (paper e lima), no fundo claro (tinta e oliva) e com a palavra sozinha em tamanho pequeno, para ver se o detalhe sobrevive.</p>
+  <div class="cards">%CARDS%</div>
+</section>
+<section>
+  <h3>O detalhe de perto</h3>
+  <p class="lead">A letra que carrega a ideia em cada caminho, ampliada.</p>
+  <div class="zooms">%ZOOM%</div>
+</section>
+<section>
+  <h3>Ícone e loja</h3>
+  <p class="lead">O ícone não muda: é o símbolo R, igual ao do kit atual. O nome novo aparece na loja.</p>
+  <div class="app">%ICON%%STORE%</div>
+</section>
+<section>
+  <p class="note">O i e o z são desenhos novos, feitos para acompanhar as letras traçadas da arte aprovada. Para a versão final, um designer deve fazer o ajuste fino de espessura e espaçamento. O registro do nome (Reprise Records e a empresa Reprise têm o mesmo som) continua pendente no INPI.</p>
+</section>
+</main>
+</body></html>

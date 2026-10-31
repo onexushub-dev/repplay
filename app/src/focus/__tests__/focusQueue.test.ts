@@ -28,7 +28,7 @@ function setup(opts: { supported?: boolean } = {}) {
   const addOldClip = (path: string) => {
     const clip = addClip(path);
     const { bounds: _bounds, ...old } = clip;
-    map.set(`repplay:v1:clip:${clip.id}`, JSON.stringify(old));
+    map.set(`reprize:v1:clip:${clip.id}`, JSON.stringify(old));
     return old as Clip;
   };
   return { repo, deps, queue, runs, addClip, addOldClip, done, flush };

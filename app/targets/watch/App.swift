@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct RepplayWatchApp: App {
+struct ReprizeWatchApp: App {
   var body: some Scene {
     WindowGroup {
       ContentView()

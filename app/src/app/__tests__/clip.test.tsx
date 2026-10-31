@@ -743,7 +743,7 @@ describe('Modo Foco', () => {
       expect(screen.getByText('Full HD (1080p) incluso')).toBeTruthy();
       expect(screen.getByText('Sem som')).toBeTruthy();
       expect(screen.getByText('Sem o Modo Foco')).toBeTruthy();
-      expect(screen.getByText('Com a marca do Repplay')).toBeTruthy();
+      expect(screen.getByText('Com a marca do Reprize')).toBeTruthy();
     });
 
     test('"Continuar no plano grátis" exports Full HD at 1x with the mark, no sound and no framing', async () => {

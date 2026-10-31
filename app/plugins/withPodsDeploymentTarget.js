@@ -2,9 +2,9 @@ const { withDangerousMod } = require('expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
-const MARKER = '# repplay: raise old pod deployment targets';
-// Podfiles generated before the rename carry the old marker; do not add the block a second time.
-const LEGACY_MARKER = '# lance: raise old pod deployment targets';
+const MARKER = '# reprize: raise old pod deployment targets';
+// Podfiles generated before the renames carry an old marker; do not add the block a second time.
+const LEGACY_MARKERS = ['# repplay: raise old pod deployment targets', '# lance: raise old pod deployment targets'];
 
 /**
  * Some third-party pods (Mute, from the volume-manager library) still declare iOS 9. Xcode 27 only accepts 15.0+
@@ -16,7 +16,7 @@ module.exports = function withPodsDeploymentTarget(config) {
     async (cfg) => {
       const file = path.join(cfg.modRequest.platformProjectRoot, 'Podfile');
       let podfile = fs.readFileSync(file, 'utf8');
-      if (podfile.includes(MARKER) || podfile.includes(LEGACY_MARKER)) return cfg;
+      if (podfile.includes(MARKER) || LEGACY_MARKERS.some((m) => podfile.includes(m))) return cfg;
       const anchor = /(react_native_post_install\([\s\S]*?\n\s*\)\n)/;
       if (!anchor.test(podfile)) throw new Error('withPodsDeploymentTarget: post_install anchor not found in the Podfile');
       podfile = podfile.replace(

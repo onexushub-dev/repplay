@@ -103,7 +103,7 @@ test('looks for the camera phone while open, and lets go on leaving', async () =
 test('without a pair it says which iPhone is which and explains the steps', async () => {
   await render(<Remote />);
   expect(screen.getByText('ESTE IPHONE É O CONTROLE')).toBeTruthy();
-  expect(screen.getByText('No celular que vai filmar, abra o Repplay e toque em “Celular” para começar o pareamento.')).toBeTruthy();
+  expect(screen.getByText('No celular que vai filmar, abra o Reprize e toque em “Celular” para começar o pareamento.')).toBeTruthy();
   expect(screen.getByText('Aponte a câmera deste celular para o código QR que aparece lá.')).toBeTruthy();
   expect(screen.getByText('Não consegue ler o QR? Digite aqui o código de 6 números:')).toBeTruthy();
   expect(screen.queryByText(/tile/i)).toBeNull();
@@ -137,7 +137,7 @@ test('a code that never gets an answer stops spinning and says the camera was no
   });
   expect(screen.getByRole('button', { name: 'Conectar' })).toBeTruthy();
   expect(
-    screen.getByText('Não encontrei o celular da câmera. Chegue mais perto e confira se o Repplay está aberto lá.'),
+    screen.getByText('Não encontrei o celular da câmera. Chegue mais perto e confira se o Reprize está aberto lá.'),
   ).toBeTruthy();
 });
 
@@ -161,7 +161,7 @@ test('a failed pairing by code says why', async () => {
   await render(<Remote />);
   await emit('onRemotePairing', { phase: 'failed', reason: 'notFound' });
   expect(
-    screen.getByText('Não encontrei o celular da câmera. Chegue mais perto e confira se o Repplay está aberto lá.'),
+    screen.getByText('Não encontrei o celular da câmera. Chegue mais perto e confira se o Reprize está aberto lá.'),
   ).toBeTruthy();
   await emit('onRemotePairing', { phase: 'failed', reason: 'expired' });
   expect(screen.getByText('Código vencido. Peça um novo no celular da câmera.')).toBeTruthy();
@@ -323,7 +323,7 @@ test('Bluetooth not allowed for the app sends the player to Settings', async () 
   const open = jest.spyOn(Linking, 'openSettings').mockResolvedValue(undefined);
   await render(<Remote />);
   await emit('onRemoteStatus', { side: 'remote', link: 'denied', reason: 'unauthorized' });
-  expect(screen.getByText('Libere o Bluetooth para o Repplay nos Ajustes para usar o controle.')).toBeTruthy();
+  expect(screen.getByText('Libere o Bluetooth para o Reprize nos Ajustes para usar o controle.')).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: 'Abrir Ajustes' }));
   expect(open).toHaveBeenCalled();
 });
@@ -476,7 +476,7 @@ test('"Esquecer esta câmera" says whose pairing goes away, asks first, then for
   alert.mockRestore();
 });
 
-const LINK = 'repplay://pair?h=host1&s=AAAAAAAAAAAAAAAAAAAAAA&n=Quadra%201';
+const LINK = 'reprize://pair?h=host1&s=AAAAAAAAAAAAAAAAAAAAAA&n=Quadra%201';
 
 test('the QR code is read right here and pairs with that camera phone', async () => {
   await render(<Remote />);
@@ -485,7 +485,7 @@ test('the QR code is read right here and pairs with that camera phone', async ()
   expect(screen.getByRole('button', { name: 'Conectando…' })).toBeTruthy();
 });
 
-test('a QR code that is not from Repplay is ignored', async () => {
+test('a QR code that is not from Reprize is ignored', async () => {
   await render(<Remote />);
   await act(async () => mockScanner.onBarcodeScanned!({ data: 'https://example.com' }));
   expect(camera().remoteControllerPairWithLink).not.toHaveBeenCalled();

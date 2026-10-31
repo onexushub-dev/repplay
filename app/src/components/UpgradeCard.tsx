@@ -7,7 +7,7 @@ import { ProBadge } from './ProBadge';
 type Props = { title: string; message: string; action: string; badge: string; onPress: () => void };
 
 /**
- * An invitation to unlock what the free plan holds back: the lime outline and the one small "Pro" pill of the paid
+ * An invitation to unlock what the free plan holds back: the amber outline and the one small "Pro" pill of the paid
  * groups, a crown, a title, a short message and the action under it. The whole card is the button.
  */
 export function UpgradeCard({ title, message, action, badge, onPress }: Props) {
@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
     borderColor: colors.accent,
     backgroundColor: colors.surface,
   },
-  icon: { width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(214, 242, 63, 0.12)', alignItems: 'center', justifyContent: 'center' },
+  icon: { width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,176,0, 0.12)', alignItems: 'center', justifyContent: 'center' },
   text: { flex: 1, minWidth: 0, gap: 4 },
   title: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.text },
   message: { fontFamily: fonts.body, fontSize: 12, lineHeight: 17, color: colors.muted },

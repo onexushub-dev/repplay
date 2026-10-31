@@ -9,8 +9,8 @@ import Speech
 final class RemoteVoice {
   static let shared = RemoteVoice()
 
-  /// Console.app (filter: subsystem `Repplay`, category `RemoteVoice`).
-  private static let log = Logger(subsystem: "Repplay", category: "RemoteVoice")
+  /// Console.app (filter: subsystem `Reprize`, category `RemoteVoice`).
+  private static let log = Logger(subsystem: "Reprize", category: "RemoteVoice")
 
   /// Same shape as WatchBridge.emit: (event name, body).
   var emit: ((String, [String: Any]) -> Void)?

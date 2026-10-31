@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reprize: o retroceder do R</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@800&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root { --ink:#0B0B09; --paper:#F3EDE1; --lime:#D6F23F; --bg:#ECEBE6; --fg:#14150F; --muted:#55584F; --rule:#D3D1C8; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.6 Manrope, system-ui, sans-serif; }
+.hero { background:var(--ink); color:var(--paper); padding:48px 24px 56px; }
+.hero > div, main { max-width:1180px; margin:0 auto; } main { padding:56px 24px 112px; }
+.eyebrow { font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#A9A79C; }
+.hero .lk { width:min(800px, 92vw); height:auto; display:block; margin:52px 0 40px; }
+.hero h1 { font:800 clamp(36px, 5vw, 58px)/1 "Barlow Condensed", sans-serif; text-transform:uppercase; margin:0; max-width:24ch; }
+.hero h1 em { font-style:normal; color:var(--lime); }
+.hero p { color:#CFCBBF; max-width:66ch; margin:18px 0 0; }
+.cards { display:grid; gap:24px; }
+.c { background:#fff; border:1px solid var(--rule); border-radius:24px; padding:28px; display:grid; gap:14px; }
+.c.rec { border:2px solid var(--fg); }
+.ch { display:flex; align-items:center; gap:14px; } .ch h2 { margin:0; font-size:24px; }
+.tag { margin-left:auto; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; background:var(--lime); color:var(--ink); padding:5px 12px; border-radius:99px; }
+.tile { border-radius:16px; display:flex; align-items:center; justify-content:center; padding:32px 28px; }
+.tile.dark { background:var(--ink); } .tile.light { background:#F7F6F1; border:1px solid var(--rule); }
+.tile .lk { width:min(680px, 100%); height:auto; } .tile .sy { width:220px; height:auto; }
+.row { display:grid; grid-template-columns:1fr 1.3fr; gap:14px; }
+.sizes { gap:28px; } .sizes .ic { width:120px; height:120px; }
+.px { display:flex; align-items:flex-end; gap:16px; flex-wrap:wrap; } .px small { width:100%; color:var(--muted); font-size:12.5px; font-weight:600; }
+.idea { font-size:17px; font-weight:600; max-width:76ch; margin:6px 0 0; } .risk { margin:0; color:#33352E; } .risk b { color:var(--fg); }
+@media (max-width:760px) { .row { grid-template-columns:1fr; } }
+</style></head>
+<body>
+<header class="hero"><div>
+  <div class="eyebrow">Reprize · caminho C · teste do retroceder · %ROUND%</div>
+  %HERO%
+  <h1>Voltar, <em>depois dar play.</em></h1>
+  <p>%LEAD%</p>
+</div></header>
+<main><div class="cards">%CARDS%</div></main>
+</body></html>

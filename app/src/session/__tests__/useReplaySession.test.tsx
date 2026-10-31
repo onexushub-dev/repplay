@@ -57,7 +57,7 @@ function fakeDeps() {
     camera,
     deleted,
     // Every game written, with clips or not (listSessions only lists games with clips).
-    sessionIds: (): string[] => JSON.parse(map.get('repplay:v1:sessions') ?? '[]'),
+    sessionIds: (): string[] => JSON.parse(map.get('reprize:v1:sessions') ?? '[]'),
     emit: (event: string, e: any = {}) => listeners.get(event)?.(e),
     advance: (ms: number) => void (t += ms),
     finishSave: (v: { clipPath: string; durationMs: number; shortSide?: number } = { clipPath: '/c.mp4', durationMs: 60000 }) => pendingSave?.(v),

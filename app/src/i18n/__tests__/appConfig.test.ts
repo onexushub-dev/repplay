@@ -30,10 +30,10 @@ test('the speech prompt names the words of its language', () => {
   for (const word of VOICE_WORDS['pt-BR']) expect(ptStrings.ios.NSSpeechRecognitionUsageDescription).toContain(`"${word}"`);
 });
 
-test('the brand is Repplay in every prompt', () => {
+test('the brand is Reprize in every prompt', () => {
   for (const key of PERMISSIONS) {
-    expect(enStrings.ios[key]).toContain('Repplay');
-    expect(ptStrings.ios[key]).toContain('Repplay');
+    expect(enStrings.ios[key]).toContain('Reprize');
+    expect(ptStrings.ios[key]).toContain('Reprize');
   }
 });
 

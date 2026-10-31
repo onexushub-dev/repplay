@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
   statValue: { fontFamily: fonts.displayBold, fontSize: 28, color: colors.text },
   statLabel: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
   note: { fontFamily: fonts.body, fontSize: 12, color: colors.muted, marginTop: -8 },
-  // The same pattern as the paid groups on the setup screen: lime outline and one small "Pro" pill on the border.
+  // The same pattern as the paid groups on the setup screen: amber outline and one small "Pro" pill on the border.
   grid: { gap: 10, paddingBottom: 12 },
   gridRow: { gap: 10 },
   footer: { gap: 8, paddingBottom: 12 },

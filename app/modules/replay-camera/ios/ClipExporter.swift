@@ -141,7 +141,7 @@ enum FocusFile {
           let startMs = (file["startMs"] as? NSNumber)?.doubleValue,
           let rows = file[aspect] as? [[NSNumber]]
     else {
-      NSLog("[Repplay] Modo Foco file unreadable: %@", path)
+      NSLog("[Reprize] Modo Foco file unreadable: %@", path)
       return []
     }
     let rects = rows.compactMap { row -> FocusRect? in
