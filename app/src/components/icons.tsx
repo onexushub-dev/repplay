@@ -35,12 +35,11 @@ export function QrIcon({ color = colors.text, size = 22 }: IconProps) {
 }
 
 /**
- * A player waving both arms above the head, moving like the figure on the gesture's "?" sheet: the arms swing from
- * side to side. Not two arms held still: just raising them is not the gesture to learn (2026-11-01). With Reduce Motion
- * on, a curved arrow over the arms says "side to side" instead.
+ * The wave gesture (option C5, 2026-11-01), moving like the figure on the gesture's "?" sheet: arms open in a V and
+ * cross over the head, with motion marks beside the hands. It fills the 24-unit box and has their default size (20, like the voice, remote and watch icons).
  */
-export function WaveIcon({ color = colors.text, size = 22 }: IconProps) {
-  return <WavingFigure size={size} color={color} strokeWidth={1.8} stillArrow />;
+export function WaveIcon({ color = colors.text, size = 20 }: IconProps) {
+  return <WavingFigure size={size} color={color} strokeWidth={1.8} />;
 }
 
 export function ShareIcon({ color = colors.text, size = 22 }: IconProps) {
