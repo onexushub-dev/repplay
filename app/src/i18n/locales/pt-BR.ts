@@ -65,7 +65,7 @@ export const ptBR: Messages = {
     },
     wave: {
       name: 'Acenar com os braços',
-      how: 'Levante os dois braços acima da cabeça, dentro do enquadramento.',
+      how: 'Acene com os dois braços acima da cabeça, de um lado para o outro.',
       when: 'Para salvar sem sair da sua posição.',
     },
     voice: {
@@ -175,7 +175,7 @@ export const ptBR: Messages = {
     myRecordings: 'Minhas gravações',
     lastReady: 'Últimos %{seconds}s prontos',
     orSay: 'ou diga “%{word}”',
-    orWave: 'ou acene com os braços',
+    orWave: 'ou acene com os braços acima da cabeça',
     orRemote: 'ou use o controle',
     tapAnywhere: 'Toque em qualquer lugar para salvar o clipe',
     recording: 'Gravando',
@@ -520,6 +520,15 @@ export const ptBR: Messages = {
       quadra: 'Atrás da linha de fundo, na altura do ombro',
       academia: 'No chão ou no tripé, a 2–3 m, de lado para o exercício',
     },
+  },
+  gestureGuide: {
+    help: 'Como fazer o gesto',
+    title: 'Como acenar',
+    stay: 'Fique dentro do enquadramento, de frente para o celular.',
+    practice: 'Treine aqui',
+    waiting: 'Afaste-se alguns passos, fique de frente para a câmera e acene.',
+    raised: 'Braços levantados: agora acene',
+    done: 'Gesto reconhecido',
   },
   sources: {
     screen: 'Tela',

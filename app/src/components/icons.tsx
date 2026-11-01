@@ -33,13 +33,16 @@ export function QrIcon({ color = colors.text, size = 22 }: IconProps) {
   );
 }
 
-/** A player with both arms up, with small motion arcs beside the hands: raise them or wave them to save. */
-export function ArmsUpIcon({ color = colors.text, size = 22 }: IconProps) {
+/**
+ * A player waving both arms above the head: arms up in a V, and a curved arrow over them going both ways (side to
+ * side). Not two arms held straight up: just raising them is not the gesture to learn (2026-11-01).
+ */
+export function WaveIcon({ color = colors.text, size = 22 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityElementsHidden>
-      <Circle cx={12} cy={8} r={2} {...stroke(color)} />
-      <Path d="M8 2v9l4 1 4-1V2M12 12v4M9 22l3-6 3 6" {...stroke(color)} />
-      <Path d="M5 3.5c-1 1.2-1 3 0 4.2M19 3.5c1 1.2 1 3 0 4.2" {...stroke(color)} />
+      <Circle cx={12} cy={10.2} r={1.9} {...stroke(color)} />
+      <Path d="M12 12.6v4.4M9.6 22l2.4-5 2.4 5M10.9 13.2 7.6 6.6M13.1 13.2l3.3-6.6" {...stroke(color)} />
+      <Path d="M6.2 4.2Q12 .4 17.8 4.2M6.2 4.2l2-.3M6.2 4.2l.8 1.8M17.8 4.2l-2-.3M17.8 4.2l-.8 1.8" {...stroke(color)} />
     </Svg>
   );
 }

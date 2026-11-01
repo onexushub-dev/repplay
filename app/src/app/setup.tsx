@@ -26,12 +26,13 @@ import { Chip } from '../components/Chip';
 import { CompactDock } from '../components/CompactDock';
 import { EconomyButton } from '../components/EconomyButton';
 import { EconomyToast } from '../components/EconomyToast';
+import { GestureSheet } from '../components/GestureSheet';
 import { modeTip } from '../components/format';
 import { sourceLabel } from '../components/sourceLabel';
 import { PositionGuide } from '../components/PositionGuide';
 import { RecordingPanel } from '../components/RecordingPanel';
 import { ProBadge } from '../components/ProBadge';
-import { ArmsUpIcon, MicIcon, QrIcon, RemoteIcon, TapIcon, WatchIcon } from '../components/icons';
+import { MicIcon, QrIcon, RemoteIcon, TapIcon, WatchIcon, WaveIcon } from '../components/icons';
 import { TriggerTile } from '../components/TriggerTile';
 import { ZoomBubble } from '../components/ZoomBubble';
 import { ZoomButton } from '../components/ZoomButton';
@@ -148,6 +149,8 @@ export default function Setup() {
   const remoteReady = remoteView.state !== 'setup';
   // The sheet opens collapsed so the camera and its guide stay visible; mode and triggers sit behind the summary.
   const [expanded, setExpanded] = useState(false);
+  // The wave gesture's "?": how to do it, and practice with the live camera.
+  const [gestureHelp, setGestureHelp] = useState(false);
   const [sheetHeight, setSheetHeight] = useState(0);
   // Swipe up on the sheet opens it, swipe down closes it; taps still reach the controls inside.
   const [swipe] = useState(() =>
@@ -282,6 +285,8 @@ export default function Setup() {
   });
 
   const { phase, error, camera } = session.state;
+  // The gesture practice belongs to the setup: a game starting closes it.
+  if (gestureHelp && phase !== 'idle') setGestureHelp(false);
   const { prepare, release } = session;
 
   // Live preview while positioning; the buffer starts filling now, so "Começar gravação" is instant.
@@ -344,6 +349,9 @@ export default function Setup() {
       ) : (
         renderSetupControls()
       )}
+      {gestureHelp ? (
+        <GestureSheet visible={live && phase === 'idle'} onClose={() => setGestureHelp(false)} />
+      ) : null}
     </View>
   );
 
@@ -428,7 +436,7 @@ export default function Setup() {
         </View>
         <View style={styles.summaryIcons}>
           <MicIcon color={iconColor(voiceOn)} size={32} />
-          <ArmsUpIcon color={iconColor(settings.gestureEnabled)} size={32} />
+          <WaveIcon color={iconColor(settings.gestureEnabled)} size={32} />
           <RemoteIcon color={iconColor(remoteReady && remoteAllowed)} size={32} />
           <WatchIcon color={iconColor(watchOn)} size={32} />
           {remoteSupported ? <QrIcon color={iconColor(remoteLinked > 0)} size={32} /> : null}
@@ -541,11 +549,12 @@ export default function Setup() {
               onPress={voiceSupported ? () => void toggleVoice() : undefined}
             />
             <TriggerTile
-              icon={<ArmsUpIcon />}
+              icon={<WaveIcon />}
               title={sourceLabel('gesture', locale)}
               status={settings.gestureEnabled ? t('setup.on') : t('setup.off')}
               active={settings.gestureEnabled}
               onPress={() => updateMode({ gestureEnabled: !settings.gestureEnabled })}
+              help={{ label: t('gestureGuide.help'), onPress: () => setGestureHelp(true) }}
             />
           </View>
         </View>
