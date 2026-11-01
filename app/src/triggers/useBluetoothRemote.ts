@@ -7,8 +7,11 @@ import { linkOf } from '../devices/bluetoothRemote';
 import { useVolumeRemote } from './useVolumeRemote';
 import { createWakeDetector } from './wakeDetector';
 
-/** While listening, how often the remote's link is looked at (to catch the press that wakes it). One cheap call. */
-export const WAKE_POLL_MS = 1000;
+/**
+ * While listening, how often the remote's link is looked at (to catch the press that wakes it). One cheap system
+ * call; twice a second keeps the waking press quick (2026-11-01: once a second plus a 1.5 s wait felt slow).
+ */
+export const WAKE_POLL_MS = 500;
 
 /**
  * The Bluetooth selfie remote: its presses (useVolumeRemote), plus the press that wakes it from sleep, counted from
@@ -28,7 +31,8 @@ export function useBluetoothRemote(
   const detector = useRef<ReturnType<typeof createWakeDetector> | undefined>(undefined);
 
   useVolumeRemote(enabled, () => {
-    if (detector.current !== undefined) detector.current.press();
+    // The waking press arriving right after its comeback was counted: the same press, dropped.
+    if (detector.current !== undefined && !detector.current.press()) return;
     onPressRef.current();
   });
 
@@ -41,8 +45,6 @@ export function useBluetoothRemote(
         onPressRef.current();
       },
       now: () => Date.now(),
-      setTimeout: (fn, ms) => setTimeout(fn, ms),
-      clearTimeout: (h) => clearTimeout(h as ReturnType<typeof setTimeout>),
       requireSeenConnected,
     });
     detector.current = wake;
@@ -66,7 +68,6 @@ export function useBluetoothRemote(
     return () => {
       active = false;
       clearInterval(timer);
-      wake.stop();
       detector.current = undefined;
     };
   }, [enabled, requireSeenConnected]);
