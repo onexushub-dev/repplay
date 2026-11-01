@@ -9,6 +9,7 @@ const PERMISSIONS = [
   'NSSpeechRecognitionUsageDescription',
   'NSPhotoLibraryAddUsageDescription',
   'NSLocalNetworkUsageDescription',
+  'NSBluetoothAlwaysUsageDescription',
 ] as const;
 
 const expo = appJson.expo;

@@ -235,3 +235,12 @@ export type FocusAnalysis = {
 export type ReplayCameraViewProps = {
   style?: StyleProp<ViewStyle>;
 };
+
+/** How the Bluetooth stands for the app: "notDetermined" = never asked (nothing was looked at). */
+export type BluetoothState = 'on' | 'off' | 'unauthorized' | 'unsupported' | 'notDetermined' | 'unknown';
+
+/** The BLE peripherals iOS holds connected right now, and which services showed each ("hid", "battery", "info"). */
+export type BluetoothConnected = {
+  state: BluetoothState;
+  devices: { id: string; name: string; services: string[] }[];
+};

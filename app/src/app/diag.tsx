@@ -5,8 +5,9 @@ import { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { bluetoothConnected } from '../../modules/replay-camera';
 import { Button } from '../components/Button';
-import { diagClear, diagFileUri, diagFlags, diagSubscribe, diagText, setDiagFlags } from '../diag/diagLog';
+import { diag, diagClear, diagFileUri, diagFlags, diagSubscribe, diagText, setDiagFlags } from '../diag/diagLog';
 import { colors, fonts, radius } from '../theme/tokens';
 
 /**
@@ -18,6 +19,27 @@ export default function Diag() {
   const [economyOff, setEconomyOff] = useState(() => diagFlags().economyOff);
 
   useEffect(() => diagSubscribe(() => setText(diagText())), []);
+
+  // Can the app see the Bluetooth selfie remote at all (BLE, connected now)? The answer goes to the log.
+  const [probe, setProbe] = useState<string>();
+  const probeBluetooth = () => {
+    setProbe('Procurando…');
+    bluetoothConnected(true)
+      .then((r) => {
+        const found =
+          r === undefined
+            ? 'sem suporte neste aparelho'
+            : r.devices.length === 0
+              ? `Bluetooth ${r.state}, nenhum aparelho BLE conectado visível`
+              : `Bluetooth ${r.state}, conectados: ${r.devices.map((d) => `${d.name} [${d.services.join(', ')}]`).join('; ')}`;
+        diag(`bluetooth: ${found}`);
+        setProbe(found);
+      })
+      .catch((e: unknown) => {
+        diag(`bluetooth: falhou (${String(e)})`);
+        setProbe('Falhou');
+      });
+  };
 
   const toggleEconomy = (off: boolean) => {
     setEconomyOff(off);
@@ -65,6 +87,11 @@ export default function Diag() {
           />
         </View>
 
+        <View style={styles.probe}>
+          <Button label="Procurar o controle no Bluetooth" variant="secondary" onPress={probeBluetooth} />
+          {probe !== undefined ? <Text style={styles.note}>{probe}</Text> : null}
+        </View>
+
         <View style={styles.actions}>
           <View style={styles.action}>
             <Button label="Compartilhar" onPress={share} />
@@ -104,6 +131,7 @@ const styles = StyleSheet.create({
   },
   rowName: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text, flexShrink: 1 },
   actions: { flexDirection: 'row', gap: 12 },
+  probe: { gap: 6 },
   action: { flex: 1 },
   count: { fontFamily: fonts.body, fontSize: 13, color: colors.soft },
   log: { flex: 1, backgroundColor: colors.surface, borderRadius: radius.card },

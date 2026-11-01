@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 
 import { repo } from '../data/mmkv';
+import { forgetRemoteLink, learnRemoteAtPress } from './bluetoothRemote';
 import {
   clearRemotePress,
   hasRemotePress,
@@ -37,11 +38,13 @@ export function useRemoteTest() {
   const press = useCallback(() => {
     if (!usedBefore()) repo.setPrefs({ remoteTestedAt: Date.now() });
     markRemotePress();
+    void learnRemoteAtPress(); // which Bluetooth device it is, so its link can be followed without a press
   }, []);
 
   /** Drops what the app remembers (the iOS pairing itself is removed by the player in Ajustes > Bluetooth). */
   const forget = useCallback(() => {
     repo.setPrefs({ remoteTestedAt: undefined });
+    forgetRemoteLink();
     clearRemotePress();
   }, []);
 

@@ -167,6 +167,12 @@ public class ReplayCameraModule: Module {
       return CaptureButtons.supported
     }
 
+    // The BLE peripherals iOS holds connected now: how the app sees the Bluetooth selfie remote (BluetoothProbe).
+    // `ask` false never makes iOS ask for Bluetooth: it answers "notDetermined" instead.
+    AsyncFunction("bluetoothConnected") { (ask: Bool, promise: Promise) in
+      BluetoothProbe.shared.run(ask: ask) { promise.resolve($0) }
+    }
+
     // TEMP(diag-remote): the audio session the volume remote depends on.
     Function("diagAudioState") { () -> String in ReplayEngine.audioState() }
 
