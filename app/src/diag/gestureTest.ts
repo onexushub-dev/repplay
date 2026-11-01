@@ -211,7 +211,7 @@ export function buildReport(
       (withLevel.length === 0
         ? 'sem dado (build antigo)'
         : levels.map((l) => `${l} ${pct(withLevel.filter((s) => s.trace.thermal === l).length, withLevel.length)}`).join(' · ')) +
-      ' (fair: gesto mais lento; serious: gravação cai para 30 fps e depois 720p; critical: gravação para)',
+      ' (fair: gesto mais lento; serious: gravação cai para 30 fps, nunca abaixo de Full HD; critical: gravação para)',
   );
   lines.push('');
   lines.push('RESUMO');

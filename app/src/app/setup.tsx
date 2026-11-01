@@ -219,11 +219,17 @@ export default function Setup() {
     });
     return () => sub.remove();
   }, [remoteSupported]);
-  useEffect(() => {
-    if (!remoteSupported || !focused) return;
-    setControlHost(remoteControllerHost()); // it may have been paired or forgotten on the remote screen
-    setRemoteLinked(remoteHostControllers()); // the status events of a remote that connected meanwhile were not heard
-  }, [remoteSupported, focused]);
+  // Coming back to this screen, read the remote again (adjusting state during render, not in an effect): it may have
+  // been paired or forgotten on the remote screen, and the status events of a remote that connected meanwhile were not
+  // heard.
+  const [remoteReadFocused, setRemoteReadFocused] = useState(focused);
+  if (remoteReadFocused !== focused) {
+    setRemoteReadFocused(focused);
+    if (remoteSupported && focused) {
+      setControlHost(remoteControllerHost());
+      setRemoteLinked(remoteHostControllers());
+    }
+  }
   const disconnectControl = () => {
     const name = controlHost === null ? '' : controlHost.name;
     Alert.alert(
