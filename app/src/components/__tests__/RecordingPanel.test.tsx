@@ -141,16 +141,16 @@ test('the hint lists the triggers that are on and the clip length', async () => 
   expect(screen.getByText('Últimos 45s prontos · ou diga “salvar” · ou use o controle')).toBeTruthy();
 });
 
-test('the wave hint shows when the gesture is on', async () => {
+test('the arms-up hint shows when the gesture is on', async () => {
   session({ paid: true });
   await render(<Recording clipSeconds={30} gesture voice={false} />);
-  expect(screen.getByText('Últimos 30s prontos · ou acene com os braços acima da cabeça · ou use o controle')).toBeTruthy();
+  expect(screen.getByText('Últimos 30s prontos · ou acene com os braços · ou use o controle')).toBeTruthy();
 });
 
 test('in a free game the hint leaves the Bluetooth remote out: it is a Pro trigger', async () => {
   session({ paid: false });
   await render(<Recording clipSeconds={15} gesture voice={false} />);
-  expect(screen.getByText('Últimos 15s prontos · ou acene com os braços acima da cabeça')).toBeTruthy();
+  expect(screen.getByText('Últimos 15s prontos · ou acene com os braços')).toBeTruthy();
 });
 
 test('a remote phone asking to end the recording ends it like the hold button does', async () => {

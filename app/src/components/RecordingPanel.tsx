@@ -14,7 +14,7 @@ import { diag, diagFlags } from '../diag/diagLog'; // TEMP(diag-remote)
 import { colors, fonts } from '../theme/tokens';
 import { Button } from './Button';
 import { HoldButton } from './HoldButton';
-import { MicIcon, RemoteIcon, TapIcon, WatchIcon, WaveIcon } from './icons';
+import { ArmsUpIcon, MicIcon, RemoteIcon, TapIcon, WatchIcon } from './icons';
 import { SavedOverlay } from './SavedOverlay';
 
 /** The watch link as the native side sees it now; read on every render, as the setup screen does. */
@@ -247,7 +247,7 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
               </View>
               <View style={styles.icons}>
                 {voice ? <MicIcon color={colors.accent} size={20} /> : null}
-                {gesture ? <WaveIcon color={colors.accent} size={20} /> : null}
+                {gesture ? <ArmsUpIcon color={colors.accent} size={20} /> : null}
                 <RemoteIcon color={remoteOn ? colors.accent : colors.muted} size={20} />
                 <WatchIcon color={watchOn ? colors.accent : colors.muted} size={20} />
               </View>

@@ -65,7 +65,7 @@ export const ptBR: Messages = {
     },
     wave: {
       name: 'Acenar com os braços',
-      how: 'Acene com os dois braços acima da cabeça, de um lado para o outro.',
+      how: 'Levante os dois braços acima da cabeça, dentro do enquadramento.',
       when: 'Para salvar sem sair da sua posição.',
     },
     voice: {
@@ -175,7 +175,7 @@ export const ptBR: Messages = {
     myRecordings: 'Minhas gravações',
     lastReady: 'Últimos %{seconds}s prontos',
     orSay: 'ou diga “%{word}”',
-    orWave: 'ou acene com os braços acima da cabeça',
+    orWave: 'ou acene com os braços',
     orRemote: 'ou use o controle',
     tapAnywhere: 'Toque em qualquer lugar para salvar o clipe',
     recording: 'Gravando',
@@ -520,29 +520,6 @@ export const ptBR: Messages = {
       quadra: 'Atrás da linha de fundo, na altura do ombro',
       academia: 'No chão ou no tripé, a 2–3 m, de lado para o exercício',
     },
-  },
-  practice: {
-    section: 'Treine aqui',
-    retry: 'Testar de novo',
-  },
-  gestureGuide: {
-    help: 'Como fazer o gesto',
-    title: 'Como acenar',
-    stay: 'Fique dentro do enquadramento, de frente para o celular.',
-    waiting: 'Afaste-se alguns passos, fique de frente para a câmera e acene.',
-    raised: 'Braços levantados: agora acene',
-    done: 'Gesto reconhecido',
-  },
-  voiceGuide: {
-    help: 'Como usar a voz',
-    title: 'Como usar a voz',
-    how: 'Diga “%{first}” ou “%{second}” em voz alta.',
-    stay: 'O celular ouve pelo próprio microfone: de longe, fale alto.',
-    waiting: 'Diga “%{first}” agora.',
-    done: 'Comando reconhecido',
-    allowText: 'Permita o reconhecimento de voz para treinar.',
-    allow: 'Permitir',
-    deniedText: 'O reconhecimento de voz está bloqueado. Libere em Ajustes.',
   },
   sources: {
     screen: 'Tela',

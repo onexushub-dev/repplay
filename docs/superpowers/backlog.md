@@ -99,7 +99,6 @@ Itens adiados nas revisões finais. Nada aqui bloqueia o uso, mas vale resolver 
 - Pendências antes do app: testar com basquete e outros ângulos de câmera; gatilho falso do gesto (saque com braços para cima) gera clipe sem lance no fim.
 - No app (2026-10-27, só iOS): a análise do Modo Foco grava o movimento da quadra (`CourtMotion.swift`) e `src/cutSuggestion/` aplica o corte sugerido quando o clipe ainda está com o corte original. Chave: `CUT_SUGGESTION_ENABLED`. Para remover: a pasta `src/cutSuggestion/`, `CourtMotion.swift` (+ testes), o `motion` em `FocusAnalyzer.swift`, `analyzed` na fila do Modo Foco, `cutSuggestion` no schema/repo e o bloco da sugestão em `app/clip/[id].tsx`.
 - Ainda não feito: "Compilar melhores momentos" automático; Android.
-- **Removido do app em 2026-11-01**: o corte sugerido não acertava os melhores momentos com segurança e atrapalhava rever e editar o clipe. Saíram `src/cutSuggestion/`, `CourtMotion.swift` (+ testes), o `motion` do arquivo do Modo Foco, o `analyzed` da fila, `cutSuggestion` do schema/repo e o bloco do editor. Na abertura do app, `repo.forgetCutSuggestions()` devolve ao corte original os clipes que a sugestão tinha cortado. O protótipo em `docs/highlights/` continua como referência se a ideia voltar.
 
 ## Depois dos testes do gesto: retestar o Modo Foco com a busca em partes do quadro
 - Fazer quando os testes de campo do gesto terminarem (`docs/superpowers/spikes/gesture-distance/`).

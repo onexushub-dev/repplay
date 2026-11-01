@@ -10,6 +10,8 @@ export type FocusQueueDeps = {
   supported(): boolean;
   repo: Pick<Repo, 'getClip' | 'updateClip'>;
   deleteFile(path: string): void;
+  /** A clip's analysis is stored and its file written (the cut suggestion reads it). */
+  analyzed?(clipId: string, outPath: string): void;
   /** Every finished analysis with its numbers (field test: how long the Modo Foco takes on each phone). */
   measured?(clip: Clip, result: FocusAnalysis): void;
 };
@@ -90,6 +92,11 @@ export function createFocusQueue(deps: FocusQueueDeps): FocusQueue {
         if (!deps.repo.updateClip(clip.id, { focus: { v: 1, status: result.status, file: outPath } })) {
           deps.deleteFile(outPath);
           return;
+        }
+        try {
+          deps.analyzed?.(clip.id, outPath);
+        } catch (e) {
+          console.warn('[Reprize] after the analysis', clip.path, e);
         }
       })
       .catch((e: unknown) => {
