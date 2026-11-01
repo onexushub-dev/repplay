@@ -26,7 +26,7 @@ import { Chip } from '../components/Chip';
 import { CompactDock } from '../components/CompactDock';
 import { EconomyButton } from '../components/EconomyButton';
 import { EconomyToast } from '../components/EconomyToast';
-import { GestureSheet } from '../components/GestureSheet';
+import { GestureSheet, VoiceSheet } from '../components/PracticeSheet';
 import { modeTip } from '../components/format';
 import { sourceLabel } from '../components/sourceLabel';
 import { PositionGuide } from '../components/PositionGuide';
@@ -149,8 +149,8 @@ export default function Setup() {
   const remoteReady = remoteView.state !== 'setup';
   // The sheet opens collapsed so the camera and its guide stay visible; mode and triggers sit behind the summary.
   const [expanded, setExpanded] = useState(false);
-  // The wave gesture's "?": how to do it, and practice with the live camera.
-  const [gestureHelp, setGestureHelp] = useState(false);
+  // A trigger's "?" (the wave gesture, voice): how to use it, and practice with the live camera.
+  const [practice, setPractice] = useState<'gesture' | 'voice' | undefined>(undefined);
   const [sheetHeight, setSheetHeight] = useState(0);
   // Swipe up on the sheet opens it, swipe down closes it; taps still reach the controls inside.
   const [swipe] = useState(() =>
@@ -263,6 +263,12 @@ export default function Setup() {
           ? t('setup.voiceDenied')
           : t('setup.tapToAllow');
 
+  /** The voice practice asks for the permission on its own (the trigger stays as the player set it). */
+  async function allowSpeech() {
+    const granted = await requestSpeechPermission();
+    setSpeech(granted ? 'granted' : 'denied');
+  }
+
   async function toggleVoice() {
     if (voiceOn) return updateMode({ voiceEnabled: false });
     const granted = speechGranted || (await requestSpeechPermission());
@@ -291,8 +297,8 @@ export default function Setup() {
   });
 
   const { phase, error, camera } = session.state;
-  // The gesture practice belongs to the setup: a game starting closes it.
-  if (gestureHelp && phase !== 'idle') setGestureHelp(false);
+  // The practice belongs to the setup: a game starting closes it.
+  if (practice !== undefined && phase !== 'idle') setPractice(undefined);
   const { prepare, release } = session;
 
   // Live preview while positioning; the buffer starts filling now, so "Começar gravação" is instant.
@@ -355,8 +361,17 @@ export default function Setup() {
       ) : (
         renderSetupControls()
       )}
-      {gestureHelp ? (
-        <GestureSheet visible={live && phase === 'idle'} onClose={() => setGestureHelp(false)} />
+      {practice === 'gesture' ? (
+        <GestureSheet visible={live && phase === 'idle'} onClose={() => setPractice(undefined)} />
+      ) : null}
+      {practice === 'voice' ? (
+        <VoiceSheet
+          visible={live && phase === 'idle'}
+          onClose={() => setPractice(undefined)}
+          locale={locale}
+          speech={speech}
+          onAllow={() => void allowSpeech()}
+        />
       ) : null}
     </View>
   );
@@ -553,6 +568,7 @@ export default function Setup() {
               active={voiceOn}
               disabled={!voiceSupported}
               onPress={voiceSupported ? () => void toggleVoice() : undefined}
+              help={voiceSupported ? { label: t('voiceGuide.help'), onPress: () => setPractice('voice') } : undefined}
             />
             <TriggerTile
               icon={<WaveIcon />}
@@ -560,7 +576,7 @@ export default function Setup() {
               status={settings.gestureEnabled ? t('setup.on') : t('setup.off')}
               active={settings.gestureEnabled}
               onPress={() => updateMode({ gestureEnabled: !settings.gestureEnabled })}
-              help={{ label: t('gestureGuide.help'), onPress: () => setGestureHelp(true) }}
+              help={{ label: t('gestureGuide.help'), onPress: () => setPractice('gesture') }}
             />
           </View>
         </View>

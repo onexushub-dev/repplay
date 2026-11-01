@@ -1,6 +1,7 @@
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { colors } from '../theme/tokens';
+import { WavingFigure } from './WavingFigure';
 
 type IconProps = { color?: string; size?: number };
 
@@ -34,17 +35,12 @@ export function QrIcon({ color = colors.text, size = 22 }: IconProps) {
 }
 
 /**
- * A player waving both arms above the head: arms up in a V, and a curved arrow over them going both ways (side to
- * side). Not two arms held straight up: just raising them is not the gesture to learn (2026-11-01).
+ * A player waving both arms above the head, moving like the figure on the gesture's "?" sheet: the arms swing from
+ * side to side. Not two arms held still: just raising them is not the gesture to learn (2026-11-01). With Reduce Motion
+ * on, a curved arrow over the arms says "side to side" instead.
  */
 export function WaveIcon({ color = colors.text, size = 22 }: IconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityElementsHidden>
-      <Circle cx={12} cy={10.2} r={1.9} {...stroke(color)} />
-      <Path d="M12 12.6v4.4M9.6 22l2.4-5 2.4 5M10.9 13.2 7.6 6.6M13.1 13.2l3.3-6.6" {...stroke(color)} />
-      <Path d="M6.2 4.2Q12 .4 17.8 4.2M6.2 4.2l2-.3M6.2 4.2l.8 1.8M17.8 4.2l-2-.3M17.8 4.2l-.8 1.8" {...stroke(color)} />
-    </Svg>
-  );
+  return <WavingFigure size={size} color={color} strokeWidth={1.8} stillArrow />;
 }
 
 export function ShareIcon({ color = colors.text, size = 22 }: IconProps) {

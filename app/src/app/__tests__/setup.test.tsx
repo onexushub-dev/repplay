@@ -26,6 +26,7 @@ jest.mock('../../../modules/replay-camera', () => {
     remoteHostPeers: jest.fn(() => []),
     addReplayListener: jest.fn(() => ({ remove: jest.fn() })),
     setGestureEnabled: jest.fn(),
+    setVoiceEnabled: jest.fn(),
     signalSaved: jest.fn(),
     ReplayCameraView: (props: { style?: unknown }) => {
       mounts.style = props.style;
@@ -302,6 +303,19 @@ test("the wave gesture's ? opens how to do it and practises with the camera, whi
   await fireEvent.press(screen.getByRole('button', { name: 'Fechar' }));
   expect(screen.queryByText('Como acenar')).toBeNull();
   expect(cam.setGestureEnabled).toHaveBeenLastCalledWith(false);
+});
+
+test("the voice's ? opens how to use it and practises listening, which stops once it closes", async () => {
+  const cam = jest.requireMock('../../../modules/replay-camera');
+  cam.setVoiceEnabled.mockClear();
+  session({});
+  await render(<Setup />);
+  await openSettings();
+  await fireEvent.press(screen.getByRole('button', { name: 'Como usar a voz' }));
+  expect(screen.getByText('Diga “salvar” ou “gravar” em voz alta.')).toBeTruthy();
+  expect(cam.setVoiceEnabled).toHaveBeenLastCalledWith(true, expect.anything());
+  await fireEvent.press(screen.getByRole('button', { name: 'Fechar' }));
+  expect(cam.setVoiceEnabled).toHaveBeenLastCalledWith(false, expect.anything());
 });
 
 test('the gesture tile toggles the gesture preference', async () => {
