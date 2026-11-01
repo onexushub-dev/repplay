@@ -4,7 +4,7 @@ import { Alert, BackHandler, Platform, Pressable, StyleSheet, Text, View } from 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { addReplayListener, getWatchStatus, setScreenEconomy } from '../../modules/replay-camera';
-import { VOICE_WORDS } from '../i18n';
+import { VOICE_WORD } from '../i18n';
 import { useT } from '../i18n/useT';
 import { removeFile, repo } from '../data/mmkv';
 import { triggerAllowed } from '../payments/limits';
@@ -172,12 +172,14 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
   }
 
   const showOverlay = last !== undefined && dismissed !== last.clipId;
-  const hintSub = [
-    t('recording.lastReady', { seconds: clipSeconds }),
-    ...(voice ? [t('recording.orSay', { word: VOICE_WORDS[locale][0] })] : []),
-    ...(gesture ? [t('recording.orWave')] : []),
-    ...(remoteOn ? [t('recording.orRemote')] : []),
-  ].join(' · ');
+  // The other ways that are on, one short tag each (2026-11-01: a line of "ou … ou … ou" was hard to read). Tapping the
+  // screen always works, so it is the main line; a way that is off is not shown at all.
+  const ways = [
+    ...(voice ? [{ key: 'voice', icon: <MicIcon color={colors.accent} size={16} />, label: t('recording.wayVoice', { word: VOICE_WORD[locale] }) }] : []),
+    ...(gesture ? [{ key: 'wave', icon: <WaveIcon color={colors.accent} size={16} />, label: t('recording.wayWave') }] : []),
+    ...(remoteOn ? [{ key: 'remote', icon: <RemoteIcon color={colors.accent} size={16} />, label: t('recording.wayRemote') }] : []),
+    ...(watchOn ? [{ key: 'watch', icon: <WatchIcon color={colors.accent} size={16} />, label: t('recording.wayWatch') }] : []),
+  ];
   const clips = t('summary.clips', { count: state.clipCount });
 
   return (
@@ -240,17 +242,23 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
         <View pointerEvents="box-none" style={styles.bottom}>
           {economy.asleep ? null : (
             <View pointerEvents="none" style={styles.hintCard}>
-              <TapIcon color={colors.accent} size={28} />
-              <View style={styles.hintText}>
-                <Text style={styles.hint}>{t('recording.tapHint')}</Text>
-                <Text style={styles.hintSub}>{hintSub}</Text>
+              <View style={styles.hintHead}>
+                <TapIcon color={colors.accent} size={26} />
+                {/* Always one line: on a narrower phone (iPhone XR, SE) the text shrinks a little instead of wrapping. */}
+                <Text style={styles.hint} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                  {t('recording.tapToSave', { seconds: clipSeconds })}
+                </Text>
               </View>
-              <View style={styles.icons}>
-                {voice ? <MicIcon color={colors.accent} size={20} /> : null}
-                {gesture ? <WaveIcon color={colors.accent} size={20} /> : null}
-                <RemoteIcon color={remoteOn ? colors.accent : colors.muted} size={20} />
-                <WatchIcon color={watchOn ? colors.accent : colors.muted} size={20} />
-              </View>
+              {ways.length > 0 ? (
+                <View style={styles.ways}>
+                  {ways.map((way) => (
+                    <View key={way.key} style={styles.way} accessible accessibilityLabel={way.label}>
+                      {way.icon}
+                      <Text style={styles.wayText}>{way.label}</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
             </View>
           )}
           <HoldButton
@@ -301,18 +309,26 @@ const styles = StyleSheet.create({
   bold: { fontFamily: fonts.bodyBold },
   bottom: { marginTop: 'auto', gap: 8, marginBottom: 12 },
   hintCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    gap: 10,
     backgroundColor: glass,
     borderRadius: 18,
     paddingVertical: 14,
     paddingHorizontal: 16,
   },
-  hintText: { flex: 1, gap: 2 },
-  hint: { fontFamily: fonts.bodyBold, fontSize: 18, lineHeight: 22, color: colors.text },
-  hintSub: { fontFamily: fonts.body, fontSize: 12, color: colors.soft },
-  icons: { flexDirection: 'column', gap: 6 },
+  hintHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  hint: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 17, lineHeight: 22, color: colors.text },
+  ways: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  way: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 999,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+  },
+  wayText: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.text },
   stopped: { flex: 1, backgroundColor: colors.recordingGround, justifyContent: 'center', padding: 24, gap: 20 },
   stoppedText: { fontFamily: fonts.displayBold, fontSize: 36, lineHeight: 38, color: colors.text, textAlign: 'center' },
 });

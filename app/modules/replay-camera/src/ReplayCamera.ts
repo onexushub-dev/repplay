@@ -138,7 +138,7 @@ export function watchSignal(saved: boolean): void {
   ReplayCameraModule.watchSignal(saved);
 }
 
-/** Listens for the save command in `locale` ("salvar"/"gravar" or "save"/"record") in the game's audio (iOS; no-op on Android for now). */
+/** Listens for the save command in `locale` ("salvar" or "save") in the game's audio (iOS; no-op on Android for now). */
 export function setVoiceEnabled(enabled: boolean, locale: VoiceLocale): void {
   ReplayCameraModule.setVoiceEnabled(enabled, locale);
 }

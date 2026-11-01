@@ -100,7 +100,7 @@ export type Prefs = {
   /** Feedback the moment a save is accepted, for a player far from the phone. */
   soundOnSave: boolean;
   flashOnSave: boolean;
-  /** "salvar" / "gravar" by voice (iOS). Off until speech permission is granted. */
+  /** "salvar" by voice (iOS). Off until speech permission is granted. */
   voiceEnabled: boolean;
   /** When a press of the Bluetooth remote was first heard; the app cannot see the iOS pairing, only presses. */
   remoteTestedAt?: number;
@@ -116,7 +116,7 @@ export type Prefs = {
   screenEconomy: boolean;
   /** Battery saving on the remote phone while the camera records: the screen dims after a minute without a touch. */
   remoteEconomy: boolean;
-  /** "salvar" / "gravar" by voice on the remote phone while the camera records (iOS, with both permissions). */
+  /** "salvar" by voice on the remote phone while the camera records (iOS, with both permissions). */
   remoteVoice: boolean;
   /** The remote screen already explained voice and asked for its permissions once. */
   remoteVoiceAsked?: boolean;

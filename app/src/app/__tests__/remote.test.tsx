@@ -616,7 +616,7 @@ async function connected(recording: boolean) {
 test('voice listens only while the camera records, and says so under SALVAR', async () => {
   await connected(false);
   expect(camera().remoteVoiceSetEnabled).toHaveBeenLastCalledWith(false, 'pt-BR');
-  expect(screen.getByLabelText('Salvar por voz, Diga “salvar” ou “gravar”')).toBeTruthy();
+  expect(screen.getByLabelText('Salvar por voz, Diga “salvar”')).toBeTruthy();
   await emit('onRemoteState', { recording: true, clipCount: 0, startedAt: NOW });
   expect(camera().remoteVoiceSetEnabled).toHaveBeenLastCalledWith(true, 'pt-BR');
   expect(screen.getByText('ou diga “salvar”')).toBeTruthy();
@@ -643,7 +643,7 @@ test('a command heard outside a recording saves nothing', async () => {
 test('voice can be turned off before the recording, and then nothing listens', async () => {
   await connected(false);
   await act(async () => {
-    fireEvent.press(screen.getByLabelText('Salvar por voz, Diga “salvar” ou “gravar”'));
+    fireEvent.press(screen.getByLabelText('Salvar por voz, Diga “salvar”'));
   });
   expect(jest.requireMock('../../data/mmkv').repo.setPrefs).toHaveBeenCalledWith({ remoteVoice: false });
   expect(screen.getByLabelText('Salvar por voz, Desligada')).toBeTruthy();
@@ -666,7 +666,7 @@ test('the first time it is connected it explains voice before iOS asks, once', a
   expect(camera().requestMicrophonePermission).toHaveBeenCalled();
   expect(camera().requestSpeechPermission).toHaveBeenCalled();
   expect(jest.requireMock('../../data/mmkv').repo.getPrefs().remoteVoiceAsked).toBe(true);
-  expect(screen.getByLabelText('Salvar por voz, Diga “salvar” ou “gravar”')).toBeTruthy();
+  expect(screen.getByLabelText('Salvar por voz, Diga “salvar”')).toBeTruthy();
   alert.mockRestore();
 });
 

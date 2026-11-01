@@ -1,7 +1,7 @@
 import appJson from '../../../app.json';
 import enStrings from '../../../locales/en.json';
 import ptStrings from '../../../locales/pt-BR.json';
-import { VOICE_WORDS } from '../locale';
+import { VOICE_WORD } from '../locale';
 
 const PERMISSIONS = [
   'NSCameraUsageDescription',
@@ -27,8 +27,10 @@ test('the base Info.plist text is the English one, and iOS may mix localizations
 });
 
 test('the speech prompt names the words of its language', () => {
-  for (const word of VOICE_WORDS.en) expect(enStrings.ios.NSSpeechRecognitionUsageDescription).toContain(`"${word}"`);
-  for (const word of VOICE_WORDS['pt-BR']) expect(ptStrings.ios.NSSpeechRecognitionUsageDescription).toContain(`"${word}"`);
+  expect(enStrings.ios.NSSpeechRecognitionUsageDescription).toContain(`"${VOICE_WORD.en}"`);
+  expect(ptStrings.ios.NSSpeechRecognitionUsageDescription).toContain(`"${VOICE_WORD['pt-BR']}"`);
+  expect(enStrings.ios.NSSpeechRecognitionUsageDescription).not.toContain('record');
+  expect(ptStrings.ios.NSSpeechRecognitionUsageDescription).not.toContain('gravar');
 });
 
 test('the brand is Reprize in every prompt', () => {

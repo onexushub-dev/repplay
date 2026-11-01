@@ -42,7 +42,7 @@ import { openPaywall } from '../payments/feedback';
 import { FREE_MAX_SECONDS, qualityAllowed, triggerAllowed } from '../payments/limits';
 import { accessPlan } from '../payments/rules';
 import { usePlan } from '../share/entitlement';
-import { type MessageKey, type TFunction, VOICE_WORDS, voiceLocale } from '../i18n';
+import { type MessageKey, type TFunction, VOICE_WORD, voiceLocale } from '../i18n';
 import { useT } from '../i18n/useT';
 import { useRemoteLink } from '../devices/bluetoothRemote';
 import { remoteDeviceView } from '../devices/remoteDevice';
@@ -263,7 +263,7 @@ export default function Setup() {
     : !settings.voiceEnabled
       ? t('setup.off')
       : speechGranted
-        ? t('setup.voiceSay', { first: VOICE_WORDS[locale][0], second: VOICE_WORDS[locale][1] })
+        ? t('setup.voiceSay', { word: VOICE_WORD[locale] })
         : speech === 'denied'
           ? t('setup.voiceDenied')
           : t('setup.tapToAllow');

@@ -53,7 +53,7 @@ import type { Prefs } from '../data/schema';
 import { parseCode, parsePairUrl } from '../remote/pairLink';
 import { canSave, connectionTone, remoteScreen } from '../remote/remoteScreen';
 import { cooldownLeft, IDLE, onResult, onTap, tick, type SaveFeedback } from '../remote/saveFeedback';
-import { VOICE_WORDS, voiceLocale, type TFunction } from '../i18n';
+import { VOICE_WORD, voiceLocale, type TFunction } from '../i18n';
 import { useT } from '../i18n/useT';
 import { useScreenEconomy } from '../session/useScreenEconomy';
 import { colors, fonts, radius } from '../theme/tokens';
@@ -431,7 +431,7 @@ export default function Remote() {
     setEconomyToast((n) => n + 1);
   };
 
-  // Voice: "salvar" / "gravar" said near this phone saves like a tap on SALVAR. It listens only while the camera
+  // Voice: "salvar" said near this phone saves like a tap on SALVAR. It listens only while the camera
   // records, with both permissions and the player's choice (on by default); a dim screen keeps listening.
   const voiceGranted = mic === 'granted' && speech === 'granted';
   const voiceDenied = mic === 'denied' || speech === 'denied';
@@ -478,9 +478,9 @@ export default function Remote() {
   useEffect(() => {
     if (!askNow || askedHere.current) return;
     askedHere.current = true;
-    const [first, second] = VOICE_WORDS[locale];
+    const word = VOICE_WORD[locale];
     // Once per phone: either answer is remembered, so it never comes back.
-    Alert.alert(t('remote.voiceAskTitle'), t('remote.voiceAskBody', { first, second }), [
+    Alert.alert(t('remote.voiceAskTitle'), t('remote.voiceAskBody', { word }), [
       {
         text: t('remote.voiceAskLater'),
         style: 'cancel',
@@ -500,7 +500,7 @@ export default function Remote() {
   const voiceStatus = !prefs.remoteVoice
     ? t('remote.economyStatusOff')
     : voiceGranted
-      ? t('setup.voiceSay', { first: VOICE_WORDS[locale][0], second: VOICE_WORDS[locale][1] })
+      ? t('setup.voiceSay', { word: VOICE_WORD[locale] })
       : voiceDenied
         ? t('setup.voiceDenied')
         : t('setup.tapToAllow');
@@ -692,7 +692,7 @@ export default function Remote() {
         {screenModel.kind === 'recording' && listening ? (
           <View style={styles.voiceHint}>
             <MicIcon color={colors.accent} size={16} />
-            <Text style={styles.hint}>{t('recording.orSay', { word: VOICE_WORDS[locale][0] })}</Text>
+            <Text style={styles.hint}>{t('recording.orSay', { word: VOICE_WORD[locale] })}</Text>
           </View>
         ) : null}
 

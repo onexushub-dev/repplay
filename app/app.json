@@ -13,7 +13,7 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Reprize uses the camera to record your clips.",
         "NSMicrophoneUsageDescription": "Reprize records the sound of your clips.",
-        "NSSpeechRecognitionUsageDescription": "Reprize listens for you to say \"save\" or \"record\" so you can save a clip without touching your phone.",
+        "NSSpeechRecognitionUsageDescription": "Reprize listens for you to say \"save\" so you can save a clip without touching your phone.",
         "LSApplicationQueriesSchemes": [
           "instagram-stories"
         ],

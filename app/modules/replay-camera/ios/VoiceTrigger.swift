@@ -1,7 +1,7 @@
 import AVFoundation
 import Speech
 
-/// Listens for the save command in the app's language ("salvar"/"gravar" in Portuguese, "save"/"record" in English)
+/// Listens for the save command in the app's language ("salvar" in Portuguese, "save" in English)
 /// in the game's own audio (the capture session's microphone samples), strictly on the device (court audio never goes to a server). Each recognition task is restarted every ~50s (Apple's
 /// limit is about a minute) and right after a command, which also clears the transcript.
 final class VoiceTrigger {
