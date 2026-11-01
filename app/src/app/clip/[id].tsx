@@ -181,6 +181,15 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
   const [zoomKey, setZoomKey] = useState(0);
   // Watch (clean, Salvar/Enviar) or edit (tool bar, Cancelar/Concluir); edit keeps what Cancelar puts back.
   const [mode, setMode] = useState<'watch' | 'edit'>('watch');
+  // The suggested cut (src/cutSuggestion) can land while the clip is open: when it became the clip's cut, watching
+  // moves to it (never under the player's fingers in edit mode) (the loop below then jumps into it). Adjusted while rendering, as React suggests for derived state.
+  const suggestionKey = clip?.cutSuggestion ? `${clip.cutSuggestion.startMs}-${clip.cutSuggestion.endMs}` : '';
+  const [seenSuggestion, setSeenSuggestion] = useState(suggestionKey);
+  if (suggestionKey !== seenSuggestion) {
+    setSeenSuggestion(suggestionKey);
+    const s = clip?.cutSuggestion;
+    if (s && clip && mode === 'watch' && clip.trim.startMs === s.startMs && clip.trim.endMs === s.endMs) setTrim(clip.trim);
+  }
   const snapshot = useRef<EditSnapshot | undefined>(undefined);
   const [openTool, setOpenTool] = useState<ToolId>(lastTool);
   // A finger held on the video in watch mode: 2x while it stays down.

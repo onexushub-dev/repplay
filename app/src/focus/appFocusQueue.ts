@@ -4,6 +4,7 @@ import { AppState } from 'react-native';
 import * as camera from '../../modules/replay-camera';
 import { onFileRemoved, repo } from '../data/mmkv';
 import { diag } from '../diag/diagLog';
+import { applyCutSuggestion } from '../cutSuggestion/applyCutSuggestion';
 import { createFocusQueue } from './focusQueue';
 
 /** The app's one Modo Foco queue. */
@@ -12,6 +13,7 @@ export const focusQueue = createFocusQueue({
   cancel: camera.cancelFocus,
   supported: camera.isFocusSupported,
   repo,
+  analyzed: (clipId, outPath) => applyCutSuggestion(clipId, outPath, { repo }),
   // TEMP(diag-remote): the Modo Foco v14 field test reads the analysis time on the Diagnóstico screen.
   measured: (clip, r) =>
     diag(
