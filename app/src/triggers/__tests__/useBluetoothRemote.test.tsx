@@ -1,7 +1,6 @@
 import { act, renderHook } from '@testing-library/react-native';
 
 import { useBluetoothRemote, WAKE_POLL_MS } from '../useBluetoothRemote';
-import { WAKE_GRACE_MS } from '../wakeDetector';
 
 jest.mock('../../../modules/replay-camera', () => ({ bluetoothConnected: jest.fn() }));
 jest.mock('../../diag/diagLog', () => ({ diag: jest.fn() }));
@@ -27,7 +26,7 @@ beforeEach(() => {
 });
 afterEach(() => jest.useRealTimers());
 
-test('the remote waking up in a game saves the clip when its own press is lost', async () => {
+test('the remote waking up in a game saves the clip as soon as it is seen back, its own press lost or not', async () => {
   const onPress = jest.fn();
   cam.bluetoothConnected.mockResolvedValue({ state: 'on', devices: [shutter] });
   const { unmount } = await renderHook(() => useBluetoothRemote(true, onPress, { requireSeenConnected: true }));
@@ -35,14 +34,13 @@ test('the remote waking up in a game saves the clip when its own press is lost',
   cam.bluetoothConnected.mockResolvedValue({ state: 'on', devices: [] }); // asleep
   await tick();
   await tick();
-  cam.bluetoothConnected.mockResolvedValue({ state: 'on', devices: [shutter] }); // woken by a press that got lost
-  await tick();
-  await act(async () => void (await jest.advanceTimersByTimeAsync(WAKE_GRACE_MS)));
+  cam.bluetoothConnected.mockResolvedValue({ state: 'on', devices: [shutter] }); // woken by a press
+  await tick(); // seen back within half a second: saved now
   expect(onPress).toHaveBeenCalledTimes(1);
   await act(async () => unmount());
 });
 
-test('a press that gets through counts once (the volume path), the comeback adds nothing', async () => {
+test('its own press arriving right after the comeback counts once', async () => {
   const onPress = jest.fn();
   cam.bluetoothConnected.mockResolvedValue({ state: 'on', devices: [shutter] });
   const { unmount } = await renderHook(() => useBluetoothRemote(true, onPress, { requireSeenConnected: true }));
@@ -51,8 +49,8 @@ test('a press that gets through counts once (the volume path), the comeback adds
   await tick();
   cam.bluetoothConnected.mockResolvedValue({ state: 'on', devices: [shutter] });
   await tick();
-  await act(async () => useVolumeRemote.mock.calls.at(-1)[1]()); // the press arrives
-  await act(async () => void (await jest.advanceTimersByTimeAsync(WAKE_GRACE_MS * 2)));
+  expect(onPress).toHaveBeenCalledTimes(1);
+  await act(async () => useVolumeRemote.mock.calls.at(-1)[1]()); // the press arrives too
   expect(onPress).toHaveBeenCalledTimes(1);
   await act(async () => unmount());
 });
