@@ -314,6 +314,19 @@ describe('iOS: the library slider goes stale (2026-10-28 field log)', () => {
     else delete (AppState as { currentState?: string }).currentState;
   });
 
+  test('a route reporting 1.00 while arming, then going back silently, does not turn the next press into a jump', async () => {
+    // 2026-10-31 night log: "volume 0.55 ignorado (salto do sistema)". The earpiece route reported 1.00 while arming,
+    // the volume went back to 0.5 with no event, the parking changed nothing (the slider already held 0.5) and the next
+    // real press was measured from 1.00.
+    const onPress = jest.fn();
+    const { unmount } = await renderHook(() => useVolumeRemote(true, onPress));
+    await act(async () => lib.__state.listeners.forEach((l: Listener) => l({ volume: 1 }))); // ios.real stays 0.5
+    await advance(ARM_MS + 3 * SETTLE_MS + 500);
+    await remote();
+    expect(onPress).toHaveBeenCalledTimes(1);
+    await act(async () => unmount());
+  });
+
   test('starting near the top parks in the middle using the real volume, not the stale slider', async () => {
     ios.real = 0.9;
     ios.slider = 0.75;

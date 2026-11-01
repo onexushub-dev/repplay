@@ -137,10 +137,14 @@ export function useVolumeRemote(enabled: boolean, onPress: () => void): void {
         if (!native) {
           const { volume } = await VolumeManager.getVolume();
           parked = volume;
+          last = volume;
           return;
         }
         await wait(SETTLE_MS);
         const real = realVolume();
+        // A parking does not always report itself (the slider already held that value, or the route put the volume
+        // back silently): the next press is measured from where the volume really is.
+        if (real !== undefined) last = real;
         if (real === undefined || Math.abs(real - target) < TOLERANCE) return;
         if (!active) return;
         diag(`controle: volume ficou em ${real.toFixed(2)} (esperado ${target.toFixed(2)}), tentando de novo`);
@@ -211,7 +215,9 @@ export function useVolumeRemote(enabled: boolean, onPress: () => void): void {
       ? setInterval(() => {
           if (!active || away() || Date.now() < armedAt || Date.now() - lastOwnSet < WATCH_MS) return;
           const real = realVolume();
-          if (real === undefined || Math.abs(real - parked) < TOLERANCE) return;
+          if (real === undefined) return;
+          last = real;
+          if (Math.abs(real - parked) < TOLERANCE) return;
           diag(`controle: volume fora do lugar (${real.toFixed(2)}, esperado ${parked.toFixed(2)}), devolvendo`);
           queuePark();
         }, WATCH_MS)
