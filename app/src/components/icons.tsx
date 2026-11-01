@@ -1,6 +1,7 @@
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { colors } from '../theme/tokens';
+import { WavingFigure } from './WavingFigure';
 
 type IconProps = { color?: string; size?: number };
 
@@ -33,15 +34,12 @@ export function QrIcon({ color = colors.text, size = 22 }: IconProps) {
   );
 }
 
-/** A player with both arms up, with small motion arcs beside the hands: raise them or wave them to save. */
-export function ArmsUpIcon({ color = colors.text, size = 22 }: IconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityElementsHidden>
-      <Circle cx={12} cy={8} r={2} {...stroke(color)} />
-      <Path d="M8 2v9l4 1 4-1V2M12 12v4M9 22l3-6 3 6" {...stroke(color)} />
-      <Path d="M5 3.5c-1 1.2-1 3 0 4.2M19 3.5c1 1.2 1 3 0 4.2" {...stroke(color)} />
-    </Svg>
-  );
+/**
+ * The wave gesture (option C5, 2026-11-01), moving like the figure on the gesture's "?" sheet: arms open in a V and
+ * cross over the head, with motion marks beside the hands. It fills the 24-unit box and has their default size (20, like the voice, remote and watch icons).
+ */
+export function WaveIcon({ color = colors.text, size = 20 }: IconProps) {
+  return <WavingFigure size={size} color={color} strokeWidth={1.8} />;
 }
 
 export function ShareIcon({ color = colors.text, size = 22 }: IconProps) {

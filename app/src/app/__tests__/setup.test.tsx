@@ -25,6 +25,9 @@ jest.mock('../../../modules/replay-camera', () => {
     remoteHostControllers: jest.fn(() => 0),
     remoteHostPeers: jest.fn(() => []),
     addReplayListener: jest.fn(() => ({ remove: jest.fn() })),
+    setGestureEnabled: jest.fn(),
+    setVoiceEnabled: jest.fn(),
+    signalSaved: jest.fn(),
     ReplayCameraView: (props: { style?: unknown }) => {
       mounts.style = props.style;
       useEffect(() => {
@@ -286,6 +289,33 @@ test('shows that the camera is opening', async () => {
   session({ camera: 'starting' });
   await render(<Setup />);
   expect(screen.getByRole('button', { name: 'Abrindo a câmera…' })).toBeDisabled();
+});
+
+test("the wave gesture's ? opens how to do it and practises with the camera, which stops looking once it closes", async () => {
+  const cam = jest.requireMock('../../../modules/replay-camera');
+  cam.setGestureEnabled.mockClear();
+  session({});
+  await render(<Setup />);
+  await openSettings();
+  await fireEvent.press(screen.getByRole('button', { name: 'Como fazer o gesto' }));
+  expect(screen.getByText('Como acenar')).toBeTruthy();
+  expect(cam.setGestureEnabled).toHaveBeenLastCalledWith(true);
+  await fireEvent.press(screen.getByRole('button', { name: 'Fechar' }));
+  expect(screen.queryByText('Como acenar')).toBeNull();
+  expect(cam.setGestureEnabled).toHaveBeenLastCalledWith(false);
+});
+
+test("the voice's ? opens how to use it and practises listening, which stops once it closes", async () => {
+  const cam = jest.requireMock('../../../modules/replay-camera');
+  cam.setVoiceEnabled.mockClear();
+  session({});
+  await render(<Setup />);
+  await openSettings();
+  await fireEvent.press(screen.getByRole('button', { name: 'Como usar a voz' }));
+  expect(screen.getByText('Diga “salvar” ou “gravar” em voz alta.')).toBeTruthy();
+  expect(cam.setVoiceEnabled).toHaveBeenLastCalledWith(true, expect.anything());
+  await fireEvent.press(screen.getByRole('button', { name: 'Fechar' }));
+  expect(cam.setVoiceEnabled).toHaveBeenLastCalledWith(false, expect.anything());
 });
 
 test('the gesture tile toggles the gesture preference', async () => {
@@ -1011,3 +1041,4 @@ test('coming back from another app, a remote shown as connected goes back to pai
   expect(require('../../devices/remoteTest').hasRemotePress()).toBe(false);
   spy.mockRestore();
 });
+

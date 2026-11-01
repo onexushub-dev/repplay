@@ -413,6 +413,47 @@ test('updateClip stores the Modo Foco status and never brings back a deleted cli
   expect(repo.getClip(clip.id)).toBeUndefined();
 });
 
+describe('clips left by the removed cut suggestion (2026-11-01)', () => {
+  function setupOld() {
+    let n = 0;
+    const map = new Map<string, string>();
+    const kv = memoryKV(map);
+    const repo = createRepo(kv, { exists: () => true, sizeBytes: () => 1 }, () => `id-${++n}`);
+    const session = repo.startSession('quadra', 1000, { paid: false });
+    const add = (createdAt: number) =>
+      repo.addClip({ sessionId: session.id, createdAt, source: 'remote', path: `/c/${createdAt}.mp4`, durationMs: 60000 });
+    const bounds = { startMs: 30000, endMs: 60000 };
+    const suggested = { startMs: 48000, endMs: 60000 };
+    /** Writes a clip as the old app left it: `cutSuggestion` stored, and maybe applied as its cut. */
+    const old = (id: string, trim: { startMs: number; endMs: number }) => {
+      const k = `reprize:v1:clip:${id}`;
+      const clip = JSON.parse(map.get(k) as string);
+      map.set(k, JSON.stringify({ ...clip, bounds, trim, cutSuggestion: suggested }));
+    };
+    return { repo, add, old, bounds, suggested };
+  }
+
+  test('a clip the suggestion had cut goes back to the cut it was saved with', () => {
+    const { repo, add, old, bounds, suggested } = setupOld();
+    const clip = add(2000);
+    old(clip.id, suggested);
+    expect(repo.forgetCutSuggestions()).toBe(1);
+    const after = repo.getClip(clip.id) as Record<string, unknown>;
+    expect(after.trim).toEqual(bounds);
+    expect('cutSuggestion' in after).toBe(false);
+  });
+
+  test("a cut the player chose stays, only the old field goes; a second run changes nothing", () => {
+    const { repo, add, old } = setupOld();
+    const clip = add(2000);
+    const chosen = { startMs: 35000, endMs: 50000 };
+    old(clip.id, chosen);
+    expect(repo.forgetCutSuggestions()).toBe(1);
+    expect(repo.getClip(clip.id)!.trim).toEqual(chosen);
+    expect(repo.forgetCutSuggestions()).toBe(0);
+  });
+});
+
 describe('clips after iOS moved the app folder', () => {
   // iOS can give the app a new data folder on reinstall: same files, new absolute path.
   const oldDocs = '/var/mobile/Containers/Data/Application/OLD-ID/Documents/';
