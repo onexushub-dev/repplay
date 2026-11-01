@@ -36,6 +36,13 @@ try {
   // no file system here (tests, web): nothing to move
 }
 
+// The cut suggestion is gone (2026-11-01): clips it had cut go back to the cut they were saved with.
+try {
+  repo.forgetCutSuggestions();
+} catch {
+  // a cleanup never stops the app from opening
+}
+
 const removalListeners = new Set<(clipPath: string) => void>();
 
 /** Hears every clip file about to be deleted (the Modo Foco queue stops its analysis). Returns the unsubscribe. */

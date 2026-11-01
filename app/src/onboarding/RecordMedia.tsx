@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 
-import { ArmsUpIcon, BatteryIcon, MicIcon, QrIcon, RemoteIcon, WatchIcon } from '../components/icons';
+import { BatteryIcon, MicIcon, QrIcon, RemoteIcon, WatchIcon, WaveIcon } from '../components/icons';
 import { useT } from '../i18n/useT';
 import { colors, fonts, radius } from '../theme/tokens';
 import { PHOTOS } from './photos';
@@ -38,7 +38,7 @@ export function RecordMedia() {
         <Text style={styles.panelTitle}>{t('setup.howToSave')}</Text>
         <View style={styles.ways}>
           <MicIcon size={30} color={colors.accent} />
-          <ArmsUpIcon size={30} color={colors.accent} />
+          <WaveIcon size={30} color={colors.accent} />
           <RemoteIcon size={30} color={colors.muted} />
           <WatchIcon size={30} color={colors.muted} />
           <QrIcon size={30} color={colors.muted} />

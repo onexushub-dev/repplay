@@ -67,7 +67,7 @@ export const en = {
     },
     wave: {
       name: 'Wave both arms',
-      how: 'Raise both arms above your head, inside the camera frame.',
+      how: 'Wave both arms above your head, from side to side.',
       when: 'To save without leaving your position.',
     },
     voice: {
@@ -177,7 +177,7 @@ export const en = {
     myRecordings: 'My recordings',
     lastReady: 'Last %{seconds}s ready',
     orSay: 'or say “%{word}”',
-    orWave: 'or wave your arms',
+    orWave: 'or wave your arms above your head',
     orRemote: 'or use the remote',
     tapAnywhere: 'Tap anywhere to save the clip',
     recording: 'Recording',
@@ -522,6 +522,29 @@ export const en = {
       quadra: 'Behind the baseline, at shoulder height',
       academia: 'On the floor or a tripod, 6–10 ft away, side-on to the exercise',
     },
+  },
+  practice: {
+    section: 'Practice here',
+    retry: 'Try again',
+  },
+  gestureGuide: {
+    help: 'How to do the gesture',
+    title: 'How to wave',
+    stay: 'Stay inside the camera frame, facing the phone.',
+    waiting: 'Step back a few paces, face the camera and wave.',
+    raised: 'Arms up: now wave',
+    done: 'Gesture recognized',
+  },
+  voiceGuide: {
+    help: 'How to use your voice',
+    title: 'How to use your voice',
+    how: 'Say “%{first}” or “%{second}” out loud.',
+    stay: 'The phone listens through its own microphone: from the court, speak up.',
+    waiting: 'Say “%{first}” now.',
+    done: 'Command recognized',
+    allowText: 'Allow speech recognition to practice.',
+    allow: 'Allow',
+    deniedText: 'Speech recognition is blocked. Turn it on in Settings.',
   },
   sources: {
     screen: 'Screen',

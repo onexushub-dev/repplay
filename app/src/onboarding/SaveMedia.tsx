@@ -1,7 +1,8 @@
 import type { ComponentType } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { ArmsUpIcon, CheckIcon, MicIcon, QrIcon, RemoteIcon, TapIcon, WatchIcon } from '../components/icons';
+import { CheckIcon, MicIcon, QrIcon, RemoteIcon, TapIcon, WatchIcon, WaveIcon } from '../components/icons';
+import { WavingFigure } from '../components/WavingFigure';
 import type { MessageKey } from '../i18n';
 import { useT } from '../i18n/useT';
 import { colors, fonts, radius } from '../theme/tokens';
@@ -13,7 +14,7 @@ type IconType = ComponentType<{ color?: string; size?: number }>;
 
 const WAYS: Record<WayId, { Icon: IconType; source: MessageKey; pro: boolean }> = {
   tap: { Icon: TapIcon, source: 'sources.screen', pro: false },
-  wave: { Icon: ArmsUpIcon, source: 'sources.gesture', pro: false },
+  wave: { Icon: WaveIcon, source: 'sources.gesture', pro: false },
   voice: { Icon: MicIcon, source: 'sources.voice', pro: false },
   phone: { Icon: QrIcon, source: 'sources.phone', pro: false },
   watch: { Icon: WatchIcon, source: 'sources.watch', pro: true },
@@ -84,7 +85,15 @@ export function SaveMedia({ ways, card, onPick }: Props) {
             <Text style={[styles.planText, pro && styles.planTextPro]}>{pro ? t('onboarding.pro') : t('onboarding.free')}</Text>
           </View>
         </View>
-        <Text style={styles.how}>{t(`onboarding.${current}.how`)}</Text>
+        {current === 'wave' ? (
+          // The gesture moving, not a still picture of raised arms: just raising them is not the gesture.
+          <View style={styles.waveRow}>
+            <WavingFigure size={56} />
+            <Text style={[styles.how, styles.waveHow]}>{t('onboarding.wave.how')}</Text>
+          </View>
+        ) : (
+          <Text style={styles.how}>{t(`onboarding.${current}.how`)}</Text>
+        )}
         <Text style={styles.when}>{t(`onboarding.${current}.when`)}</Text>
       </Reveal>
     </View>
@@ -138,6 +147,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabOn: { borderColor: colors.accent, backgroundColor: colors.accent },
+  waveRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  waveHow: { flex: 1 },
   card: { paddingVertical: 12, paddingHorizontal: 14, borderRadius: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, gap: 4 },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   cardName: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 17, color: colors.text },
