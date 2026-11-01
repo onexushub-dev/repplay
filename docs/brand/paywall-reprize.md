@@ -1,50 +1,50 @@
-# Paywall Repplay: ficha para o painel do RevenueCat
+# Paywall Reprize: ficha para o painel do RevenueCat
 
-Aplicar na oferta `default` (Paywalls, no painel). Valores do kit de marca (`docs/brand/repplay/`) e de `app/src/theme/tokens.ts`.
+Aplicar na oferta `default` (Paywalls, no painel). Valores da paleta Placar (guia de marca do Reprize, `docs/brand/reprize/`) e de `app/src/theme/tokens.ts`.
 
 ## O que muda em relação à versão atual
 
-| Elemento | Hoje | Repplay |
+| Elemento | Hoje | Reprize |
 |---|---|---|
-| Fundo da página | azul-marinho `#0F1226`-ish | **Ink `#0B0B09`** |
-| Cartões e planos (fundo) | azul acinzentado | **Surface `#1B1D18`** |
-| Plano selecionado (borda e fundo) | borda ciano, fundo azul | borda **Lima `#D6F23F`** 2 px, fundo Surface |
-| Selo "SAVE 19%" | ciano com texto escuro | fundo **Lima**, texto **Ink** |
-| Ícones dos benefícios | ciano sobre azul | **Lima** sobre Surface |
-| Botão "Go Pro" | **vermelho coral** | fundo **Lima**, texto **Ink** |
-| Texto principal | branco | **Paper `#F3EDE1`** |
-| Texto secundário | cinza azulado | **Muted `#A9A79C`** |
+| Fundo da página | azul-marinho `#0F1226`-ish | **Ink `#0A0A0A`** |
+| Cartões e planos (fundo) | azul acinzentado | **Surface `#141414`** |
+| Plano selecionado (borda e fundo) | borda ciano, fundo azul | borda **Âmbar `#FFB000`** 2 px, fundo Surface |
+| Selo "SAVE 19%" | ciano com texto escuro | fundo **Âmbar**, texto **Ink** |
+| Ícones dos benefícios | ciano sobre azul | **Âmbar** sobre Surface |
+| Botão "Go Pro" | **vermelho coral** | fundo **Âmbar**, texto **Ink** |
+| Texto principal | branco | **Branco `#FFFFFF`** |
+| Texto secundário | cinza azulado | **Muted `#B3B3B3`** |
 | Links (Restore, Terms, Privacy) | cinza | **Muted** |
 | Título | sans arredondada | **Barlow Condensed 700/800**, caixa alta, entrelinha 1.05 |
 | Corpo, preços, rótulos | sans | **Manrope** 400/600/700 |
 
-Por que o botão não pode ser vermelho: no app, o vermelho-laranja (`rec`, `#FF5A36`) significa só "gravando". Um botão de compra nessa cor lê como alerta e quebra a regra do kit de usar um único acento.
+Por que o botão não pode ser vermelho: no app, o vermelho-laranja (`rec`, `#FF453A`) significa só "gravando". Um botão de compra nessa cor lê como alerta e quebra a regra do guia de usar um único acento.
 
-## Cores (todas do kit)
+## Cores (paleta Placar)
 
 | Papel | Nome | HEX |
 |---|---|---|
-| Fundo | Ink | `#0B0B09` |
-| Cartão / plano | Surface | `#1B1D18` |
-| Contorno em repouso | Border | `#3A3D34` |
-| Texto | Paper | `#F3EDE1` |
-| Texto secundário | Muted | `#A9A79C` |
-| Acento (botão, selo, ícones, plano selecionado) | Lima | `#D6F23F` |
-| Texto sobre o acento | Ink | `#0B0B09` |
+| Fundo | Ink | `#0A0A0A` |
+| Cartão / plano | Surface | `#141414` |
+| Contorno em repouso | Border | `#2E2E2E` |
+| Texto | Branco | `#FFFFFF` |
+| Texto secundário | Muted | `#B3B3B3` |
+| Acento (botão, selo, ícones, plano selecionado) | Âmbar | `#FFB000` |
+| Texto sobre o acento | Ink | `#0A0A0A` |
 
-Nunca usar Lima sobre fundo branco ou claro (regra do kit).
+Nunca usar Âmbar sobre fundo branco ou claro (regra do guia; no claro, o acento é o Âmbar escuro `#946200`).
 
 ## Contraste (WCAG, calculado)
 
 | Par | Razão |
 |---|---|
-| Paper sobre Ink | 16,9:1 |
-| Paper sobre Surface | 14,6:1 |
-| Lima sobre Ink | 15,6:1 |
-| Ink sobre Lima (botão e selo) | 15,6:1 |
-| Muted sobre Ink | 8,2:1 |
-| Muted sobre Surface | 7,0:1 |
-| Border sobre Ink | 1,8:1, só decorativo: o plano selecionado se distingue por Lima, não pela borda cinza |
+| Branco sobre Ink | 19,8:1 |
+| Branco sobre Surface | 18,4:1 |
+| Âmbar sobre Ink | 10,8:1 |
+| Ink sobre Âmbar (botão e selo) | 10,8:1 |
+| Muted sobre Ink | 9,4:1 |
+| Muted sobre Surface | 8,8:1 |
+| Border sobre Ink | 1,5:1, só decorativo: o plano selecionado se distingue pelo Âmbar, não pela borda cinza |
 
 Todos os textos passam de 7:1.
 
@@ -54,7 +54,7 @@ Raios do app: plano e cartão 14, botão 16, chip e selo 20, folha 24. Espaçame
 
 ## Hero (imagem do topo)
 
-Manter a foto escura de quadra, mas escurecer a base até Ink `#0B0B09` na emenda com o conteúdo, sem o recorte azulado. A foto atual é de skate; o app é de esportes de quadra e areia (beach tennis, futevôlei, vôlei de praia), então troque por uma foto desses esportes, com câmera no tripé, aspecto cru de celular e sem acabamento de banco de imagens (direção do brief).
+Manter a foto escura de quadra, mas escurecer a base até Ink `#0A0A0A` na emenda com o conteúdo, sem o recorte azulado. A foto atual é de skate; o app é de esportes de quadra e areia (beach tennis, futevôlei, vôlei de praia), então troque por uma foto desses esportes, com câmera no tripé, aspecto cru de celular e sem acabamento de banco de imagens (direção do brief).
 
 ## Texto
 
