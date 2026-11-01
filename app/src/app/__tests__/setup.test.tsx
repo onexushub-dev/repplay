@@ -2,7 +2,7 @@ import { Alert } from 'react-native';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import Setup from '../setup';
-import { clearRemotePress } from '../../devices/remoteTest';
+import { clearRemotePress, setRemoteSheetOpen } from '../../devices/remoteTest';
 
 jest.mock('../../../modules/replay-camera', () => {
   const { useEffect } = jest.requireActual('react');
@@ -118,6 +118,8 @@ async function openSettings() {
 }
 
 beforeEach(() => {
+  // A tap on the remote tile counts the sheet as opening for a moment: never carry it into the next test.
+  setRemoteSheetOpen(false);
   jest.clearAllMocks();
   jest.requireMock('../../data/mmkv').__reset();
   clearRemotePress();
@@ -318,6 +320,19 @@ test("the voice's ? opens how to use it and practises listening, which stops onc
   expect(cam.setVoiceEnabled).toHaveBeenLastCalledWith(false, expect.anything());
 });
 
+test('opening the Bluetooth remote sheet keeps the camera on under it (it was stopped and reopened)', async () => {
+  const value = session({});
+  const view = await render(<Setup />);
+  await openSettings();
+  await fireEvent.press(screen.getByRole('button', { name: /^Controle Bluetooth/ }));
+  expect(router.push).toHaveBeenCalledWith(expect.objectContaining({ pathname: '/devices' }));
+  value.release.mockClear();
+  jest.requireMock('expo-router').useIsFocused.mockReturnValue(false); // the sheet covers the setup
+  await view.rerender(<Setup />);
+  expect(value.release).not.toHaveBeenCalled();
+  jest.requireMock('expo-router').useIsFocused.mockReturnValue(true);
+});
+
 test('the gesture tile toggles the gesture preference', async () => {
   session({});
   await render(<Setup />);
@@ -516,17 +531,17 @@ test('a remote press while collapsed shows the remote works', async () => {
   expect(screen.getByRole('button', { name: /controle conectado$/ })).toBeTruthy();
 });
 
-test('a remote paired in an earlier launch shows on, like the recording screen', async () => {
+test('a remote used in an earlier launch is not shown on until a press: it may have been unpaired since', async () => {
   const { StyleSheet } = jest.requireActual('react-native');
   const { colors } = jest.requireActual('../../theme/tokens');
-  const statusColor = () => StyleSheet.flatten(screen.getByText('Pareado · aperte um botão').props.style).color;
+  const statusColor = () => StyleSheet.flatten(screen.getByText('Aperte um botão para conferir').props.style).color;
 
   session({});
   repo.setPrefs({ remoteTestedAt: 1 });
   await render(<Setup />);
-  expect(screen.getByRole('button', { name: /controle pareado$/ })).toBeTruthy();
+  expect(screen.getByRole('button', { name: /controle a conferir$/ })).toBeTruthy();
   await openSettings();
-  expect(statusColor()).toBe(colors.accent);
+  expect(statusColor()).not.toBe(colors.accent);
 });
 
 test('the positioning guide fits the camera area above the sheet', async () => {
@@ -877,12 +892,12 @@ test('the Bluetooth remote tile starts as "Toque para conectar" and opens the Di
   expect(router.push).toHaveBeenCalledWith({ pathname: '/devices', params: { kind: 'remote' } });
 });
 
-test('the Bluetooth remote tile says "Pareado" when the remote was used before, and "Conectado" after a press', async () => {
+test('the Bluetooth remote tile asks for a press when the remote was used before, and says "Conectado" after one', async () => {
   repo.setPrefs({ remoteTestedAt: 123 });
   session({});
   await render(<Setup />);
   await openSettings();
-  expect(screen.getByRole('button', { name: 'Controle Bluetooth, Pareado · aperte um botão' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Controle Bluetooth, Aperte um botão para conferir' })).toBeTruthy();
   const { useVolumeRemote } = jest.requireMock('../../triggers/useVolumeRemote');
   await act(async () => useVolumeRemote.mock.calls.at(-1)[1]());
   expect(screen.getByRole('button', { name: 'Controle Bluetooth, Conectado' })).toBeTruthy();

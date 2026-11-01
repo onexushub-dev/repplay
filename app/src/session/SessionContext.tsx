@@ -12,9 +12,17 @@ import { focusHold } from '../focus/focusQueue';
 // TEMP(diag-remote)
 import { diag } from '../diag/diagLog';
 import { useSessionDiag } from '../diag/useSessionDiag';
-import { useVolumeRemote } from '../triggers/useVolumeRemote';
+import { useBluetoothRemote } from '../triggers/useBluetoothRemote';
 import { type ReplaySession, type SessionDeps, useReplaySession } from './useReplaySession';
 import { useWatchTriggerGate } from './useWatchTriggerGate';
+
+/**
+ * The Bluetooth remote in a game: its presses, and the press that wakes it from sleep (counted from its comeback),
+ * once it was seen connected in this game (a remote switched on mid-game must not save a clip).
+ */
+function useGameRemote(enabled: boolean, onPress: () => void): void {
+  useBluetoothRemote(enabled, onPress, { requireSeenConnected: true });
+}
 
 const appDeps: SessionDeps = {
   camera,
@@ -24,7 +32,7 @@ const appDeps: SessionDeps = {
   now: Date.now,
   locale: currentLocale,
   startDecision: payments.startDecision,
-  useRemote: useVolumeRemote,
+  useRemote: useGameRemote,
   onClipSaved: (clipId) => {
     const clip = repo.getClip(clipId);
     diag(`clipe salvo (${clip ? clip.source : '?'})`); // TEMP(diag-remote)

@@ -44,15 +44,16 @@ import { accessPlan } from '../payments/rules';
 import { usePlan } from '../share/entitlement';
 import { type MessageKey, type TFunction, VOICE_WORDS, voiceLocale } from '../i18n';
 import { useT } from '../i18n/useT';
+import { useRemoteLink } from '../devices/bluetoothRemote';
 import { remoteDeviceView } from '../devices/remoteDevice';
-import { clearRemotePress } from '../devices/remoteTest';
+import { clearRemotePress, openingRemoteSheet } from '../devices/remoteTest';
 import { useRemoteSheetOpen, useRemoteTest } from '../devices/useRemoteTest';
 import { CLIP_SECONDS_OPTIONS, type ModeSettings, type Prefs } from '../data/schema';
 import { effectiveSettings, modeById, offeredMode, withModeOverride } from '../modes/registry';
 import { clampZoom, lensFor, nextZoomStep } from '../modes/zoom';
 import { useSession } from '../session/SessionContext';
 import { colors, fonts, radius } from '../theme/tokens';
-import { useVolumeRemote } from '../triggers/useVolumeRemote';
+import { useBluetoothRemote } from '../triggers/useBluetoothRemote';
 
 /** How long the zoom value stays over the preview after the last pinch move. */
 const BUBBLE_MS = 800;
@@ -86,6 +87,8 @@ function cameraStatus(t: TFunction, host: { name: string } | null): string | und
 
 /** How long the battery-saving notice stays after a tap on its button. */
 const ECONOMY_TOAST_MS = 3000;
+
+const PRACTICE_REMOTE = { requireSeenConnected: false };
 
 export default function Setup() {
   const session = useSession();
@@ -139,14 +142,16 @@ export default function Setup() {
   };
   // The Bluetooth remote: the app cannot see the iOS pairing, only presses (this launch, or heard before).
   const remoteTest = useRemoteTest();
+  // The remote's link as iOS shows it (BLE remotes the app has learnt), looked at while this screen is in front.
+  const remoteLink = useRemoteLink(focused);
   const remoteView = remoteDeviceView(
-    { pressed: remoteTest.pressed, testedBefore: remoteTest.testedBefore, waitedLong: false },
+    { pressed: remoteTest.pressed, testedBefore: remoteTest.testedBefore, waitedLong: false, link: remoteLink },
     locale,
   );
-  // Paired counts as ready: a remote heard before works in the recording (which always listens to it), so its icon and
-  // tile show it on like the recording screen does; only a remote never heard in the app stays grey. The texts still
-  // tell paired from connected.
-  const remoteReady = remoteView.state !== 'setup';
+  // Only a press proves the remote works: one used before may have been unpaired in Ajustes since, and the app cannot
+  // tell (2026-11-01 field test). So its icon and tile light up only once a press is heard; the recording still listens
+  // to it either way.
+  const remoteReady = remoteView.state === 'connected';
   // The sheet opens collapsed so the camera and its guide stay visible; mode and triggers sit behind the summary.
   const [expanded, setExpanded] = useState(false);
   // A trigger's "?" (the wave gesture, voice): how to use it, and practice with the live camera.
@@ -288,9 +293,13 @@ export default function Setup() {
           ? 'setup.summaryRemoteNotConnected'
           : remoteView.state === 'connected'
           ? 'setup.summaryRemoteConnected'
-          : remoteView.state === 'offline'
-            ? 'setup.summaryRemotePaired'
-            : 'setup.summaryRemoteNotConnected',
+          : remoteLink === 'bluetoothOff'
+            ? 'setup.summaryBluetoothOff'
+            : remoteLink === 'missing'
+              ? 'setup.summaryRemoteMissing'
+              : remoteView.state === 'offline'
+                ? 'setup.summaryRemotePaired'
+                : 'setup.summaryRemoteNotConnected',
       ),
       ...(watchOn ? [t('setup.summaryWatchReady')] : []),
     ].join(', '),
@@ -314,7 +323,8 @@ export default function Setup() {
   }, [focused]);
 
   // A press of the Bluetooth remote here proves it is paired and reaching the app.
-  useVolumeRemote(live && phase === 'idle' && remoteAllowed, remoteTest.press);
+  // The connection test: the press that wakes the remote counts too (requireSeenConnected off: it may be asleep now).
+  useBluetoothRemote(live && phase === 'idle' && remoteAllowed, remoteTest.press, PRACTICE_REMOTE);
 
   // Coming back from another app, whether the remote is still on is unknown: until it is pressed again it shows as paired.
   useEffect(() => {
@@ -543,7 +553,10 @@ export default function Setup() {
               lockedHint={remoteAllowed ? undefined : t('setup.proOnly')}
               onPress={
                 remoteAllowed
-                  ? () => router.push({ pathname: '/devices', params: { kind: 'remote' } })
+                  ? () => {
+                      openingRemoteSheet(); // the camera stays on under the sheet (presses are heard through it)
+                      router.push({ pathname: '/devices', params: { kind: 'remote' } });
+                    }
                   : () => void openPaywall(t)
               }
             />
