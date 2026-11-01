@@ -56,7 +56,7 @@ struct ContentView: View {
         Header {}
         BigButton(
           title: link.starting ? Text("Starting…") : Text("Start recording"), style: .title2, enabled: !link.starting,
-          action: link.sendStart)
+          doubleTap: true, action: link.sendStart)
       }
     }
   }
@@ -72,7 +72,7 @@ struct ContentView: View {
   /// Save, or (watch trigger locked: it is paid) a short note in its place; the timer and count keep working.
   @ViewBuilder private var saveButton: some View {
     if link.saveAllowed {
-      BigButton(title: Text("Save"), enabled: true, action: link.sendSave)
+      BigButton(title: Text("Save"), enabled: true, doubleTap: true, action: link.sendSave)
     } else {
       ProOnlyNote()
     }
@@ -109,6 +109,11 @@ struct ContentView: View {
       } else {
         ProgressView()
       }
+      // A tap anywhere saves; being a Button lets Double Tap press it too.
+      Button { if link.saveAllowed { link.sendSave() } } label: { Color.clear.contentShape(Rectangle()) }
+        .buttonStyle(.plain)
+        .handGestureShortcut(.primaryAction)
+        .accessibilityLabel(link.saveAllowed ? Text("Save") : Text("Available with Pro"))
       VStack {
         HStack(alignment: .top) {
           CameraToggle(isOn: true) { link.setPreview(false) }
@@ -123,10 +128,6 @@ struct ContentView: View {
       }
       .padding(4)
     }
-    .contentShape(Rectangle())
-    .onTapGesture { if link.saveAllowed { link.sendSave() } }
-    .accessibilityAddTraits(link.saveAllowed ? .isButton : [])
-    .accessibilityLabel(link.saveAllowed ? Text("Save") : Text("Available with Pro"))
     .ignoresSafeArea(edges: .bottom)
   }
 }
@@ -255,6 +256,8 @@ private struct BigButton: View {
   let title: Text
   var style: Font.TextStyle = .title
   let enabled: Bool
+  /// The Double Tap gesture (index finger and thumb) presses this button: Save and Start take it.
+  var doubleTap = false
   let action: () -> Void
   var body: some View {
     Button(action: action) {
@@ -269,6 +272,15 @@ private struct BigButton: View {
     }
     .buttonStyle(PressStyle())
     .disabled(!enabled)
+    .modifier(DoubleTapShortcut(on: doubleTap))
+  }
+}
+
+/// `handGestureShortcut` has no "off" value, so the modifier is added only when asked for.
+private struct DoubleTapShortcut: ViewModifier {
+  let on: Bool
+  @ViewBuilder func body(content: Content) -> some View {
+    if on { content.handGestureShortcut(.primaryAction) } else { content }
   }
 }
 
