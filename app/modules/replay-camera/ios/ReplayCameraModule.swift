@@ -97,7 +97,8 @@ public class ReplayCameraModule: Module {
 
     Events("onTrigger", "onThermalChange", "onInterrupted", "onResumed", "onError", "onGestureDebug", "onGestureTrace", "onWatchStatus",
            "onRemoteStatus", "onRemoteState", "onRemoteResult", "onRemotePairing", "onRemoteStop",
-           "onRemoteStart", "onRemoteFrame", "onRemoteCheck", "onRemoteVoice", "onDiag") // onDiag: TEMP(diag-remote)
+           "onRemoteStart", "onRemoteFrame", "onRemoteCheck", "onRemoteVoice", "onCaptureButton", "onAudioChange",
+           "onDiag") // onDiag: TEMP(diag-remote)
 
     OnCreate {
       self.engine.emit = { [weak self] name, body in self?.sendEvent(name, body) }
@@ -158,6 +159,13 @@ public class ReplayCameraModule: Module {
     // The phone's real output volume. The volume remote reads presses as volume changes and parks the volume after
     // each one; the volume library reports its hidden slider instead, which goes stale (2026-10-28 field log).
     Function("outputVolume") { () -> Double in Double(AVAudioSession.sharedInstance().outputVolume) }
+
+    // The Bluetooth remote as a capture event (iOS 17.2+, see CaptureButtons): true while a screen listens to it.
+    // Returns whether this phone delivers them; the volume path keeps working either way.
+    Function("setCaptureButtons") { (enabled: Bool) -> Bool in
+      DispatchQueue.main.async { MainActor.assumeIsolated { CaptureButtons.shared.set(enabled) } }
+      return CaptureButtons.supported
+    }
 
     // TEMP(diag-remote): the audio session the volume remote depends on.
     Function("diagAudioState") { () -> String in ReplayEngine.audioState() }

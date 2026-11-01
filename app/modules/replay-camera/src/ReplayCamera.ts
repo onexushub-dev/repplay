@@ -80,6 +80,15 @@ export function outputVolume(): number | undefined {
   return typeof get === 'function' ? get.call(ReplayCameraModule) : undefined;
 }
 
+/**
+ * While true, a volume button or Bluetooth selfie remote press arrives as `onCaptureButton` instead of changing the
+ * volume (iOS 17.2+, camera running). Returns whether this phone delivers them (false on Android and older builds).
+ */
+export function setCaptureButtons(enabled: boolean): boolean {
+  const set = ReplayCameraModule.setCaptureButtons;
+  return typeof set === 'function' ? set.call(ReplayCameraModule, enabled) : false;
+}
+
 /** TEMP(diag-remote): the audio session the Bluetooth remote depends on, in one line; empty where unsupported. */
 export function diagAudioState(): string {
   const get = ReplayCameraModule.diagAudioState;

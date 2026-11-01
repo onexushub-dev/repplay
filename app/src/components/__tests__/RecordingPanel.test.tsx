@@ -319,6 +319,12 @@ describe('heat tip', () => {
     jest.useRealTimers();
   });
 
+  test('shown when the phone gets hot with nothing left to step down (Full HD 30 is the floor)', async () => {
+    session({ thermal: { level: 'serious', degraded: false, quality: '1080p30' } });
+    await render(<Recording />);
+    expect(screen.getByText(tip)).toBeTruthy();
+  });
+
   test('not shown while cool, nor next to the step-down banner', async () => {
     session({});
     const view = await render(<Recording />);

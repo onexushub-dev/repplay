@@ -1,11 +1,15 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { useEffect } from 'react';
 
 import { useFreeExportGate } from '../useFreeExportGate';
 
 let gate: ReturnType<typeof useFreeExportGate>;
 function Harness() {
-  gate = useFreeExportGate();
-  return gate.sheet;
+  const current = useFreeExportGate();
+  useEffect(() => {
+    gate = current; // after render, not during it: the tests reach the hook through this
+  });
+  return current.sheet;
 }
 
 afterEach(() => jest.useRealTimers());
