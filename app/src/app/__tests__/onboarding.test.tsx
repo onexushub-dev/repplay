@@ -92,9 +92,9 @@ test('the Save story shows its ways, and tapping one opens it', async () => {
   await fireEvent.press(next());
   expect(screen.getByText('Toque na tela')).toBeTruthy();
   await fireEvent.press(screen.getByLabelText('Voz'));
-  expect(screen.getByText('Diga “salvar” ou “gravar”.')).toBeTruthy();
+  expect(screen.getByText('Diga “salvar”.')).toBeTruthy();
   await run(10_000);
-  expect(screen.getByText('Diga “salvar” ou “gravar”.')).toBeTruthy();
+  expect(screen.getByText('Diga “salvar”.')).toBeTruthy();
 });
 
 test('the last story explains the camera and asking for it ends the onboarding', async () => {

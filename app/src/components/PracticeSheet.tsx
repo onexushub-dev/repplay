@@ -9,7 +9,7 @@ import {
   signalSaved,
 } from '../../modules/replay-camera';
 import type { TriggerSource } from '../../modules/replay-camera/src/ReplayCamera.types';
-import { type AppLocale, VOICE_WORDS, voiceLocale } from '../i18n';
+import { type AppLocale, VOICE_WORD, voiceLocale } from '../i18n';
 import { useT } from '../i18n/useT';
 import { colors, fonts, radius } from '../theme/tokens';
 import { Button } from './Button';
@@ -188,7 +188,7 @@ type VoiceProps = {
 /** The voice trigger's "?". */
 export function VoiceSheet({ visible, onClose, locale, speech, onAllow }: VoiceProps) {
   const { t } = useT();
-  const [first, second] = VOICE_WORDS[locale];
+  const word = VOICE_WORD[locale];
   const trigger: PracticeTrigger = {
     source: 'voice',
     enable: (on) => setVoiceEnabled(on, voiceLocale(locale)),
@@ -205,11 +205,11 @@ export function VoiceSheet({ visible, onClose, locale, speech, onAllow }: VoiceP
       visible={visible}
       onClose={onClose}
       title={t('voiceGuide.title')}
-      figure={<SpeakingFigure size={88} accessibilityLabel={t('voiceGuide.how', { first, second })} />}
-      how={t('voiceGuide.how', { first, second })}
+      figure={<SpeakingFigure size={88} accessibilityLabel={t('voiceGuide.how', { word })} />}
+      how={t('voiceGuide.how', { word })}
       note={t('voiceGuide.stay')}
       trigger={trigger}
-      texts={{ waiting: t('voiceGuide.waiting', { first }), done: t('voiceGuide.done') }}
+      texts={{ waiting: t('voiceGuide.waiting', { word }), done: t('voiceGuide.done') }}
       blocked={blocked}
     />
   );

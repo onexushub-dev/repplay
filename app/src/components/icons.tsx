@@ -39,7 +39,9 @@ export function QrIcon({ color = colors.text, size = 22 }: IconProps) {
  * cross over the head, with motion marks beside the hands. It fills the 24-unit box and has their default size (20, like the voice, remote and watch icons).
  */
 export function WaveIcon({ color = colors.text, size = 20 }: IconProps) {
-  return <WavingFigure size={size} color={color} strokeWidth={1.8} />;
+  // A thicker line than the other icons (2.2, not 1.8): made of thin strokes with space between them, it looked smaller
+  // than its neighbours at tile size (2026-11-01).
+  return <WavingFigure size={size} color={color} strokeWidth={2.2} />;
 }
 
 export function ShareIcon({ color = colors.text, size = 22 }: IconProps) {

@@ -92,7 +92,7 @@ describe('the voice', () => {
       <VoiceSheet visible onClose={jest.fn()} locale="pt-BR" speech="granted" onAllow={jest.fn()} />,
     );
     expect(cam.setVoiceEnabled).toHaveBeenLastCalledWith(true, expect.anything());
-    expect(screen.getByText('Diga “salvar” ou “gravar” em voz alta.')).toBeTruthy();
+    expect(screen.getByText('Diga “salvar” em voz alta.')).toBeTruthy();
     expect(status()).toHaveTextContent('Diga “salvar” agora.');
     await emit('onTrigger', { source: 'voice', at: 1 });
     expect(status()).toHaveTextContent('Comando reconhecido');

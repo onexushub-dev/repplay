@@ -314,7 +314,7 @@ test("the voice's ? opens how to use it and practises listening, which stops onc
   await render(<Setup />);
   await openSettings();
   await fireEvent.press(screen.getByRole('button', { name: 'Como usar a voz' }));
-  expect(screen.getByText('Diga “salvar” ou “gravar” em voz alta.')).toBeTruthy();
+  expect(screen.getByText('Diga “salvar” em voz alta.')).toBeTruthy();
   expect(cam.setVoiceEnabled).toHaveBeenLastCalledWith(true, expect.anything());
   await fireEvent.press(screen.getByRole('button', { name: 'Fechar' }));
   expect(cam.setVoiceEnabled).toHaveBeenLastCalledWith(false, expect.anything());
@@ -351,7 +351,7 @@ test('Começar gravação starts the one mode and shows the recording controls o
 
   session({ phase: 'recording', sessionId: 's1', startedAt: Date.now() });
   await view.rerender(<Setup />);
-  expect(screen.getByText('Toque na tela para salvar o clipe')).toBeTruthy();
+  expect(screen.getByText(/Toque na tela para salvar os últimos/)).toBeTruthy();
   expect(router.replace).not.toHaveBeenCalled();
 });
 
