@@ -33,10 +33,30 @@ export function clearRemotePress(): void {
   notify();
 }
 
+/** If the sheet asked for by `openingRemoteSheet` has not shown up by then, the setup lets the camera go as usual. */
+export const OPENING_GRACE_MS = 3000;
+let openingTimer: ReturnType<typeof setTimeout> | undefined;
+
 /** The Dispositivos sheet is in front: the setup screen keeps listening to the remote for it. */
 export function setRemoteSheetOpen(open: boolean): void {
+  if (openingTimer !== undefined) clearTimeout(openingTimer);
+  openingTimer = undefined;
   sheetOpen = open;
   notify();
+}
+
+/**
+ * Call right before opening the Dispositivos sheet. The setup screen loses focus as the sheet starts to open, before
+ * the sheet itself says it is in front: without this the camera under it was stopped and reopened, which took 8-10 s
+ * (2026-11-01 field test) and left presses going to the ringer volume meanwhile.
+ */
+export function openingRemoteSheet(): void {
+  setRemoteSheetOpen(true);
+  openingTimer = setTimeout(() => {
+    openingTimer = undefined;
+    sheetOpen = false;
+    notify();
+  }, OPENING_GRACE_MS);
 }
 
 export function isRemoteSheetOpen(): boolean {
