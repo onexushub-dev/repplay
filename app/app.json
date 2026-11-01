@@ -23,7 +23,7 @@
         "NSBonjourServices": [
           "_reprize-remote._tcp"
         ],
-        "NSBluetoothAlwaysUsageDescription": "O Reprize usa o Bluetooth para conversar com o outro celular que serve de controle.",
+        "NSBluetoothAlwaysUsageDescription": "Reprize uses Bluetooth to talk to the phone you use as a remote and to show whether your selfie remote is connected.",
         "UIBackgroundModes": [
           "bluetooth-central"
         ]

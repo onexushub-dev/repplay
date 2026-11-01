@@ -104,6 +104,12 @@ export type Prefs = {
   voiceEnabled: boolean;
   /** When a press of the Bluetooth remote was first heard; the app cannot see the iOS pairing, only presses. */
   remoteTestedAt?: number;
+  /**
+   * The Bluetooth remote as iOS shows it (BLE remotes only): its peripheral id and name, learnt at a press when exactly
+   * one connected device could be it. Then the app sees it connect and go without a press.
+   */
+  remoteBleId?: string;
+  remoteBleName?: string;
   /** The Modo Foco introduction (the first framed clip) was shown. */
   focusIntroSeen?: boolean;
   /** Battery saving while recording: the screen goes dark after a while without a touch (the recording goes on). */

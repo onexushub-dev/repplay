@@ -1,6 +1,7 @@
 import ReplayCameraModule from './ReplayCameraModule';
 import type {
   AnalyzeFocusOptions,
+  BluetoothConnected,
   DeviceUpright,
   ExportClipOptions,
   ExportedClip,
@@ -87,6 +88,15 @@ export function outputVolume(): number | undefined {
 export function setCaptureButtons(enabled: boolean): boolean {
   const set = ReplayCameraModule.setCaptureButtons;
   return typeof set === 'function' ? set.call(ReplayCameraModule, enabled) : false;
+}
+
+/**
+ * The BLE peripherals iOS holds connected now (how the Bluetooth selfie remote is seen); undefined where unsupported
+ * (Android, older builds). `ask` false never makes iOS ask for Bluetooth: the state is then "notDetermined".
+ */
+export async function bluetoothConnected(ask: boolean): Promise<BluetoothConnected | undefined> {
+  const probe = ReplayCameraModule.bluetoothConnected;
+  return typeof probe === 'function' ? probe.call(ReplayCameraModule, ask) : undefined;
 }
 
 /** TEMP(diag-remote): the audio session the Bluetooth remote depends on, in one line; empty where unsupported. */

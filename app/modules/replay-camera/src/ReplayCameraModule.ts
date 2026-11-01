@@ -2,6 +2,7 @@ import { NativeModule, requireNativeModule } from 'expo';
 
 import type {
   AnalyzeFocusOptions,
+  BluetoothConnected,
   DeviceUpright,
   ExportClipOptions,
   ExportedClip,
@@ -42,6 +43,8 @@ declare class ReplayCameraModule extends NativeModule<ReplayCameraModuleEvents> 
   setCaptureButtons?(enabled: boolean): boolean;
   // TEMP(diag-remote) (iOS only: missing on Android and in older builds).
   diagAudioState?(): string;
+  // The Bluetooth selfie remote as iOS shows it (iOS only: missing on Android and in older builds).
+  bluetoothConnected?(ask: boolean): Promise<BluetoothConnected>;
   requestPermissions(): Promise<boolean>;
   signalSaved(sound: boolean, flash: boolean): void;
   signalSaveFailed(sound: boolean): void;
