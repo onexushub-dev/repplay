@@ -212,6 +212,31 @@ export function createRepo(kv: KV, files: FileProbe, newId: () => string) {
       return moved;
     },
 
+    /**
+     * One-time cleanup (2026-11-01): the cut suggestion was removed. A clip it had cut (its cut is still the suggested
+     * one) goes back to the cut it was saved with (`bounds`); a cut the player chose stays. The old field is dropped
+     * either way. Returns how many clips it touched.
+     */
+    forgetCutSuggestions(): number {
+      type Old = Clip & { cutSuggestion?: Clip['trim'] };
+      let touched = 0;
+      for (const sessionId of sessionIds()) {
+        for (const clipId of clipIds(sessionId)) {
+          const stored = read<Old>(key.clip(clipId));
+          if (!stored || stored.cutSuggestion === undefined) continue;
+          const { cutSuggestion, ...clip } = stored;
+          const automatic =
+            clip.bounds !== undefined &&
+            clip.trim.startMs === cutSuggestion.startMs &&
+            clip.trim.endMs === cutSuggestion.endMs;
+          write(key.clip(clipId), automatic && clip.bounds ? { ...clip, trim: clip.bounds } : clip);
+          touched += 1;
+        }
+      }
+      if (touched > 0) changed();
+      return touched;
+    },
+
     /** Games with at least one existing clip, newest first. */
     listSessions(): { session: Session; clips: number; firstClip?: Clip }[] {
       return sessionIds()
@@ -234,7 +259,6 @@ export function createRepo(kv: KV, files: FileProbe, newId: () => string) {
         savedAt?: number;
         sharedAt?: number;
         focus?: Clip['focus'];
-        cutSuggestion?: Clip['cutSuggestion'];
       },
     ): Clip | undefined {
       const existing = read<Clip>(key.clip(id));
