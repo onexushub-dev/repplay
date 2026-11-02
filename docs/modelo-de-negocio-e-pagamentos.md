@@ -60,8 +60,8 @@ Compilar no grátis abre o paywall direto.
 
 ## Como se paga
 
-- **PRO** (assinatura, entitlement `pro`): `pro_monthly` **R$ 14,90/mês** e `pro_annual` **R$ 99,90/ano** (≈ R$ 8,33/mês, 44% abaixo de 12 mensalidades). **Teste grátis de 7 dias no anual e no mensal; a loja cobra no oitavo dia.**
-- **Passe Avulso** (consumível, `single_pass`, **R$ 4,90**), oferecido como **"Liberar só esta gravação"** no painel da exportação; o paywall dele se chama **"Liberar esta gravação"**:
+- **PRO** (assinatura, entitlement `pro`): `pro_monthly` **R$ 14,90/mês** e `pro_annual` **R$ 99,90/ano** (≈ R$ 8,33/mês, 44% abaixo de 12 mensalidades). Nos EUA: **$6.90/mês** e **$49.90/ano** (≈ $4.16/mês, 40% abaixo de 12 mensalidades). **Teste grátis de 7 dias no anual e no mensal; a loja cobra no oitavo dia.**
+- **Passe Avulso** (consumível, `single_pass`, **R$ 4,90**; **$2.49** nos EUA), oferecido como **"Liberar só esta gravação"** no painel da exportação; o paywall dele se chama **"Liberar esta gravação"**:
   - é usado **só quando o jogador escolhe**, numa gravação grátis já feita; nunca é gasto sozinho ao começar uma gravação;
   - libera nessa gravação a exportação em Full HD, com som, com Modo Foco, sem marca, e compilar os clipes dela;
   - não libera duração acima de 15 s nem 4K, porque a gravação foi feita em 15 s e Full HD;

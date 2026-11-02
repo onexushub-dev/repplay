@@ -14,17 +14,26 @@
 
 - **Só RevenueCat** sobre Apple IAP e Google Play Billing. Sem Stripe e sem pagamento fora da loja.
 - **Sem backend e sem login.** Usuário anônimo (ID do RevenueCat). Login pode vir depois, como convite opcional após a compra (`Purchases.logIn()` junta o histórico anônimo).
-- **Moeda e preço vêm sempre da loja.** O país da conta da Apple/Google decide a moeda; o app mostra só o texto de preço da loja/RevenueCat e nunca converte nem fixa símbolo. Nenhum valor nem símbolo de moeda em código ou catálogo. Os valores em R$ deste spec são os preços do Brasil.
+- **Moeda e preço vêm sempre da loja.** O país da conta da Apple/Google decide a moeda; o app mostra só o texto de preço da loja/RevenueCat e nunca converte nem fixa símbolo. Nenhum valor nem símbolo de moeda em código ou catálogo. Os valores deste spec são os preços do Brasil e dos EUA.
 - **Paywall do RevenueCat**, hospedado e montado no painel, exibido com `RevenueCatUI.presentPaywall()`. O app não chama `purchasePackage`.
 - **O Passe é validado no aparelho** (resultado da compra + `nonSubscriptionTransactions`), sem servidor.
 
 ## Produtos e ofertas
 
-| Produto | Tipo | Preço (BR) | Observação |
-|---|---|---|---|
-| `pro_annual` | Assinatura anual, entitlement `pro` | R$ 99,90 (≈ R$ 8,33/mês) | Teste grátis de 7 dias, cobrança no oitavo dia; pré-selecionado no paywall |
-| `pro_monthly` | Assinatura mensal, entitlement `pro` | R$ 14,90 | Teste grátis de 7 dias, cobrança no oitavo dia |
-| `single_pass` | Consumível | R$ 4,90 | "Liberar recursos PRO nessa gravação" |
+| Produto | Tipo | Brasil | EUA | Observação |
+|---|---|---|---|---|
+| `pro_annual` | Assinatura anual, entitlement `pro` | R$ 99,90 (≈ R$ 8,33/mês) | $49.90 (≈ $4.16/mês) | Teste grátis de 7 dias, cobrança no oitavo dia; pré-selecionado no paywall |
+| `pro_monthly` | Assinatura mensal, entitlement `pro` | R$ 14,90 | $6.90 | Teste grátis de 7 dias, cobrança no oitavo dia |
+| `single_pass` | Consumível | R$ 4,90 | $2.49 | "Liberar esta gravação" |
+
+**Economia do anual** (selo do paywall, calculado pelo RevenueCat com `{{ product.relative_discount }}` contra o mensal de cada país; nunca digitado):
+
+| País | 12 mensalidades | Anual | Economia | Selo esperado |
+|---|---|---|---|---|
+| Brasil | R$ 178,80 | R$ 99,90 | 44,1% | ECONOMIZE 44% |
+| EUA | $82.80 | $49.90 | 39,7% | ECONOMIZE 40% (ou 39%, conforme o arredondamento do RevenueCat) |
+
+Nos outros países, o preço vem da equivalência automática da loja a partir do preço dos EUA (Apple) ou do preço-base (Google), e a economia acompanha. Conferir os países principais antes de publicar.
 
 - **Oferta `default`:** pacotes Anual e Mensal. Abre pelos cadeados da preparação (duração acima de 15 s, 4K, Apple Watch), por compilar e por "Liberar com o PRO".
 - **Oferta `pass`:** só o `single_pass`. Abre por "Liberar recursos PRO nessa gravação" (aviso de exportação, cartão do resumo, cadeado de som do editor) quando não há Passe guardado.
