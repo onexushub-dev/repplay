@@ -16,10 +16,10 @@ Levar para o celular do praticante o sistema de "replay" que algumas quadras ofe
 |---|---|
 | Plataforma | React Native + Expo (New Architecture, Hermes), iOS e Android |
 | Gatilhos v1 | Botão na tela, controle Bluetooth, gesto corporal (braços em X), smartwatch (Apple Watch + Wear OS) |
-| Buffer | Janela móvel de 60 s no Pro e 15 s no grátis. O que sai da janela é apagado na hora. Só os clipes salvos ficam no celular; cada um guarda a duração escolhida mais 2 s de margem |
+| Buffer | Janela móvel de 60 s no PRO e 15 s no grátis. O que sai da janela é apagado na hora. Só os clipes salvos ficam no celular; cada um guarda a duração escolhida mais 2 s de margem |
 | Duração do clipe | Escolhida na preparação: 15, 30, 45 ou 60 s (padrão 15 s; no grátis só 15 s). Ajustável depois no editor |
 | Dados | Só no celular, sem login. Modelo preparado para login futuro |
-| Receita | Regras em `docs/modelo-de-negocio-e-pagamentos.md`. Grátis: gravações ilimitadas, tudo funciona no app; clipe de 15 s, gravação em Full HD e exportação em HD, sem som, sem Modo Foco e com marca d'água; compilar e Apple Watch só no Pro. Pro (R$14,90/mês ou R$99,90/ano) libera tudo; o Passe Avulso (R$4,90) libera os recursos Pro na exportação de uma gravação já feita. Kit físico de fixação opcional, vendido fora do app |
+| Receita | Regras em `docs/modelo-de-negocio-e-pagamentos.md`. Grátis: gravações ilimitadas, tudo funciona no app; clipe de 15 s, gravação em Full HD e exportação em HD, sem som, sem Modo Foco e com marca d'água; compilar e Apple Watch só no PRO. PRO (R$14,90/mês ou R$99,90/ano) libera tudo; o Passe Avulso (R$4,90) libera os recursos PRO na exportação de uma gravação já feita. Kit físico de fixação opcional, vendido fora do app |
 | Câmera | Módulo nativo próprio `ReplayCamera` (Expo Modules), sem VisionCamera |
 
 ## 3. Experiência do usuário
@@ -37,15 +37,15 @@ Fluxo: **Boas-vindas → Posicionar câmera → Gravando → Clipe salvo (repete
 - Seletor de lente 0.5x / 1x (ultra-wide como padrão quando houver).
 - Dica: "Atrás da linha de fundo, na altura do ombro".
 - Esporte: Beach tennis, Futevôlei, Vôlei de praia, Outro.
-- Status dos gatilhos: Tela (sempre ativa), Gesto X (ativo/inativo), Controle (conectado/não), Relógio (pareado/"Toque para parear").
-- Seção "Clipe": duração (15, 30, 45 ou 60 s), qualidade (Full HD / 4K) e som do clipe; no plano grátis as durações acima de 15 s e o 4K têm cadeado e selo "Pro" (seção 3.5).
+- Status dos gatilhos: Tela (sempre ativa), Gesto X (ativo/inativo), Controle (conectado/não), Apple Watch (pareado/"Toque para parear").
+- Seção "Clipe": duração (15, 30, 45 ou 60 s), qualidade (Full HD / 4K) e som do clipe; no plano grátis as durações acima de 15 s e o 4K têm cadeado e selo "PRO" (seção 3.5).
 - Botão "Começar gravação". Bloqueado só se houver menos de ~500 MB livres; o plano nunca impede de começar.
 
 ### 3.3 Gravando
 - A tela escurece para economizar bateria, mas a gravação continua.
 - Topo: indicador REC, tempo de jogo, temperatura.
 - Centro: contador de clipes. Tocar em qualquer lugar salva o clipe.
-- Barra "Últimos N s prontos · o resto é apagado" (N = a janela da gravação: 60 s no Pro, 15 s no grátis).
+- Barra "Últimos N s prontos · o resto é apagado" (N = a janela da gravação: 60 s no PRO, 15 s no grátis).
 - Indicadores dos gatilhos remotos.
 - "Segure para encerrar o jogo" (toque longo, para evitar encerrar por engano).
 - Calor: o app reduz sozinho para 720p/30 e mostra o aviso "Celular quente… coloque na sombra".
@@ -57,15 +57,15 @@ Fluxo: **Boas-vindas → Posicionar câmera → Gravando → Clipe salvo (repete
 
 ### 3.5 Plano grátis e paywall
 Regras completas em `docs/modelo-de-negocio-e-pagamentos.md` (fonte da verdade).
-- Grátis: **gravações ilimitadas**, clipes ilimitados. A captura é em Full HD e grava o som; dentro do app tudo funciona (som, Modo Foco, velocidade, zoom, giro, corte). Limites: clipe de 15 s (escolhido antes de começar) e, ao salvar ou enviar, vídeo em HD (720p), sem som, sem Modo Foco e com marca d'água (a velocidade escolhida vai no vídeo). Compilar, 4K e o gatilho Apple Watch são do Pro.
-- Pro (Mensal R$14,90 ou Anual R$99,90, com 7 dias grátis só no anual): durações de 15 a 60 s, gravação em 4K, exportação em Full HD ou 4K com som, Modo Foco e velocidade, sem marca; compilar; Apple Watch.
-- Passe Avulso (R$4,90), apresentado como "Liberar recursos PRO nessa gravação": usado só quando o jogador escolhe, numa gravação grátis já feita; libera nela a exportação Pro (Full HD, som, Modo Foco, sem marca) e compilar. Nunca é gasto ao começar uma gravação. O plano de cada gravação é fixado no início.
+- Grátis: **gravações ilimitadas**, clipes ilimitados. A captura é em Full HD e grava o som; dentro do app tudo funciona (som, Modo Foco, velocidade, zoom, giro, corte). Limites: clipe de 15 s (escolhido antes de começar) e, ao salvar ou enviar, vídeo em HD (720p), sem som, sem Modo Foco e com marca d'água (a velocidade escolhida vai no vídeo). Compilar, 4K e o gatilho Apple Watch são do PRO.
+- PRO (Mensal R$14,90 ou Anual R$99,90, com 7 dias grátis só no anual): durações de 15 a 60 s, gravação em 4K, exportação em Full HD ou 4K com som, Modo Foco e velocidade, sem marca; compilar; Apple Watch.
+- Passe Avulso (R$4,90), apresentado como "Liberar recursos PRO nessa gravação": usado só quando o jogador escolhe, numa gravação grátis já feita; libera nela a exportação PRO (Full HD, som, Modo Foco, sem marca) e compilar. Nunca é gasto ao começar uma gravação. O plano de cada gravação é fixado no início.
 - O paywall abre pelos cadeados da preparação (comprar destrava a opção; nada começa sozinho), por compilar e pelo aviso antes de exportar no grátis: painel destacado na primeira exportação de cada gravação, listando tudo o que o vídeo não terá, e aviso discreto nas seguintes. Nenhum paywall durante a gravação; a gravação nunca para por causa do plano.
 - Pagamento pela App Store / Google Play. Detalhes técnicos em `2026-10-20-payments-revenuecat-design.md`.
 
 ### 3.6 Relógio (watchOS e Wear OS)
 - Uma tela só: tempo + número de clipes e um botão grande "Salvar clipe".
-- O Apple Watch como gatilho é do Pro. No grátis o botão dá lugar a "Disponível no Pro" e o resto continua (tempo, contagem, Começar/Parar). No iPhone o gatilho se chama "Apple Watch".
+- O Apple Watch como gatilho é do PRO. No grátis o botão dá lugar a "Disponível no PRO" e o resto continua (tempo, contagem, Começar/Parar). No iPhone o gatilho se chama "Apple Watch".
 - Vibração quando o clipe é confirmado.
 
 ### 3.7 Fim de jogo
@@ -76,7 +76,7 @@ Regras completas em `docs/modelo-de-negocio-e-pagamentos.md` (fonte da verdade).
 ### 3.8 Editor do clipe
 - Preview com play.
 - Linha do tempo do clipe salvo (a duração escolhida mais 2 s de margem), com a janela de corte ajustável.
-- Ferramentas: Corte, Velocidade (inclui câmera lenta, todos os planos), Som (todos os planos no app; na gravação grátis o som não vai no vídeo salvo, selo "Pro"), Zoom e giro.
+- Ferramentas: Corte, Velocidade (inclui câmera lenta, todos os planos), Som (todos os planos no app; na gravação grátis o som não vai no vídeo salvo, selo "PRO"), Zoom e giro.
 - Botões "Salvar na galeria" e "Compartilhar".
 
 ### 3.9 Exportar e compartilhar (revisado em 2026-10-23: o Story saiu)
@@ -167,7 +167,7 @@ Preferências   { lente, duraçãoPadrão: 15, gestoAtivo, relógioPareado }
 
 A fonte da verdade é `docs/modelo-de-negocio-e-pagamentos.md`; esta tabela é o resumo.
 
-| Regra | Grátis | Pro (R$14,90/mês ou R$99,90/ano) |
+| Regra | Grátis | PRO (R$14,90/mês ou R$99,90/ano) |
 |---|---|---|
 | Gravações | Ilimitadas | Ilimitadas |
 | Clipes por gravação | Ilimitados | Ilimitados |
@@ -178,9 +178,9 @@ A fonte da verdade é `docs/modelo-de-negocio-e-pagamentos.md`; esta tabela é o
 | Compilar clipes | Não | Sim |
 | Gatilhos | Tela, gesto, voz, controle Bluetooth, celular controle | + Apple Watch |
 
-- **Passe Avulso (R$4,90), "Liberar recursos PRO nessa gravação":** usado só quando o jogador escolhe, numa gravação grátis já feita. Libera nela a exportação Pro (Full HD, som, Modo Foco, sem marca) e compilar; não libera duração acima de 15 s nem 4K. Nunca é gasto ao começar uma gravação. Um Passe usado nunca volta a ser crédito, mesmo apagando a gravação.
-- O plano de cada gravação (`pago`) é fixado no início e não muda depois; com Pro ativo, todas as gravações exportam como pagas.
-- Antes de exportar no grátis, um painel destacado (1ª exportação de cada gravação) ou um aviso discreto (exportações seguintes da mesma gravação) mostra o que o vídeo não terá e oferece o Pro ou "Liberar recursos PRO nessa gravação".
+- **Passe Avulso (R$4,90), "Liberar recursos PRO nessa gravação":** usado só quando o jogador escolhe, numa gravação grátis já feita. Libera nela a exportação PRO (Full HD, som, Modo Foco, sem marca) e compilar; não libera duração acima de 15 s nem 4K. Nunca é gasto ao começar uma gravação. Um Passe usado nunca volta a ser crédito, mesmo apagando a gravação.
+- O plano de cada gravação (`pago`) é fixado no início e não muda depois; com PRO ativo, todas as gravações exportam como pagas.
+- Antes de exportar no grátis, um painel destacado (1ª exportação de cada gravação) ou um aviso discreto (exportações seguintes da mesma gravação) mostra o que o vídeo não terá e oferece o PRO ou "Liberar recursos PRO nessa gravação".
 - Anual: R$99,90 ≈ R$8,33/mês, 44% abaixo de 12 mensalidades, pré-selecionado no paywall, com teste grátis de 7 dias só nele. O Passe não fica no paywall principal. Preços e moeda vêm sempre da loja.
 - Conteúdo digital é vendido só pelas compras da loja (Apple/Google). O kit físico é vendido fora do app (link externo, Pix).
 - O acordo Apple–CADE (dez/2025) permite link para pagamento externo no Brasil, mas exige login e backend; fora da v1.
@@ -198,7 +198,7 @@ A fonte da verdade é `docs/modelo-de-negocio-e-pagamentos.md`; esta tabela é o
 
 ## 8. Testes
 
-- **JS (unitários):** trava de gatilhos, regras do Passe e do Pro, plano fixado no início, limites do plano grátis na captura e na exportação, aviso antes de exportar (destacado e discreto, por gravação), estado da sessão.
+- **JS (unitários):** trava de gatilhos, regras do Passe e do PRO, plano fixado no início, limites do plano grátis na captura e na exportação, aviso antes de exportar (destacado e discreto, por gravação), estado da sessão.
 - **Nativo:** testes do anel de pedaços (descarte e junção), em aparelho real.
 - **Campo:** sessões de 2h ao sol, num iPhone e num Android intermediário.
 

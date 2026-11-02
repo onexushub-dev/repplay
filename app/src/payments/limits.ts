@@ -31,8 +31,8 @@ export function qualityAllowed(quality: Quality, plan: Plan): boolean {
   return accessPlan(plan) === 'paid' || quality !== '2160p30';
 }
 
-/** The paid triggers: the watch and the Bluetooth remote. Voice, gesture, screen and the phone remote are free. */
-export const PAID_TRIGGERS: readonly TriggerSource[] = ['watch', 'remote'];
+/** The paid trigger: the Apple Watch. Voice, gesture, screen, the Bluetooth remote and the phone remote are free. */
+export const PAID_TRIGGERS: readonly TriggerSource[] = ['watch'];
 
 export function triggerAllowed(source: TriggerSource, plan: Plan): boolean {
   return accessPlan(plan) === 'paid' || !PAID_TRIGGERS.includes(source);

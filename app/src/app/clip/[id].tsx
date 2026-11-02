@@ -586,14 +586,18 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
   async function run(kind: ExportJob['kind'], action: (path: string) => Promise<void>) {
     if (exporting.current || !sizeKnown) return;
     // The free-plan notice says what the video loses: nothing while the field test unlocks it all (accessPlan).
-    if (accessPlan(plan) === 'free') {
-      const choice = await freeGate.ask({ focus: focusActive, speed: edit.speed !== 1, sound: !edit.muted && edit.speed === 1 });
-      if (choice === 'unlock') void unlockRecording(clip!.sessionId, t);
-      if (choice !== 'go') return;
-      if (exporting.current) return;
+    const free = accessPlan(plan) === 'free';
+    if (free) {
+      const go = await freeGate.ask(
+        clip!.sessionId,
+        { focus: focusActive, sound: !edit.muted && edit.speed === 1 },
+        kind === 'share' ? 'share' : 'save',
+      );
+      if (!go || exporting.current) return;
     }
+    // Only a paid export picks a size: a free one is always HD.
     const choices = exportChoices(clip!.shortSide);
-    if (choices.length > 1 && look) {
+    if (!free && choices.length > 1 && look) {
       const picked = await qualityGate.ask({
         choices,
         landscape: look.frame.width > look.frame.height,

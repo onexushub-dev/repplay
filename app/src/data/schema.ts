@@ -43,7 +43,7 @@ export type ModeSettings = {
 /** What was saved for a mode: before zoom existed it held `lens` (read, never written). */
 export type StoredModeSettings = Partial<ModeSettings> & { lens?: 'ultraWide' | 'wide' };
 
-export type Session = { id: string; sport: Sport; startedAt: number; endedAt?: number; name?: string; /** Fixed at start: true if Pro or a Single Pass unlocked this game; absent on games recorded before the free plan. */ paid?: boolean; /** RevenueCat transaction id of the single pass that unlocked this game; absent = no pass. */ passTransactionId?: string };
+export type Session = { id: string; sport: Sport; startedAt: number; endedAt?: number; name?: string; /** Fixed at start: true if Pro or a Single Pass unlocked this game; absent on games recorded before the free plan. */ paid?: boolean; /** RevenueCat transaction id of the single pass that unlocked this game; absent = no pass. */ passTransactionId?: string; /** True once a free export of this recording showed the full panel; later exports get the short notice. */ freeNoticeShown?: boolean };
 
 export const MAX_GAME_NAME = 40;
 export const MAX_CLIP_NAME = 40;

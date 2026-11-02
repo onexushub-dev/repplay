@@ -34,11 +34,6 @@ export default function RootLayout() {
 
   useEffect(() => {
     payments.start();
-    // The month may have turned while the app was in the background: the free allowance starts over.
-    const sub = AppState.addEventListener('change', (next) => {
-      if (next === 'active') payments.recheckMonth();
-    });
-    return () => sub.remove();
   }, []);
 
   useEffect(() => {

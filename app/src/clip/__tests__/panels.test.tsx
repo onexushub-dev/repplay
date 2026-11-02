@@ -102,7 +102,8 @@ test('on a free recording the sound works, and the hint says it does not leave t
   const c = ctx({ plan: 'free' });
   const Panel = panel('sound');
   await render(<Panel ctx={c} />);
-  expect(screen.getByText('No plano grátis o som toca aqui, mas não vai no vídeo salvo ou enviado.')).toBeTruthy();
+  expect(screen.getByText('O som toca aqui no app, mas só vai no clipe salvo ou enviado com o PRO.')).toBeTruthy();
+  expect(screen.getByLabelText('PRO')).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: 'Som' }));
   expect(c.setEdit).toHaveBeenCalledWith({ muted: true });
   expect(c.unlock).not.toHaveBeenCalled();
@@ -112,17 +113,19 @@ test('on a free recording Modo Foco works, and the hint says it does not leave t
   const c = ctx({ focus: 'on', plan: 'free' });
   const Panel = panel('focus');
   await render(<Panel ctx={c} />);
-  expect(screen.getByText('No plano grátis o Foco funciona aqui, mas não vai no vídeo salvo ou enviado.')).toBeTruthy();
+  expect(screen.getByText('O Modo Foco funciona aqui no app, mas só vai no clipe salvo ou enviado com o PRO.')).toBeTruthy();
+  expect(screen.getByLabelText('PRO')).toBeTruthy();
   await fireEvent.press(screen.getByRole('switch', { name: 'Modo Foco' }));
   expect(c.toggleFocus).toHaveBeenCalledTimes(1);
   expect(c.unlock).not.toHaveBeenCalled();
 });
 
-test('on a free recording the speed works, and the hint says it does not leave the app', async () => {
+test('on a free recording the speed works and goes into the video: no Pro note, no badge', async () => {
   const c = ctx({ plan: 'free' });
   const Panel = panel('speed');
   await render(<Panel ctx={c} />);
-  expect(screen.getByText('No plano grátis a velocidade funciona aqui, mas não vai no vídeo salvo ou enviado.')).toBeTruthy();
+  expect(screen.getByText('Escolha a velocidade de reprodução do clipe.')).toBeTruthy();
+  expect(screen.queryByLabelText('PRO')).toBeNull();
   await fireEvent.press(screen.getByRole('button', { name: 'Velocidade 2x' }));
   expect(c.setEdit).toHaveBeenCalledWith({ speed: 2 });
   expect(c.unlock).not.toHaveBeenCalled();

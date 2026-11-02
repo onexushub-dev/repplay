@@ -42,7 +42,7 @@ test('a waiting Pass is spent on this recording only after the player agrees', a
   expect(upgradeSession).toHaveBeenCalledWith('s1', { passTransactionId: 'tx-1' });
 });
 
-test('"Keep for the next one" leaves the Pass and the recording as they were', async () => {
+test('"Agora não" leaves the Pass and the recording as they were', async () => {
   unlockOption.mockReturnValue({ kind: 'credit', passTransactionId: 'tx-1' });
   const done = unlockRecording('s1', t);
   answer(t('unlock.keep'));
@@ -50,22 +50,31 @@ test('"Keep for the next one" leaves the Pass and the recording as they were', a
   expect(upgradeSession).not.toHaveBeenCalled();
 });
 
-test('with nothing to spend the paywall opens, and a cancel changes nothing', async () => {
+test('with nothing to spend the Single Pass paywall opens, and a cancel changes nothing', async () => {
   unlockOption.mockReturnValue({ kind: 'none' });
   showPaywall.mockResolvedValue('cancelled');
   await expect(unlockRecording('s1', t)).resolves.toBe(false);
   expect(showPaywall).toHaveBeenCalledTimes(1);
+  expect(showPaywall).toHaveBeenCalledWith('pass');
   expect(upgradeSession).not.toHaveBeenCalled();
 });
 
-test('a Pass bought in the paywall is offered for this recording', async () => {
+test('a Pass bought in the paywall goes to this recording without asking again', async () => {
   unlockOption.mockReturnValueOnce({ kind: 'none' }).mockReturnValue({ kind: 'credit', passTransactionId: 'tx-2' });
   showPaywall.mockResolvedValue('purchased');
+  await expect(unlockRecording('s1', t)).resolves.toBe(true);
+  expect(upgradeSession).toHaveBeenCalledWith('s1', { passTransactionId: 'tx-2' });
+  expect(alert).not.toHaveBeenCalled();
+});
+
+test('a restore in the paywall never spends a Pass it did not buy: an old one still asks first', async () => {
+  unlockOption.mockReturnValueOnce({ kind: 'none' }).mockReturnValue({ kind: 'credit', passTransactionId: 'tx-3' });
+  showPaywall.mockResolvedValue('restored');
   const done = unlockRecording('s1', t);
   await new Promise((r) => setTimeout(r, 0));
-  answer(t('unlock.use'));
-  await expect(done).resolves.toBe(true);
-  expect(upgradeSession).toHaveBeenCalledWith('s1', { passTransactionId: 'tx-2' });
+  answer(t('unlock.keep'));
+  await expect(done).resolves.toBe(false);
+  expect(upgradeSession).not.toHaveBeenCalled();
 });
 
 test('a subscription bought in the paywall unlocks the recording without asking', async () => {

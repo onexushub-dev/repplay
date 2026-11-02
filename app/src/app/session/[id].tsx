@@ -54,18 +54,21 @@ export default function SessionSummary() {
     labelOf: (c) => (c.name ? c.name : t('batch.clipNumber', { number: clipNumber(c, clips.indexOf(c)) })),
   });
   const working = batch.job !== undefined;
-  // A free recording's clips leave without sound, Modo Foco and the app mark off: say so before saving or sending them.
+  // A free recording's clips leave in HD, without sound and Modo Foco, with the app mark: say so before saving or sending
+  // them (the full notice on the recording's first export, a short note after it).
   const freeGate = useFreeExportGate();
-  const exportAfterNotice = async (clips: typeof pickedClips, go: (clips: typeof pickedClips) => Promise<void>) => {
+  const exportAfterNotice = async (
+    kind: 'save' | 'share',
+    clips: typeof pickedClips,
+    go: (clips: typeof pickedClips) => Promise<void>,
+  ) => {
     // Nothing is lost while the field test unlocks it all (accessPlan): no notice then.
     if (accessPlan(plan) === 'free') {
-      const choice = await freeGate.ask({
+      const proceed = await freeGate.ask(id, {
         focus: clips.some((c) => freeLosses(c).focus),
-        speed: clips.some((c) => freeLosses(c).speed),
         sound: clips.some((c) => freeLosses(c).sound),
-      });
-      if (choice === 'unlock') void unlockRecording(id, t);
-      if (choice !== 'go') return;
+      }, kind);
+      if (!proceed) return;
     }
     await go(clips);
   };
@@ -299,8 +302,8 @@ export default function SessionSummary() {
             count={pickedClips.length}
             paid={plan === 'paid'}
             busy={working}
-            onShare={() => void exportAfterNotice(pickedClips, batch.share)}
-            onSave={() => void exportAfterNotice(pickedClips, batch.save)}
+            onShare={() => void exportAfterNotice('share', pickedClips, batch.share)}
+            onSave={() => void exportAfterNotice('save', pickedClips, batch.save)}
             onCompile={() => void batch.compile(pickedClips)}
             onDelete={confirmDeleteClips}
           />

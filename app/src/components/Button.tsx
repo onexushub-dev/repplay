@@ -11,7 +11,7 @@ type Props = {
   /** Shows a spinner and blocks presses while something is being done; the label should then say what ("Conectando…"). */
   loading?: boolean;
   icon?: ReactNode;
-  /** Read by screen readers after the label ("Compilar é do plano pago"). */
+  /** Read by screen readers after the label ("Compilar é do Pro"). */
   hint?: string;
 };
 

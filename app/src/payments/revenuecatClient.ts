@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import Purchases, { type CustomerInfo } from 'react-native-purchases';
+import Purchases, { type CustomerInfo, type PurchasesOffering } from 'react-native-purchases';
 import RevenueCatUI from 'react-native-purchases-ui';
 
 import type { PaymentsClient, PaywallOutcome } from './client';
@@ -60,13 +60,21 @@ export function createRevenueCatClient(): PaymentsClient {
       return () => void Purchases.removeCustomerInfoUpdateListener(listener);
     },
 
-    async showPaywall() {
+    async showPaywall(offering) {
       if (!configured) {
         if (__DEV__) console.warn('[payments] paywall: RevenueCat is not configured in this build');
         return 'error';
       }
       try {
-        const result = await RevenueCatUI.presentPaywall({ displayCloseButton: true });
+        // The current offering is Pro (`default`); any other is looked up by its identifier. A missing one falls back
+        // to the current offering, so the player can still buy Pro.
+        let chosen: PurchasesOffering | undefined;
+        if (offering !== 'default') {
+          const all = await Purchases.getOfferings();
+          chosen = all.all[offering];
+          if (__DEV__ && chosen === undefined) console.warn(`[payments] offering "${offering}" not found: showing the current one`);
+        }
+        const result = await RevenueCatUI.presentPaywall(chosen ? { displayCloseButton: true, offering: chosen } : { displayCloseButton: true });
         if (__DEV__ && result === RevenueCatUI.PAYWALL_RESULT.ERROR) console.warn('[payments] paywall returned ERROR (see the [RevenueCat] logs)');
         return outcomeFor(result);
       } catch (e) {

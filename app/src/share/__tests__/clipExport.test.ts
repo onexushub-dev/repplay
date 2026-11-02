@@ -35,9 +35,9 @@ test('clipExportJob matches what the clip screen exports', () => {
   expect(job.options.crop).toBeUndefined();
   expect(job.watermark).toBe(false); // a paid recording leaves without the app mark
   expect(job.frame).toEqual({ width: 1080, height: 1920 });
-  // The free plan: same frame, speed held at 1x, the app mark kept.
+  // The free plan: an HD frame, the chosen speed, the app mark kept.
   const free = clipExportJob(clip, 'free', vertical);
-  expect(free.options).toMatchObject({ width: 1080, height: 1920, speed: 1 });
+  expect(free.options).toMatchObject({ width: 720, height: 1280, speed: 2 });
   expect(free.watermark).toBe(true);
 });
 
