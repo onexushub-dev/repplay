@@ -6,6 +6,10 @@ export type Props = Record<string, string | number | boolean>;
 /** The only thing the app needs from a vendor SDK; src/analytics/posthogAdapter.ts is the one real implementation. */
 export interface AnalyticsAdapter {
   capture(name: string, props?: Props): void;
+  /** A screen view (`$screen`), by route pattern only. */
+  screen?(name: string): void;
+  /** Mirrors the opt-out into the SDK, so its own lifecycle events stop too. */
+  setEnabled?(on: boolean): void;
 }
 
 export interface Analytics {
@@ -13,6 +17,8 @@ export interface Analytics {
   setEnabled(on: boolean): void;
   isEnabled(): boolean;
   installId(): string;
+  /** A screen view, by route pattern (`clip/[id]`), never by the ids in the URL. */
+  screen(name: string): void;
   /** Starts a new session: the per-session caps count from zero again. */
   startSession(): void;
 }
@@ -21,6 +27,8 @@ const ID_KEY = 'analytics.installId';
 const ENABLED_KEY = 'analytics.enabled';
 
 const DEFAULT_CAP = 20;
+// Screen views: enough for a long evening of browsing clips, bounded all the same.
+const SCREEN_CAP = 100;
 // A busy evening can legitimately save and miss many clips; these two get more room before the cap drops a send.
 const CAPS: Partial<Record<EventName, number>> = { clip_saved: 50, trigger_failed: 50 };
 
@@ -34,6 +42,7 @@ export function createAnalytics(o: { adapter: AnalyticsAdapter; kv: KV; newId: (
   let id: string | null = null;
   let enabled: boolean | null = null;
   let counts = new Map<EventName, number>();
+  let screens = 0;
 
   function isEnabled(): boolean {
     if (enabled === null) {
@@ -76,8 +85,22 @@ export function createAnalytics(o: { adapter: AnalyticsAdapter; kv: KV; newId: (
         // analytics must never reach the app
       }
     },
+    screen(name) {
+      try {
+        if (!isEnabled() || screens >= SCREEN_CAP || !adapter.screen) return;
+        screens += 1;
+        adapter.screen(name);
+      } catch {
+        // analytics must never reach the app
+      }
+    },
     setEnabled(on) {
       enabled = on;
+      try {
+        if (adapter.setEnabled) adapter.setEnabled(on);
+      } catch {
+        // the SDK keeps its own state; ours still gates every send
+      }
       try {
         kv.set(ENABLED_KEY, on ? 'true' : 'false');
       } catch {
@@ -88,6 +111,7 @@ export function createAnalytics(o: { adapter: AnalyticsAdapter; kv: KV; newId: (
     installId,
     startSession() {
       counts = new Map();
+      screens = 0;
     },
   };
 }

@@ -9,6 +9,7 @@ import { AppState } from 'react-native';
 
 import { isRemoteSupported, remoteHostStart, remoteHostStop } from '../../modules/replay-camera';
 import { analytics, initAnalytics, sessionSummary, track } from '../analytics';
+import { useScreenViews } from '../analytics/useScreenViews';
 import { startFocusQueue } from '../focus/appFocusQueue';
 import { useLocaleSync } from '../i18n/useT';
 import { payments } from '../payments';
@@ -34,6 +35,9 @@ export default function RootLayout() {
 
   // The app language follows the device (Android can change it while the app runs).
   useLocaleSync();
+
+  // Metrics: one screen view per route change, by route pattern.
+  useScreenViews();
 
   useEffect(() => {
     payments.start();

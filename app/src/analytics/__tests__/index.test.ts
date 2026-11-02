@@ -9,7 +9,7 @@ jest.mock('expo-constants', () => ({
   },
 }));
 
-type MockPostHog = { apiKey: string; options: Record<string, unknown>; capture: jest.Mock };
+type MockPostHog = { apiKey: string; options: Record<string, unknown>; capture: jest.Mock; screen: jest.Mock; optOut: jest.Mock; optIn: jest.Mock };
 
 function load() {
   jest.resetModules();
@@ -33,7 +33,7 @@ describe('initAnalytics', () => {
     expect(() => analytics.track('onboarding_completed')).not.toThrow();
   });
 
-  test('with a key it builds the SDK once, anonymous, on the configured host, with every automatic capture off', () => {
+  test('with a key it builds the SDK once, anonymous, on the configured host, with autocapture, replay and person profiles off and lifecycle events on', () => {
     mockExtra.posthog = { key: 'phc_test', host: 'https://us.i.posthog.com' };
     const { analytics, instances } = load();
     analytics.initAnalytics();
@@ -43,7 +43,7 @@ describe('initAnalytics', () => {
       host: 'https://us.i.posthog.com',
       personProfiles: 'never',
       disableGeoip: true,
-      captureAppLifecycleEvents: false,
+      captureAppLifecycleEvents: true,
       enableSessionReplay: false,
       errorTracking: { autocapture: false },
     });
@@ -96,5 +96,30 @@ describe('initAnalytics', () => {
     const { analytics, instances } = load();
     analytics.initAnalytics();
     expect(instances[0].options).toMatchObject({ preloadFeatureFlags: false, disableSurveys: true, disableRemoteConfig: true });
+  });
+});
+
+describe('screen views and opt-out reach the SDK', () => {
+  test('a screen view is sent as $screen through the SDK', () => {
+    mockExtra.posthog = { key: 'phc_test', host: 'https://us.i.posthog.com' };
+    const { analytics, instances } = load();
+    analytics.initAnalytics();
+    analytics.analytics.screen('session/[id]');
+    expect(instances[0].screen).toHaveBeenCalledWith('session/[id]');
+  });
+
+  test('opting out tells a running SDK, so its lifecycle events stop too', () => {
+    mockExtra.posthog = { key: 'phc_test', host: 'https://us.i.posthog.com' };
+    const { analytics, instances } = load();
+    analytics.initAnalytics();
+    analytics.analytics.setEnabled(false);
+    expect(instances[0].optOut).toHaveBeenCalled();
+  });
+
+  test('opting out before anything was sent does not start the SDK', () => {
+    mockExtra.posthog = { key: 'phc_test', host: 'https://us.i.posthog.com' };
+    const { analytics, instances } = load();
+    analytics.analytics.setEnabled(false);
+    expect(instances).toHaveLength(0);
   });
 });
