@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
+import { track } from '../../analytics';
 import Pair from '../pair';
 
 jest.mock('../../../modules/replay-camera', () => ({
@@ -8,6 +9,7 @@ jest.mock('../../../modules/replay-camera', () => ({
   remoteControllerPairWithLink: jest.fn(),
   addReplayListener: jest.fn(() => ({ remove: jest.fn() })),
 }));
+jest.mock('../../analytics', () => ({ track: jest.fn() }));
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), push: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) },
   useLocalSearchParams: jest.fn(),
@@ -130,4 +132,34 @@ test('Fechar leaves even when the QR code opened the app straight on this screen
   await fireEvent.press(screen.getByRole('button', { name: 'Fechar' }));
   expect(router().back).not.toHaveBeenCalled();
   expect(router().replace).toHaveBeenCalledWith('/');
+});
+
+describe('analytics', () => {
+  test('a pairing that succeeds reports the QR method once', async () => {
+    await render(<Pair />);
+    await emit({ phase: 'paired', peer: { id: 'h1', name: 'Quadra 1' } });
+    expect(track).toHaveBeenCalledTimes(1);
+    expect(track).toHaveBeenCalledWith('pairing_completed', { method: 'qr', kind: 'remote' });
+  });
+
+  test('a failure reports its reason, never the camera phone name', async () => {
+    await render(<Pair />);
+    await emit({ phase: 'failed', reason: 'expired' });
+    expect(track).toHaveBeenCalledWith('pairing_failed', { reason: 'expired' });
+  });
+
+  test('no answer for 15 s reports notFound', async () => {
+    await render(<Pair />);
+    await act(async () => {
+      jest.advanceTimersByTime(16_000);
+    });
+    expect(track).toHaveBeenCalledWith('pairing_failed', { reason: 'notFound' });
+  });
+
+  test('a link that is not a pairing link reports invalid_link once', async () => {
+    params({});
+    await render(<Pair />);
+    expect(track).toHaveBeenCalledTimes(1);
+    expect(track).toHaveBeenCalledWith('pairing_failed', { reason: 'invalid_link' });
+  });
 });

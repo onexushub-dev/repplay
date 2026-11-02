@@ -68,6 +68,7 @@ jest.mock('../../data/mmkv', () => {
     },
   };
 });
+jest.mock('../../analytics', () => ({ track: jest.fn(), sessionSummary: { note: jest.fn() } }));
 jest.mock('../../session/SessionContext', () => ({ useSession: jest.fn() }));
 jest.mock('../../share/entitlement', () => ({ usePlan: jest.fn(() => 'paid') }));
 jest.mock('../../payments/feedback', () => ({
@@ -195,6 +196,17 @@ test('each tap goes to the next zoom: 0.5 → 1 → 2 → 5 → 0.5, zooming the
   }
 });
 
+test('each zoom tap counts once in the session summary and sends no event of its own', async () => {
+  const { sessionSummary, track } = jest.requireMock('../../analytics');
+  sessionSummary.note.mockClear();
+  session({});
+  await render(<Setup />);
+  await fireEvent.press(zoomButton('Zoom 0.5x'));
+  await fireEvent.press(zoomButton('Zoom 1x'));
+  expect(sessionSummary.note.mock.calls).toEqual([['zoom'], ['zoom']]);
+  expect(track).not.toHaveBeenCalled();
+});
+
 test('changing the zoom does not ask the session to reopen the camera when it stays on the same lens', async () => {
   const s = session({});
   await render(<Setup />);
@@ -305,6 +317,7 @@ test("the wave gesture's ? opens how to do it and practises with the camera, whi
   await fireEvent.press(screen.getByRole('button', { name: 'Fechar' }));
   expect(screen.queryByText('Como acenar')).toBeNull();
   expect(cam.setGestureEnabled).toHaveBeenLastCalledWith(false);
+  expect(jest.requireMock('../../analytics').sessionSummary.note).toHaveBeenCalledWith('guide');
 });
 
 test("the voice's ? opens how to use it and practises listening, which stops once it closes", async () => {
@@ -404,6 +417,7 @@ test('turning voice on asks for speech permission first', async () => {
   await openSettings();
   await fireEvent.press(screen.getByRole('button', { name: /^Voz/ }));
   expect(camera.requestSpeechPermission).toHaveBeenCalled();
+  expect(jest.requireMock('../../analytics').track).toHaveBeenCalledWith('permission_result', { kind: 'speech', granted: true });
   expect(repo.setPrefs).toHaveBeenCalledWith(
     expect.objectContaining({
       modeSettings: expect.objectContaining({ quadra: expect.objectContaining({ voiceEnabled: true }) }),
@@ -423,6 +437,7 @@ test('voice stays off when speech permission is denied', async () => {
   await fireEvent.press(screen.getByRole('button', { name: /^Voz/ }));
   expect(repo.setPrefs).not.toHaveBeenCalled();
   expect(screen.getByText('Libere o reconhecimento de fala em Ajustes.')).toBeTruthy();
+  expect(jest.requireMock('../../analytics').track).toHaveBeenCalledWith('permission_result', { kind: 'speech', granted: false });
 });
 
 test('the voice tile says when this phone cannot recognize speech offline', async () => {
@@ -631,6 +646,8 @@ test('on the free tier 4K carries the Pro badge, opens the paywall and the game 
   expect(screen.getByRole('button', { name: 'Full HD' }).props.accessibilityState).toMatchObject({ selected: true });
   await fireEvent.press(screen.getByRole('button', { name: '4K, Disponível no PRO' }));
   expect(openPaywall).toHaveBeenCalledTimes(1);
+  expect(openPaywall).toHaveBeenCalledWith(expect.any(Function), 'locked_feature');
+  expect(jest.requireMock('../../analytics').track).toHaveBeenCalledWith('pro_feature_blocked', { feature: 'quality_4k' });
 });
 
 test('battery saving sits beside the zoom: on by default, a tap turns it off and says what that means', async () => {
@@ -695,8 +712,10 @@ test('on the free tier the Apple Watch tile shows a Pro badge and opens the payw
   const tile = screen.getByRole('button', { name: 'Apple Watch, Pronto, Disponível no PRO' });
   await fireEvent.press(tile);
   expect(openPaywall).toHaveBeenCalledTimes(1);
-  expect(openPaywall.mock.calls[0]).toHaveLength(1);
+  expect(openPaywall.mock.calls[0]).toHaveLength(2);
   expect(openPaywall.mock.calls[0][0]('setup.watchProOnly')).toBe('Disponível no PRO');
+  expect(openPaywall.mock.calls[0][1]).toBe('locked_feature');
+  expect(jest.requireMock('../../analytics').track).toHaveBeenCalledWith('pro_feature_blocked', { feature: 'watch' });
 });
 
 test('on the free tier clip lengths above 15s are locked and open the paywall', async () => {
@@ -710,6 +729,7 @@ test('on the free tier clip lengths above 15s are locked and open the paywall', 
     openPaywall.mockClear();
     await fireEvent.press(screen.getByRole('button', { name: `${label}, Disponível no PRO` }));
     expect(openPaywall).toHaveBeenCalledTimes(1);
+    expect(jest.requireMock('../../analytics').track).toHaveBeenCalledWith('pro_feature_blocked', { feature: 'clip_length' });
   }
   expect(repo.setPrefs).not.toHaveBeenCalledWith(expect.objectContaining({ modeSettings: expect.anything() }));
 });

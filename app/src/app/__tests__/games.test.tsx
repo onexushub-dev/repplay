@@ -150,3 +150,4 @@ test('the gallery has no PRO card, even with recordings on the free plan: each r
   expect(screen.queryByText('PRO')).toBeNull();
   expect(payments.showPaywall).not.toHaveBeenCalled();
 });
+

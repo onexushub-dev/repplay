@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { Alert, Linking } from 'react-native';
+import { track } from '../../analytics';
 
 import Remote from '../remote';
 
@@ -53,6 +54,7 @@ jest.mock('expo-camera', () => {
     useCameraPermissions: () => [{ granted: true, canAskAgain: true }, jest.fn()],
   };
 });
+jest.mock('../../analytics', () => ({ track: jest.fn(), sessionSummary: { note: jest.fn() } }));
 jest.mock('expo-keep-awake', () => ({
   activateKeepAwakeAsync: jest.fn(() => Promise.resolve()),
   deactivateKeepAwake: jest.fn(),
@@ -544,6 +546,36 @@ test('the camera side of this same phone saying "searching" does not make the re
   expect(screen.getByRole('button', { name: 'SALVAR' })).toBeTruthy();
 });
 
+describe('analytics', () => {
+  test('a pairing by code reports the code method', async () => {
+    await render(<Remote />);
+    await fireEvent.changeText(screen.getByLabelText('Código de 6 números'), '042517');
+    await emit('onRemotePairing', { phase: 'paired', peer: { id: 'h1', name: 'Quadra 1' } });
+    expect(track).toHaveBeenCalledWith('pairing_completed', { method: 'code', kind: 'remote' });
+  });
+
+  test('a pairing by QR reports the QR method', async () => {
+    await render(<Remote />);
+    await act(async () => {
+      if (mockScanner.onBarcodeScanned) mockScanner.onBarcodeScanned({ data: LINK });
+    });
+    await emit('onRemotePairing', { phase: 'paired', peer: { id: 'h1', name: 'Quadra 1' } });
+    expect(track).toHaveBeenCalledWith('pairing_completed', { method: 'qr', kind: 'remote' });
+  });
+
+  test('a failure and a silent camera phone report their reasons', async () => {
+    await render(<Remote />);
+    await fireEvent.changeText(screen.getByLabelText('Código de 6 números'), '042517');
+    await emit('onRemotePairing', { phase: 'failed', reason: 'expired' });
+    expect(track).toHaveBeenCalledWith('pairing_failed', { reason: 'expired' });
+    await fireEvent.changeText(screen.getByLabelText('Código de 6 números'), '042518');
+    await act(async () => {
+      jest.advanceTimersByTime(12_000);
+    });
+    expect(track).toHaveBeenCalledWith('pairing_failed', { reason: 'notFound' });
+  });
+});
+
 // The camera phone beats every 5 s while it records; the remote's screen economy waits a minute without a touch.
 async function recordFor(ms: number) {
   for (let left = ms; left > 0; left -= 5000) {
@@ -665,6 +697,8 @@ test('the first time it is connected it explains voice before iOS asks, once', a
   });
   expect(camera().requestMicrophonePermission).toHaveBeenCalled();
   expect(camera().requestSpeechPermission).toHaveBeenCalled();
+  expect(track).toHaveBeenCalledWith('permission_result', { kind: 'microphone', granted: true });
+  expect(track).toHaveBeenCalledWith('permission_result', { kind: 'speech', granted: true });
   expect(jest.requireMock('../../data/mmkv').repo.getPrefs().remoteVoiceAsked).toBe(true);
   expect(screen.getByLabelText('Salvar por voz, Diga “salvar”')).toBeTruthy();
   alert.mockRestore();

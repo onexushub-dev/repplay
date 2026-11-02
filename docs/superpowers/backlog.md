@@ -120,3 +120,18 @@ Itens adiados nas revisões finais. Nada aqui bloqueia o uso, mas vale resolver 
 ## Modo Foco — zoom e variante "lance" (2026-10-28)
 - No app (v15, `rules: v15-acao-zoom110`): `FocusTuning.action.zoomIn = 1.1`, 10% a mais de zoom sobre o v14 "ação" (o limite sobe de 1,5x para 1,65x). Teste de zoom uniforme em 3 vídeos (`tools/zoom-compare.sh`, `renders/zoom/`): +10% manteve quem está em ação sempre no quadro (parados cortados 3–7% do tempo); +20% já corta jogadores 12–14% do tempo; +30% a +50%, um terço a dois terços. Subir só o limite (1,65x–2x) não muda quase nada: quem define o zoom é a distância entre os jogadores.
 - Adiado (retomar junto com a detecção de bola): variante "lance" em `focus_variant.py` (`--set lance=1 --set maxZoom=2 --set lanceTop=2 --set lanceMinWeight=1.5 --set widthHoldMs=0`): fecha nos 2 jogadores mais rápidos com 0,8 s de antecipação. Zoom típico 1,5–1,8x, jogadores em ação cortados ≤5%, mas os parados saem do quadro 24–48% do tempo e a câmera se move 2–5x mais. Comparar com `tools/variant-compare.sh <vídeo> lance ...`. Ideias para depois: peso extra para o golpe (pose: pulso rápido acima do ombro), som da batida, escolher por esporte (lance no basquete/futebol, atual no beach tennis/vôlei).
+
+## Métricas de uso anônimas (PostHog, 2026-10-28)
+Antes de lançar com a chave:
+- No projeto do PostHog, desligar a captura de IP (Settings > Project > General > IP data capture configuration). Na nuvem dos EUA ela vem ligada; o app já desliga o GeoIP, mas o IP da requisição só deixa de ser guardado com essa opção.
+- Criar o projeto no PostHog Cloud dos EUA (us.posthog.com; o app é usado no Brasil e nos EUA) e colocar a chave pública em `REPRIZE_POSTHOG_KEY` (`app/.env.local` e no EAS). Sem a chave o app não envia nada.
+- Gerar um novo dev client: o SDK (`posthog-react-native`, `expo-application`) é nativo.
+- Passar pelo app com a chave e conferir em Live Events: cada evento uma vez, só com as propriedades do spec, nenhum perfil de pessoa criado, nenhum IP.
+- Política de privacidade: uma linha sobre métricas anônimas de uso e um e-mail para quem quiser se opor (LGPD, legítimo interesse): o app ainda não tem onde desligar.
+- Sem tela de configurações, o switch "Métricas de uso anônimas" saiu do app (2026-11-02). O núcleo continua com `analytics.setEnabled()` / `isEnabled()`: quando houver a tela, é só pôr o switch nela. No Data safety do Google Play, declarar a coleta como obrigatória enquanto não houver o switch.
+- Etiqueta de privacidade da App Store: dados de uso não vinculados ao usuário; sem pedido de rastreamento (ATT).
+- Montar os painéis: retenção, funil do onboarding (etapa 1 até concluir, paywall, compra) e uso das features pelo `session_summary`.
+
+Adiado:
+- `paywall_viewed` com origem `onboarding` não existe ainda: nenhuma tela das stories abre o paywall.
+- Exportação em lote conta no `session_summary`, mas não gera `export_completed` por clipe (e por isso não diz o plano: só a exportação de um clipe traz `plan`).
