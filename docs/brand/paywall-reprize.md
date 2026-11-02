@@ -100,69 +100,61 @@ Em pt-BR. Termos do app: "gravação" é a sessão, "clipe" é o vídeo salvo e 
 
 ## Prompt para o editor do RevenueCat · oferta `default`
 
-As instruções estão em inglês; os textos do paywall, em pt-BR, devem sair exatamente como estão.
+As instruções estão em inglês; os textos do paywall, em pt-BR, devem sair exatamente como estão. Anexar a imagem de referência da assinatura.
 
 ```text
-Create a dark, full-screen paywall for "Reprize PRO", a sports video app (beach tennis, futevôlei, beach volleyball). Language: Brazilian Portuguese. Use the copy below exactly; do not invent claims, numbers or testimonials beyond the copy below.
+Update the current paywall. Use the attached image as the layout reference. Keep everything that already matches it and fix only the points below. Language: Brazilian Portuguese; use the copy exactly as written.
 
-STYLE
-- Background #0A0A0A. Cards and plan tiles #141414; resting border 1 px #2E2E2E. Text #FFFFFF; secondary text #B3B3B3.
-- Single accent: amber #FFB000, with #0A0A0A text on amber. Never use red, blue, purple or gradients other than the photo fade.
-- Headings: Barlow Condensed 800, uppercase, line height 1.0. Everything else: Manrope 600/700/800.
-- Radii: tile 10, plan 14, button 16, badge 20. Spacing on a 4/8 grid. Full-width button, at least 52 px tall.
+1. HERO PHOTO: remove every overlay from the photo: the amber rectangle, the "FULL HD" label and the speaker icon. The photo stays clean and fades into #0A0A0A at the bottom. All content (title to footer) stays anchored to the bottom of the screen and the photo fills the space above it.
 
-LAYOUT, TOP TO BOTTOM
-1. Close button (X) top left, over the photo.
-2. Hero: the current dark night-court photo, fading into #0A0A0A at the bottom. Anchor all the content below (title to footer) to the bottom of the screen and let the photo fill all the remaining space above it, so it grows on taller phones instead of leaving empty space. No overlays on the photo: no frames, badges or icons.
-3. Title, two lines: "SEUS LANCES" in white and "COM QUALIDADE PRO" in amber.
-4. Subtitle in #B3B3B3: "Todos os recursos para gravar, editar e compartilhar."
-5. Benefit grid, 2 columns × 4 rows. Each cell is a #141414 tile (radius 10) with an amber line icon on the left and a bold white label. No descriptions under the labels.
-   - "Full HD" (HD/screen icon) | "Som no vídeo" (speaker icon)
-   - "Modo Foco" (corner brackets / scan icon) | "Sem marca d’água" (eye-off icon)
-   - "Clipes de 60 s" (timer icon) | "Gravação em 4K" (video camera icon)
-   - "Compilar clipes" (stacked videos icon) | "Apple Watch" (watch icon)
-6. Two full-width plan rows stacked vertically (keep the current layout), each a #141414 card (radius 14) with the plan name and a second line on the left and the store price on the right.
-   - Top, Annual, PRESELECTED: 2 px amber border. Name "Anual" with an amber pill badge right after it showing the savings computed by RevenueCat against the monthly package, format "ECONOMIZE {percent}". Second line in #B3B3B3: "Melhor custo-benefício". On the right: "{annual price}/ano" in bold and, under it in small #B3B3B3, "{price per month}/mês".
-   - Bottom, Monthly: 1 px #2E2E2E border. Name "Mensal". Second line in #B3B3B3: "O mais escolhido". Price on the right: "{monthly price}/mês".
-7. Primary button (amber, #0A0A0A text), one line. Annual selected and trial eligible: "Começar 7 dias grátis". Otherwise: "Assinar o PRO".
-8. Two short lines under the button, centered, #B3B3B3, small; the second line is always "Cancele quando quiser.". First line, annual with trial: "Grátis por 7 dias, depois {annual price}/ano." Annual without trial: "{annual price}/ano, renovação automática." Monthly: "{monthly price}/mês, renovação automática."
-9. Footer links in #B3B3B3: "Restaurar · Termos · Privacidade".
+2. TEXT UNDER THE BUTTON: always two lines, centered, #B3B3B3, 13 px, so it never looks empty.
+   - Line 1, depends on the selected package and must never be blank:
+     - Annual, eligible for the introductory offer: "Grátis por {{ product.offer_period }}, depois {{ product.price_per_period_abbreviated }}."
+     - Annual, not eligible: "{{ product.price_per_period_abbreviated }}, renovação automática."
+     - Monthly: "{{ product.price_per_period_abbreviated }}, renovação automática."
+   - Line 2, always: "Cancele quando quiser."
 
-RULES
-- Only two packages: Annual and Monthly. Do not show the Single Pass here; it has its own offering.
-- Prices, currency and the savings percentage always come from store variables; never type a price.
-- Do not mention recording limits: recordings are unlimited on both plans.
-- Do not list playback speed, the Bluetooth remote or the phone remote: they are free.
-- Write the plan name as "PRO", in capitals, everywhere.
-- Keep the footer "Restaurar · Termos · Privacidade" visible without scrolling on small phones.
+3. BUTTON: when the Annual package is selected and the user is eligible for the introductory offer, the label is "Começar 7 dias grátis". In every other case: "Assinar o PRO".
+
+4. SAVINGS BADGE on the Annual row: "ECONOMIZE {{ product.relative_discount }}", computed against the Monthly package of this offering. Never type the number.
+
+5. ICONS in the benefit grid, amber line icons:
+   - "Full HD": a rounded rectangle with "HD" inside (not a camera)
+   - "Som no vídeo": speaker with sound waves
+   - "Modo Foco": four corner brackets with a dot in the center
+   - "Sem marca d’água": eye with a slash
+   - "Clipes de 60 s": stopwatch
+   - "Gravação em 4K": video camera
+   - "Compilar clipes": two stacked video frames with a play triangle
+   - "Apple Watch": a smartwatch (not a pulse line)
+
+6. TYPE: title "SEUS LANCES" (white) / "COM QUALIDADE PRO" (amber #FFB000) in Barlow Condensed 800, uppercase, line height 1.0, about 40 px. Everything else in Manrope.
+
+7. CLOSE BUTTON: top left, 32 px, dark translucent circle with a white X.
+
+8. FOOTER: keep "Restaurar · Termos · Privacidade" in #B3B3B3, 13 px, above the home indicator, with at least 12 px between it and the text under the button.
+
+Keep unchanged: subtitle "Todos os recursos para gravar, editar e compartilhar.", the 2 × 4 grid, the two stacked plan rows ("Anual" preselected with "Melhor custo-benefício" and the monthly price under the annual price; "Mensal" with "O mais escolhido"), colors #0A0A0A, #141414, #2E2E2E, #FFFFFF, #B3B3B3 and the single amber accent. Only the Annual and Monthly packages; no Single Pass. Prices always come from store variables.
 ```
 
 ## Prompt para o editor do RevenueCat · oferta `pass`
 
+Anexar a imagem de referência do Passe.
+
 ```text
-Create a dark, full-screen paywall for the "Passe Avulso", a one-time purchase in Reprize, a sports video app. It unlocks PRO export quality for one recording (session) the player already made. Language: Brazilian Portuguese. Use the copy below exactly; do not invent claims or numbers.
+Create a paywall for the "pass" offering with exactly the same look as the PRO paywall in the "default" offering (copy its components and styles). Use the attached image as the layout reference. Language: Brazilian Portuguese; use the copy exactly as written.
 
-STYLE
-Identical to the PRO paywall: background #0A0A0A, cards #141414, text #FFFFFF and #B3B3B3, single accent amber #FFB000 with #0A0A0A text on it, Barlow Condensed 800 uppercase headings, Manrope for everything else, radii 10/14/16.
+- Same hero photo, clean, with no overlays (no frames, labels or icons), fading into #0A0A0A. Content anchored to the bottom; the photo fills the space above it.
+- Close button top left, same as the PRO paywall.
+- Title in Barlow Condensed 800, uppercase: "LIBERAR" (white) / "ESTA GRAVAÇÃO" (amber #FFB000).
+- Subtitle, #B3B3B3: "Recursos PRO em todos os clipes desta gravação, sem assinatura."
+- Benefit grid, same tiles and icons as the PRO paywall, 2 columns: "Full HD" | "Som no vídeo"; "Modo Foco" | "Sem marca d’água"; "Compilar os clipes dela" spanning both columns.
+- One product row, preselected (2 px amber border), same style as the PRO plan rows: "Passe avulso", second line "Vale só para esta gravação", price {{ product.price }} on the right.
+- Primary button, amber with #0A0A0A text: "Liberar esta gravação".
+- Under the button, centered, #B3B3B3, 13 px: "Pagamento único, sem renovação automática."
+- Footer: "Restaurar · Termos · Privacidade", same as the PRO paywall.
 
-LAYOUT, TOP TO BOTTOM
-1. Close button (X) top left.
-2. Hero, same as the PRO paywall: content anchored to the bottom and the photo filling all the remaining space above it. The same night-court photo, with no overlays, fading into #0A0A0A.
-3. Title, two lines: "LIBERAR" in white and "ESTA GRAVAÇÃO" in amber.
-4. Subtitle in #B3B3B3: "Recursos PRO em todos os clipes desta gravação, sem assinatura."
-5. Benefit grid, same tiles as the PRO paywall (#141414, radius 10, amber line icon, bold white label), 2 columns:
-   - "Full HD" (HD/screen icon) | "Som no vídeo" (speaker icon)
-   - "Modo Foco" (corner brackets / scan icon) | "Sem marca d’água" (eye-off icon)
-   - "Compilar os clipes dela" (stacked videos icon), spanning both columns
-6. One full-width product row, same style as the PRO plan rows and preselected (2 px amber border): name "Passe avulso", second line in #B3B3B3 "Vale só para esta gravação", the store price on the right.
-7. Primary button (amber, #0A0A0A text): "Liberar esta gravação".
-8. Under the button, centered, #B3B3B3, small: "Pagamento único, sem renovação automática."
-9. Footer links in #B3B3B3: "Restaurar · Termos · Privacidade".
-
-RULES
-- Only the single_pass package. No subscription plans and no trial text.
-- The price always comes from the store variable; never type a price.
-- Keep the footer "Restaurar · Termos · Privacidade" visible without scrolling on small phones.
+Only the single_pass package. No subscription plans and no trial text. The price always comes from the store variable.
 ```
 
 ## Depois de publicar
