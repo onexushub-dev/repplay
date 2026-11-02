@@ -141,32 +141,12 @@ test('Nova gravação clears a game that has just ended before starting over', a
   expect(reset).toHaveBeenCalled();
 });
 
-describe('the Pro invitation in the gallery', () => {
+test('the gallery has no PRO card, even with recordings on the free plan: each recording offers it on its own screen', async () => {
   const freeGame = { session: { id: 's1', sport: 'outro', startedAt: 0, endedAt: 5, paid: false }, clips: 2, firstClip: clip };
-  const paidGame = { session: { id: 's2', sport: 'outro', startedAt: 0, endedAt: 5, paid: true }, clips: 2, firstClip: clip };
-
-  test('shows while some recording with clips is on the free plan, and opens the paywall', async () => {
-    repo.listSessions.mockReturnValue([freeGame]);
-    repo.sessionStats.mockReturnValue({ clips: 2, bytes: 1, recordedMs: 60_000 });
-    await render(<Games />);
-    expect(screen.getByText('Desbloqueie tudo com o PRO')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: /^Desbloqueie tudo com o PRO/ }));
-    expect(payments.showPaywall).toHaveBeenCalledTimes(1);
-  });
-
-  test('is not there when every recording is paid, or when there is nothing yet', async () => {
-    repo.listSessions.mockReturnValue([paidGame]);
-    repo.sessionStats.mockReturnValue({ clips: 2, bytes: 1, recordedMs: 60_000 });
-    await render(<Games />);
-    expect(screen.queryByText('Desbloqueie tudo com o PRO')).toBeNull();
-  });
-
-  test('is not there for a Pro subscriber, who already has everything unlocked', async () => {
-    payments.unlockOption.mockReturnValue({ kind: 'pro' });
-    repo.listSessions.mockReturnValue([freeGame]);
-    repo.sessionStats.mockReturnValue({ clips: 2, bytes: 1, recordedMs: 60_000 });
-    await render(<Games />);
-    expect(screen.queryByText('Desbloqueie tudo com o PRO')).toBeNull();
-    payments.unlockOption.mockReturnValue({ kind: 'none' });
-  });
+  repo.listSessions.mockReturnValue([freeGame]);
+  repo.sessionStats.mockReturnValue({ clips: 2, bytes: 1, recordedMs: 60_000 });
+  await render(<Games />);
+  expect(screen.queryByText('Desbloqueie tudo com o PRO')).toBeNull();
+  expect(screen.queryByText('PRO')).toBeNull();
+  expect(payments.showPaywall).not.toHaveBeenCalled();
 });
