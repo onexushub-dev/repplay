@@ -60,7 +60,7 @@ Compilar no grátis abre o paywall direto.
 
 ## Como se paga
 
-- **PRO** (assinatura, entitlement `pro`): `pro_monthly` **R$ 14,90/mês** e `pro_annual` **R$ 99,90/ano** (≈ R$ 8,33/mês, 44% abaixo de 12 mensalidades). **Teste grátis de 7 dias só no anual.**
+- **PRO** (assinatura, entitlement `pro`): `pro_monthly` **R$ 14,90/mês** e `pro_annual` **R$ 99,90/ano** (≈ R$ 8,33/mês, 44% abaixo de 12 mensalidades). **Teste grátis de 7 dias no anual e no mensal; a loja cobra no oitavo dia.**
 - **Passe Avulso** (consumível, `single_pass`, **R$ 4,90**), oferecido como **"Liberar só esta gravação"** no painel da exportação; o paywall dele se chama **"Liberar esta gravação"**:
   - é usado **só quando o jogador escolhe**, numa gravação grátis já feita; nunca é gasto sozinho ao começar uma gravação;
   - libera nessa gravação a exportação em Full HD, com som, com Modo Foco, sem marca, e compilar os clipes dela;
@@ -95,7 +95,7 @@ Tudo é teste até a publicação. Depois de publicar, os números (conversão p
 - [x] Marca d'água discreta no grátis (redesenho em `share/ShareOverlay.tsx`).
 - [x] Textos pt-BR e en (`src/i18n/locales/*.ts`, `locales/*.json`): conferir a regra de termos (clipe = vídeo salvo; lance = jogada e copy, como "melhores lances"); "Relógio" → "Apple Watch"; sair os textos de teto mensal e de Passe no início; revisar `summary.freeNote`, `games.proMessage`, `unlock.message`, `clip.focusPro`, `clip.speedFree` (sai), `clip.soundFree`, `freeExport.*`, `setup.watchProOnly`, `setup.proOnly`.
 - [x] Testes: `rules`, `store`, `snapshot`, `unlock`, `setup`, `session`, `useFreeExportGate`, `exportOptions`.
-- [ ] RevenueCat e lojas: oferta `default` com Anual (pré-selecionado) e Mensal; oferta `pass` com o `single_pass`; teste de 7 dias só no `pro_annual`; paywall e descrições conforme `docs/brand/paywall-reprize.md`.
+- [ ] RevenueCat e lojas: oferta `default` com Anual (pré-selecionado) e Mensal; oferta `pass` com o `single_pass`; teste de 7 dias no `pro_annual` e no `pro_monthly`; paywall e descrições conforme `docs/brand/paywall-reprize.md`.
 - [ ] `FIELD_TEST_UNLOCK_ALL` em `false` antes de publicar.
 - [x] Rodar `npx jest`, `npx tsc --noEmit` e `npx expo lint` em `app/`.
 

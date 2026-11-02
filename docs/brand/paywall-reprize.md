@@ -72,7 +72,7 @@ Em pt-BR. Termos do app: "gravação" é a sessão, "clipe" é o vídeo salvo e 
 | Anual (em cima, pré-selecionado) | Anual + selo ECONOMIZE N% · Melhor custo-benefício · preço/ano, com o preço/mês embaixo |
 | Mensal | Mensal · O mais escolhido · preço/mês |
 | Botão | Assinar o PRO (nos dois planos; o teste aparece só na linha embaixo do botão) |
-| Linha 1 embaixo do botão | Anual com teste: Grátis por 7 dias, depois PREÇO/ano. · Anual sem teste: PREÇO/ano, renovação automática. · Mensal: PREÇO/mês, renovação automática. |
+| Linha 1 embaixo do botão | Com direito ao teste (anual ou mensal): Grátis por 7 dias, depois PREÇO/ano (ou /mês). · Sem direito: PREÇO/ano (ou /mês), renovação automática. |
 | Linha 2 | Cancele quando quiser. |
 | Rodapé | Restaurar · Termos · Privacidade |
 
@@ -127,10 +127,11 @@ LAYOUT, TOP TO BOTTOM
 7. Primary button, amber with #0A0A0A text, one line: always "Assinar o PRO", for both packages. The free trial is told only in the text under the button.
 8. Text under the button: one text component of two lines, centered, #B3B3B3, 13 px, never blank. It reads the selected package.
    - Default text (always shown): "{{ product.price_per_period_abbreviated }}, renovação automática." / "Cancele quando quiser."
-   - Override with the condition "eligible for introductory offer" (Annual selected and user eligible): "Grátis por 7 dias, depois {{ product.price_per_period_abbreviated }}." / "Cancele quando quiser."
+   - Override with the condition "eligible for introductory offer" (any selected package, Annual or Monthly, when the user is eligible): "Grátis por 7 dias, depois {{ product.price_per_period_abbreviated }}." / "Cancele quando quiser."
 9. Footer: "Restaurar · Termos · Privacidade", #B3B3B3, 13 px. Respect the bottom safe area and add 16 px of bottom padding so it sits above the home indicator, with 12 px between it and the text above.
 
 RULES
+- Both Annual and Monthly have a 7-day free trial; the store charges on day 8. Do not add any other trial text.
 - Only the Annual and Monthly packages; no Single Pass (it has its own offering). The savings badge is computed against the Monthly package, so the offering must contain only these two.
 - Prices, currency and the savings percentage always come from store variables; never type a number.
 - Write the plan name as "PRO", in capitals.
@@ -167,5 +168,5 @@ RULES
 ## Depois de publicar
 
 1. Preços do Brasil: Anual R$ 99,90, Mensal R$ 14,90 e Passe R$ 4,90. Conferir nas lojas antes de publicar.
-2. Conferir se o teste de 7 dias está ativo no `pro_annual` nas duas lojas. Sem ele, o botão mostra "Assinar o PRO".
+2. Criar o teste de 7 dias no `pro_annual` e no `pro_monthly` nas duas lojas (App Store Connect: oferta introdutória gratuita de 1 semana; Play Console: oferta de teste grátis de 7 dias em cada plano base). A cobrança acontece no oitavo dia.
 3. Abrir os dois paywalls no aparelho (`presentPaywall`), não só no preview do painel: fonte, selo de economia (44% no Brasil), texto do teste com e sem direito a ele, botão trocando entre anual e mensal e rodapé visível num iPhone de 6,1".
