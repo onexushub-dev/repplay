@@ -744,18 +744,16 @@ describe('Modo Foco', () => {
       await pressAction('Salvar na galeria');
       expect(camera.exportClip).not.toHaveBeenCalled();
       expect(screen.getByText('Salve seus clipes com qualidade PRO')).toBeTruthy();
-      expect(screen.getByLabelText(/^Som no clipe\. Grátis: não\. PRO: sim/)).toBeTruthy();
-      expect(screen.getByLabelText(/^Modo Foco no clipe\. Grátis: não\. PRO: sim/)).toBeTruthy();
-      expect(screen.getByLabelText('Qualidade. Grátis: HD. PRO: Full HD')).toBeTruthy();
-      expect(screen.getByLabelText('Sem marca d’água. Grátis: não. PRO: sim')).toBeTruthy();
+      expect(screen.getByText('Seu clipe tem som e Modo Foco')).toBeTruthy();
+      expect(screen.getByLabelText('GRÁTIS: Sem som, Sem Modo Foco, HD, Com marca d’água')).toBeTruthy();
+      expect(screen.getByLabelText('PRO: Com som, Modo Foco, Full HD, Sem marca d’água')).toBeTruthy();
     });
 
     test('"Continuar no plano grátis" exports HD at the chosen speed with the mark, no sound and no framing', async () => {
       __setClip({ ...base, focus: ready, edit: { speed: 2, muted: false } });
       await open();
       await pressAction('Salvar na galeria');
-      expect(screen.getAllByText('Este clipe usa')).toHaveLength(1); // the framing; 2x is silent anyway
-      expect(screen.getByText('No plano grátis, este clipe sai em HD, sem Modo Foco e com marca d’água.')).toBeTruthy();
+      expect(screen.getByText('Seu clipe tem Modo Foco')).toBeTruthy(); // 2x is silent anyway
       await fireEvent.press(screen.getByRole('button', { name: 'Continuar no plano grátis' }));
       await act(async () => {});
       expect(camera.exportClip).toHaveBeenCalledTimes(1);
@@ -772,7 +770,7 @@ describe('Modo Foco', () => {
       await open();
       await pressAction('Salvar na galeria');
       expect(screen.queryByText('Continuar no plano grátis')).toBeNull();
-      expect(screen.getByText(/^Este clipe sai em HD, .*com marca d’água\.$/)).toBeTruthy();
+      expect(screen.getByText(/^Salvo em HD, .*com marca d’água\.$/)).toBeTruthy();
       await act(async () => {});
       expect(camera.exportClip).toHaveBeenCalledTimes(1);
       expect(camera.exportClip).toHaveBeenCalledWith(expect.objectContaining({ width: 1280, height: 720, watermark: true }));
@@ -791,9 +789,8 @@ describe('Modo Foco', () => {
       __setClip({ ...base, focus: ready, edit: { muted: false, focus: false } });
       await open();
       await pressAction('Salvar na galeria');
-      expect(screen.getByLabelText(/^Modo Foco no clipe\. Grátis: não\. PRO: sim/)).toBeTruthy();
-      expect(screen.getByLabelText(/^Som no clipe\. Grátis: não\. PRO: sim/)).toBeTruthy();
-      expect(screen.getAllByText('Este clipe usa')).toHaveLength(1);
+      expect(screen.getByText('Seu clipe tem som')).toBeTruthy();
+      expect(screen.getByLabelText('GRÁTIS: Sem som, Sem Modo Foco, HD, Com marca d’água')).toBeTruthy();
     });
   });
 

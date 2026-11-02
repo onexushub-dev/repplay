@@ -257,6 +257,15 @@ export function SoundIcon({ color = colors.text, size = 22 }: IconProps) {
   );
 }
 
+/** The speaker with a cross: a video without sound. */
+export function MutedIcon({ color = colors.text, size = 22 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityElementsHidden>
+      <Path d="M4 10v4h4l5 4V6L8 10zM16 10l4 4M20 10l-4 4" {...stroke(color)} />
+    </Svg>
+  );
+}
+
 /** A magnifier with a plus: zoom by hand. */
 export function ZoomIcon({ color = colors.text, size = 22 }: IconProps) {
   return (
