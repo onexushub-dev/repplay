@@ -61,12 +61,12 @@ Compilar no grátis abre o paywall direto.
 ## Como se paga
 
 - **PRO** (assinatura, entitlement `pro`): `pro_monthly` **R$ 14,90/mês** e `pro_annual` **R$ 99,90/ano** (≈ R$ 8,33/mês, 44% abaixo de 12 mensalidades). **Teste grátis de 7 dias só no anual.**
-- **Passe Avulso** (consumível, `single_pass`, **R$ 4,90**), apresentado como **"Liberar recursos PRO nessa gravação"**:
+- **Passe Avulso** (consumível, `single_pass`, **R$ 4,90**), oferecido como **"Liberar só esta gravação"** no painel da exportação; o paywall dele se chama **"Liberar esta gravação"**:
   - é usado **só quando o jogador escolhe**, numa gravação grátis já feita; nunca é gasto sozinho ao começar uma gravação;
   - libera nessa gravação a exportação em Full HD, com som, com Modo Foco, sem marca, e compilar os clipes dela;
   - não libera duração acima de 15 s nem 4K, porque a gravação foi feita em 15 s e Full HD;
   - um Passe comprado e ainda não usado fica guardado para a próxima vez que o jogador escolher liberar uma gravação.
-- **Paywall** (RevenueCat): a oferta `default` tem só Anual (pré-selecionado, com preço mensal equivalente e selo de economia calculado pelo painel) e Mensal. O Passe fica numa oferta própria (`pass`), aberta por "Liberar recursos PRO nessa gravação".
+- **Paywall** (RevenueCat): a oferta `default` tem só Anual (pré-selecionado, com preço mensal equivalente e selo de economia calculado pelo painel) e Mensal. O Passe fica numa oferta própria (`pass`), aberta por "Liberar só esta gravação", com o mesmo visual. Textos e prompts do painel: `docs/brand/paywall-reprize.md`.
 - Preço e moeda vêm sempre da loja; nenhum valor no código.
 
 ## Como o app decide
