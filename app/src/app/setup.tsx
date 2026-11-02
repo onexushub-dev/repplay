@@ -37,7 +37,6 @@ import { TriggerTile } from '../components/TriggerTile';
 import { ZoomBubble } from '../components/ZoomBubble';
 import { ZoomButton } from '../components/ZoomButton';
 import { repo } from '../data/mmkv';
-import { useStartPreview } from '../payments/useStartPreview';
 import { openPaywall } from '../payments/feedback';
 import { FREE_MAX_SECONDS, qualityAllowed, triggerAllowed } from '../payments/limits';
 import { accessPlan } from '../payments/rules';
@@ -191,7 +190,7 @@ export default function Setup() {
     watchSupported && watchAllowed && watch !== 'ready'
       ? () => Alert.alert(t('setup.watchHelpTitle'), watch === 'notInstalled' ? t('setup.watchHelpInstall') : t('setup.watchHelpPair'))
       : undefined;
-  // The paid triggers are the watch and the Bluetooth remote; the phone remote is free for every plan.
+  // The Apple Watch is the one paid trigger; the Bluetooth remote and the phone remote are free for every plan.
   const remoteAllowed = triggerAllowed('remote', plan);
   // The free plan cuts clips at 15 s: a longer pick is paid, and what the screen shows is what the game will get.
   const isAllowed = (seconds: number) => paidAccess || seconds <= FREE_MAX_SECONDS;
@@ -334,19 +333,12 @@ export default function Setup() {
     return () => sub.remove();
   }, []);
 
-  const preview = useStartPreview();
-  const startNote =
-    preview.decision.kind === 'credit' ? t('setup.passCredits', { count: preview.credits }) : null;
   const busy = useRef(false);
   async function onStart() {
     if (busy.current) return;
     busy.current = true;
     try {
-      if ((await session.start(modeId)) !== 'blocked') return;
-      const outcome = await openPaywall(t);
-      // One retry right after a purchase: the player already asked to start. A purchase that shows up later
-      // (SDK lag) only changes the status line; the next tap starts.
-      if (outcome === 'purchased' || outcome === 'restored') await session.start(modeId);
+      await session.start(modeId); // the plan never stops a start
     } finally {
       busy.current = false;
     }
@@ -440,7 +432,6 @@ export default function Setup() {
             {expanded ? renderSettings() : renderSummary()}
 
             {errorText ? <Text style={styles.error}>{errorText}</Text> : null}
-            {startNote ? <Text style={styles.startNote}>{startNote}</Text> : null}
             <Button
               label={opening ? t('setup.openingCamera') : t('setup.start')}
               icon={starting ? <ActivityIndicator color={colors.onAccent} /> : undefined}
@@ -543,7 +534,6 @@ export default function Setup() {
         <Text style={styles.section}>{t('setup.triggers')}</Text>
         {/* The paid triggers (Bluetooth remote and watch) share one outline and one "Pro" badge on the free plan. */}
         <View style={styles.proTriggers}>
-          {showPro ? <View pointerEvents="none" style={styles.proOutline} /> : null}
           <View style={styles.gridRow}>
             <TriggerTile
               icon={<RemoteIcon />}
@@ -560,17 +550,21 @@ export default function Setup() {
                   : () => void openPaywall(t)
               }
             />
-            <TriggerTile
-              icon={<WatchIcon />}
-              title={sourceLabel('watch', locale)}
-              status={watchSupported ? watchStatus : t('setup.watchIosOnly')}
-              active={watchOn}
-              disabled={!watchSupported}
-              lockedHint={watchLocked ? t('setup.watchProOnly') : undefined}
-              onPress={watchLocked ? () => void openPaywall(t) : watchHelp}
-            />
+            {/* The paid trigger: in the free plan the Apple Watch tile alone carries the outline and the "Pro" badge. */}
+            <View style={styles.proTile}>
+              {showPro ? <View pointerEvents="none" style={styles.proOutline} /> : null}
+              <TriggerTile
+                icon={<WatchIcon />}
+                title={sourceLabel('watch', locale)}
+                status={watchSupported ? watchStatus : t('setup.watchIosOnly')}
+                active={watchOn}
+                disabled={!watchSupported}
+                lockedHint={watchLocked ? t('setup.watchProOnly') : undefined}
+                onPress={watchLocked ? () => void openPaywall(t) : watchHelp}
+              />
+              {showPro ? <ProBadge label={t('setup.proBadge')} top={-9} right={6} /> : null}
+            </View>
           </View>
-          {showPro ? <ProBadge label={t('setup.proBadge')} top={-9} right={6} /> : null}
         </View>
         <View style={styles.grid}>
           <View style={styles.gridRow}>
@@ -730,12 +724,12 @@ const styles = StyleSheet.create({
   },
   // The outline is drawn around the tiles, out in the sheet's side padding, so the tiles keep the width of the free ones.
   proTriggers: { marginTop: 8, marginBottom: 4 }, // room for the badge under the section title
+  proTile: { flex: 1, flexDirection: 'row' },
   proOutline: { position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderWidth: 1, borderColor: colors.accent, borderRadius: 15 },
   triggerPlain: { gap: 8 },
   grid: { gap: 8 },
   gridRow: { flexDirection: 'row', gap: 8 },
   error: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.warning },
-  startNote: { fontFamily: fonts.body, fontSize: 13, color: colors.soft, textAlign: 'center' },
   cameraButtons: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   feedbackRow: {
     flexDirection: 'row',

@@ -106,9 +106,3 @@ test('saved keeps neither locked nor lastFree in lastSaved', () => {
   const s = reducer(recording(), { type: 'saved', sessionId: 's1', clipId: 'c1', source: 'screen', at: 1, cutMs: 30_000 });
   expect(s.lastSaved).toEqual({ clipId: 'c1', number: 1, source: 'screen', at: 1, cutMs: 30_000 });
 });
-
-test('startBlocked after startRequested goes back to idle keeping the camera, without an error', () => {
-  const on = reducer(initialState, { type: 'cameraOn' });
-  const s = reducer(reducer(on, { type: 'startRequested' }), { type: 'startBlocked' });
-  expect(s).toEqual({ ...initialState, camera: 'on' });
-});

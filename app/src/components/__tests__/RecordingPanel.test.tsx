@@ -155,11 +155,11 @@ test('the wave tag shows when the gesture is on', async () => {
   expect(screen.queryByText('Diga “salvar”')).toBeNull();
 });
 
-test('in a free game the Bluetooth remote has no tag: it is a Pro trigger', async () => {
+test('in a free game the Bluetooth remote has its tag too: it is free', async () => {
   session({ paid: false });
   await render(<Recording clipSeconds={15} gesture voice={false} />);
   expect(screen.getByText('Acene')).toBeTruthy();
-  expect(screen.queryByText('Controle')).toBeNull();
+  expect(screen.getByText('Controle')).toBeTruthy();
 });
 
 test('a remote phone asking to end the recording ends it like the hold button does', async () => {

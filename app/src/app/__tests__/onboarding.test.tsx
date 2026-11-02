@@ -43,11 +43,11 @@ test('a tap on the right edge goes forward and one on the left goes back', async
   await fireEvent.press(next());
   expect(screen.getByText('SALVE.')).toBeTruthy();
   await fireEvent.press(next());
-  expect(screen.getByText('Salve à distância com o PRO.')).toBeTruthy();
+  expect(screen.getByText('Salve pelo pulso com o PRO.')).toBeTruthy();
   await fireEvent.press(next());
   expect(screen.getByText('EDITE.')).toBeTruthy();
   await fireEvent.press(previous());
-  expect(screen.getByText('Salve à distância com o PRO.')).toBeTruthy();
+  expect(screen.getByText('Salve pelo pulso com o PRO.')).toBeTruthy();
 });
 
 test('the stories move on by themselves', async () => {

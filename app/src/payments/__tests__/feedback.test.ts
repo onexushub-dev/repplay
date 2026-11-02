@@ -19,7 +19,7 @@ describe('openPaywall', () => {
   it('opens the one paywall and tells the user when it fails', async () => {
     showPaywall.mockResolvedValue('error');
     await expect(openPaywall(t)).resolves.toBe('error');
-    expect(showPaywall).toHaveBeenCalledWith();
+    expect(showPaywall).toHaveBeenCalledWith('default');
     expect(Alert.alert).toHaveBeenCalledWith(t('payments.paywallError'));
   });
   it.each(['cancelled', 'purchased', 'restored'])('stays silent on %s and returns it', async (outcome) => {

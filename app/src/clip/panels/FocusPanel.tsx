@@ -23,6 +23,7 @@ export function FocusPanel({ ctx }: { ctx: ToolContext }) {
       <PanelHead
         title={t('clip.focusMode')}
         hint={free ? t('clip.focusPro') : t('clip.focusHint')}
+        pro={free ? t('setup.proBadge') : undefined}
         right={
           <Pressable
             accessibilityRole="switch"

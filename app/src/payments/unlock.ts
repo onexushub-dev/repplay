@@ -5,7 +5,7 @@ import type { TFunction } from '../i18n';
 import { openPaywall } from './feedback';
 import { payments } from '.';
 
-/** Asks whether the Pass goes to this recording or waits for the next one; resolves true for "this one". */
+/** Asks before a Pass kept from before goes to this recording; resolves true for "use it". */
 function askUsePass(t: TFunction): Promise<boolean> {
   return new Promise((resolve) => {
     Alert.alert(
@@ -21,21 +21,24 @@ function askUsePass(t: TFunction): Promise<boolean> {
 }
 
 /**
- * Unlocks Full HD and sound for a recording that is already made. Pro does it at once, a waiting Pass after the player
- * agrees to spend it here, and with neither the paywall opens first: what was bought then is offered the same way.
+ * "Liberar recursos PRO nessa gravação": opens a recording already made for the paid export (Full HD, sound, Modo Foco,
+ * no mark, compile). Pro does it at once; a Pass kept from before after the player agrees to use it here; with neither,
+ * the Single Pass paywall opens and the Pass bought there goes to this recording. A Pass is never spent anywhere else.
  * Returns whether the recording is paid now.
  */
 export async function unlockRecording(sessionId: string, t: TFunction): Promise<boolean> {
   let option = payments.unlockOption();
+  let boughtHere = false;
   if (option.kind === 'none') {
-    const outcome = await openPaywall(t);
+    const outcome = await openPaywall(t, 'pass');
     if (outcome !== 'purchased' && outcome !== 'restored') return false;
+    boughtHere = outcome === 'purchased';
     option = payments.unlockOption();
   }
   if (option.kind === 'none') return false;
   if (option.kind === 'credit') {
-    // A Pass bought just now is a credit like any other: the player chooses between this recording and the next one.
-    if (!(await askUsePass(t))) return false;
+    // A Pass bought just now was bought for this recording; one kept from before is used after the player agrees.
+    if (!boughtHere && !(await askUsePass(t))) return false;
     return repo.upgradeSession(sessionId, { passTransactionId: option.passTransactionId }) !== undefined;
   }
   return repo.upgradeSession(sessionId, {}) !== undefined;

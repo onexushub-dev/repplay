@@ -679,51 +679,9 @@ describe('start decision', () => {
     await act(async () => void (r = await f.view.result.current.start(sport)));
     return r;
   };
-  const freeCount = (f: F) => f.deps.repo.freeCount(f.deps.now());
+  /** Free recordings stored: there is no counter any more, a free start is just an unpaid session. */
+  const freeCount = (f: F) => f.sessionIds().filter((id: string) => f.deps.repo.getSession(id)?.paid === false).length;
   const lowStorage = () => Object.assign(new Error('x'), { code: 'LOW_STORAGE' });
-
-  test('blocked touches nothing: no starting phase, no camera, no session, no count', async () => {
-    const d = fakeDeps();
-    const phases = new Set<string>();
-    const view = await renderHook(() => {
-      const r = useReplaySession(d.deps);
-      phases.add(r.state.phase);
-      return r;
-    });
-    const f = { ...d, view };
-    f.startDecision.mockResolvedValue({ kind: 'blocked' });
-    expect(await startResult(f)).toBe('blocked');
-    expect([...phases]).toEqual(['idle']);
-    expect(f.view.result.current.state.error).toBeUndefined();
-    expect(f.camera.startSession).not.toHaveBeenCalled();
-    expect(f.sessionIds()).toEqual([]);
-    expect(freeCount(f)).toBe(0);
-  });
-
-  test('blocked after a game leaves the ended game on screen as it was', async () => {
-    const f = await setup();
-    await startResult(f);
-    await act(async () => void (await f.view.result.current.stop()));
-    const before = f.view.result.current.state;
-    f.startDecision.mockResolvedValue({ kind: 'blocked' });
-    expect(await startResult(f)).toBe('blocked');
-    expect(f.view.result.current.state).toBe(before);
-    expect(freeCount(f)).toBe(1);
-  });
-
-  test('blocked at the second decision goes back to idle, keeps the camera and records nothing', async () => {
-    const f = await setup();
-    const startSession = jest.spyOn(f.deps.repo, 'startSession');
-    f.startDecision.mockResolvedValueOnce({ kind: 'pro' }).mockResolvedValueOnce({ kind: 'blocked' });
-    expect(await startResult(f)).toBe('blocked');
-    expect(f.view.result.current.state).toMatchObject({ phase: 'idle', camera: 'on' });
-    expect(f.view.result.current.state.error).toBeUndefined();
-    expect(f.camera.stopSession).not.toHaveBeenCalled();
-    expect(startSession).not.toHaveBeenCalled();
-    expect(f.sessionIds()).toEqual([]);
-    expect(freeCount(f)).toBe(0);
-    expect(f.camera.setGestureEnabled).not.toHaveBeenCalledWith(true);
-  });
 
   test('free: the chosen quality with sound, 15 s clips, an unpaid session and one free recording counted', async () => {
     const f = await setup();
@@ -754,24 +712,8 @@ describe('start decision', () => {
     expect(f.view.result.current.state).toMatchObject({ paid: true, bufferSeconds: 60 });
   });
 
-  test('a credit is spent once and does not count', async () => {
+  test('a camera failure records nothing and spends nothing', async () => {
     const f = await setup();
-    f.startDecision.mockResolvedValue({ kind: 'credit', passTransactionId: 'tx-1' });
-    expect(await startResult(f)).toBe('started');
-    expect(f.deps.repo.getSession(f.view.result.current.state.sessionId!)).toMatchObject({
-      paid: true,
-      passTransactionId: 'tx-1',
-    });
-    expect([...f.deps.repo.spentPasses()]).toEqual(['tx-1']);
-    expect(freeCount(f)).toBe(0);
-  });
-
-  test.each([
-    ['free', { kind: 'free' } as const],
-    ['a credit', { kind: 'credit', passTransactionId: 'tx-1' } as const],
-  ])('a camera failure on %s records nothing, counts nothing and spends nothing', async (_n, decision) => {
-    const f = await setup();
-    f.startDecision.mockResolvedValue(decision);
     f.camera.startSession.mockRejectedValueOnce(lowStorage());
     expect(await startResult(f)).toBe('failed');
     expect(f.view.result.current.state).toMatchObject({ phase: 'idle', error: 'LOW_STORAGE' });
@@ -810,20 +752,16 @@ describe('start decision', () => {
     expect(freeCount(f)).toBe(1);
   });
 
-  test.each([
-    ['free', { kind: 'free' } as const],
-    ['a credit', { kind: 'credit', passTransactionId: 'tx-1' } as const],
-  ])('a double tap on %s starts one session and counts or spends once', async (_n, decision) => {
+  test('a double tap starts one session', async () => {
     const f = await setup();
-    f.startDecision.mockResolvedValue(decision);
     let rs: unknown[] = [];
     await act(async () => {
       rs = await Promise.all([f.view.result.current.start('quadra'), f.view.result.current.start('quadra')]);
     });
     expect([...rs].sort()).toEqual(['busy', 'started']);
     expect(f.sessionIds()).toHaveLength(1);
-    if (decision.kind === 'free') expect(freeCount(f)).toBe(1);
-    else expect([...f.deps.repo.spentPasses()]).toEqual(['tx-1']);
+    expect(freeCount(f)).toBe(1);
+    expect(f.deps.repo.spentPasses().size).toBe(0);
   });
 
   test('prepare never touches the camera while recording, starting or stopping', async () => {
@@ -861,10 +799,10 @@ describe('start decision', () => {
     expect(f.view.result.current.state.phase).toBe('recording');
   });
 
-  test('the Bluetooth remote is a Pro trigger: off in a free game, on in a paid one', async () => {
+  test('the Bluetooth remote is free: on in a free game and in a paid one', async () => {
     const free = await setup();
     await startResult(free);
-    expect(free.useRemote).toHaveBeenLastCalledWith(false, expect.any(Function));
+    expect(free.useRemote).toHaveBeenLastCalledWith(true, expect.any(Function));
     const paid = await setup();
     paid.startDecision.mockResolvedValue({ kind: 'pro' });
     await startResult(paid);
@@ -904,9 +842,8 @@ describe('start decision', () => {
     }],
     ['repo.startSession', (f: F) => jest.spyOn(f.deps.repo, 'startSession').mockImplementationOnce(() => { throw new Error('x'); })],
   ])('a throw from %s fails the start, counts nothing, spends nothing, and a later start works', async (name, arm) => {
-    for (const decision of [{ kind: 'free' } as const, { kind: 'credit', passTransactionId: 'tx-1' } as const]) {
+    {
       const f = await setup();
-      f.startDecision.mockResolvedValue(decision);
       arm(f);
       expect(await startResult(f)).toBe('failed');
       expect(f.view.result.current.state).toMatchObject({ phase: 'idle', error: expect.any(String) });
@@ -950,31 +887,16 @@ describe('start decision', () => {
     expect(clip.trim).toEqual({ startMs: 45000, endMs: 60000 });
   });
 
-  test('a credit gone between the two decisions: reopens with the 15 s ceiling, spends nothing, counts a free recording', async () => {
+  test('Pro arriving between the two decisions reopens with the paid settings and records a paid session', async () => {
     const f = await setup();
-    f.startDecision.mockResolvedValueOnce({ kind: 'credit', passTransactionId: 'tx-1' }).mockResolvedValueOnce({ kind: 'free' });
+    f.startDecision.mockResolvedValueOnce({ kind: 'free' }).mockResolvedValueOnce({ kind: 'pro' });
     expect(await startResult(f)).toBe('started');
-    expect(f.camera.startSession).toHaveBeenNthCalledWith(1, expect.objectContaining({ maxQuality: '1080p60', audio: true }));
-    expect(f.camera.startSession).toHaveBeenLastCalledWith(
-      expect.objectContaining({ maxQuality: '1080p60', bufferSeconds: 15, audio: true }),
-    );
-    const session = f.deps.repo.getSession(f.view.result.current.state.sessionId!)!;
-    expect(session.paid).toBe(false);
-    expect(session.passTransactionId).toBeUndefined();
-    expect(f.deps.repo.spentPasses().size).toBe(0);
-    expect(freeCount(f)).toBe(1);
-  });
-
-  test('a credit arriving between the two decisions: reopens in Full HD with sound, spends it once, counts nothing', async () => {
-    const f = await setup();
-    f.startDecision.mockResolvedValueOnce({ kind: 'free' }).mockResolvedValueOnce({ kind: 'credit', passTransactionId: 'tx-1' });
-    expect(await startResult(f)).toBe('started');
-    expect(f.camera.startSession).toHaveBeenNthCalledWith(1, expect.objectContaining({ maxQuality: '1080p60', audio: true }));
+    expect(f.camera.startSession).toHaveBeenNthCalledWith(1, expect.objectContaining({ bufferSeconds: 15 }));
     expect(f.camera.startSession).toHaveBeenLastCalledWith(
       expect.objectContaining({ maxQuality: '1080p60', bufferSeconds: 60, audio: true }),
     );
-    expect(f.deps.repo.getSession(f.view.result.current.state.sessionId!)).toMatchObject({ paid: true, passTransactionId: 'tx-1' });
-    expect([...f.deps.repo.spentPasses()]).toEqual(['tx-1']);
+    expect(f.deps.repo.getSession(f.view.result.current.state.sessionId!)).toMatchObject({ paid: true });
+    expect(f.deps.repo.spentPasses().size).toBe(0);
     expect(freeCount(f)).toBe(0);
   });
 

@@ -1,4 +1,3 @@
-import { monthKey } from '../payments/rules';
 import { type Clip, DEFAULT_PREFS, DEFAULT_TRIM_MS, MAX_CLIP_NAME, MAX_GAME_NAME, type Prefs, type Session, type Sport } from './schema';
 
 export interface KV {
@@ -21,7 +20,6 @@ const key = {
   clipsOf: (sessionId: string) => `reprize:v1:clips-of:${sessionId}`,
   sessions: 'reprize:v1:sessions',
   spentPasses: 'reprize:v1:spentPasses',
-  freeCount: (month: string) => `reprize:v1:freeCount:${month}`,
 };
 const SESSION_PREFIX = 'reprize:v1:session:';
 
@@ -44,12 +42,6 @@ export function createRepo(kv: KV, files: FileProbe, newId: () => string) {
 
   function getSession(id: string): Session | undefined {
     return read<Session>(key.session(id));
-  }
-
-  /** Absent, unreadable or not a whole number >= 0 reads as 0. */
-  function freeCountOf(now: number): number {
-    const n = Number(kv.getString(key.freeCount(monthKey(now))));
-    return Number.isInteger(n) && n >= 0 ? n : 0;
   }
 
   function sessionIds(): string[] {
@@ -122,27 +114,20 @@ export function createRepo(kv: KV, files: FileProbe, newId: () => string) {
       if (addSpent(ids)) changed();
     },
 
-    /** Free recordings started in the month of `now`; only grows (deleting a game gives nothing back). */
-    freeCount(now: number): number {
-      return freeCountOf(now);
-    },
-
-    startSession(sport: Sport, now: number, plan: { paid: boolean; passTransactionId?: string }): Session {
+    startSession(sport: Sport, now: number, plan: { paid: boolean }): Session {
       const ids = sessionIds(); // before writing, so a first-time rebuild doesn't list this game twice
       spentList(); // build the ledger from existing games before this one exists
-      const { passTransactionId } = plan;
-      const session: Session = { id: newId(), sport, startedAt: now, paid: plan.paid, ...(passTransactionId ? { passTransactionId } : {}) };
+      const session: Session = { id: newId(), sport, startedAt: now, paid: plan.paid };
       write(key.session(session.id), session);
       write(key.sessions, [...ids, session.id]);
-      if (passTransactionId) addSpent([passTransactionId]);
-      if (!plan.paid) kv.set(key.freeCount(monthKey(now)), String(freeCountOf(now) + 1));
       changed();
       return session;
     },
 
     /**
-     * Makes a finished free recording a paid one: Full HD and sound open for its clips. With a Single Pass the pass is
-     * spent on this recording; with Pro nothing is spent. Does not touch the free counter.
+     * Makes a finished free recording a paid one ("Liberar recursos PRO nessa gravação"): its clips export in Full HD,
+     * with sound and Modo Foco, without the mark. With a Single Pass the pass is spent on this recording; with Pro
+     * nothing is spent.
      */
     upgradeSession(id: string, plan: { passTransactionId?: string }): Session | undefined {
       const session = getSession(id);
@@ -153,6 +138,14 @@ export function createRepo(kv: KV, files: FileProbe, newId: () => string) {
       if (passTransactionId) addSpent([passTransactionId]);
       changed();
       return next;
+    },
+
+    /** Records that this free recording already showed the full export panel: later exports get the short notice. */
+    markFreeNoticeShown(id: string): void {
+      const session = getSession(id);
+      if (!session || session.freeNoticeShown) return;
+      write(key.session(id), { ...session, freeNoticeShown: true });
+      changed();
     },
 
     endSession(id: string, now: number): Session {

@@ -1,16 +1,7 @@
 import type { Repo } from '../data/repo';
 import type { PaymentsClient, PaywallOutcome } from './client';
-import {
-  availableCredit,
-  creditCount,
-  detectPurchase,
-  FREE_RECORDINGS_PER_MONTH,
-  freeLeft,
-  monthKey,
-  planOf,
-  startPlan,
-} from './rules';
-import { EMPTY_SNAPSHOT, type Plan, type Snapshot, type StartDecision, type UnlockOption } from './types';
+import { availableCredit, creditCount, detectPurchase, planOf, startPlan } from './rules';
+import { EMPTY_SNAPSHOT, type Offering, type Plan, type Snapshot, type StartDecision, type UnlockOption } from './types';
 
 /**
  * A paywall purchase not seen yet (SDK lag). Its Pass is a credit like any other; the marker only keeps it from being
@@ -20,8 +11,7 @@ type Pending = { before: Snapshot };
 
 export function createPaymentsStore(
   client: PaymentsClient,
-  repo: Pick<Repo, 'getSession' | 'spentPasses' | 'spendPasses' | 'freeCount'>,
-  now: () => number = Date.now,
+  repo: Pick<Repo, 'getSession' | 'spentPasses' | 'spendPasses'>,
 ) {
   let current: Snapshot | null = null;
   // At most one paywall result we could not explain yet. A new paywall never opens while it exists unresolved.
@@ -29,8 +19,6 @@ export function createPaymentsStore(
   let open = false;
   let version = 0;
   let started = false;
-  // The month of the last notify: recheckMonth() notifies when the clock is in another one (no notify yet this month).
-  let lastMonth = monthKey(now());
   const listeners = new Set<() => void>();
 
   // Restored passes whose ledger write failed: counted as spent from here and written again at the next update, so a
@@ -38,7 +26,6 @@ export function createPaymentsStore(
   const unledgered = new Set<string>();
 
   function notify() {
-    lastMonth = monthKey(now());
     version += 1;
     listeners.forEach((fn) => fn());
   }
@@ -115,19 +102,11 @@ export function createPaymentsStore(
     return { droppedExplained: !!droppedId };
   }
 
-  /**
-   * Never throws, and never mutates the store (it runs while rendering). Deliberate: a storage failure decides free: it
-   * never stops a player from recording, and can let the monthly cap through.
-   */
+  /** Never throws, and never mutates the store (it runs while rendering): any failure decides free. */
   function decide(): StartDecision {
     try {
-      const t = now();
       const snap = current ?? EMPTY_SNAPSHOT;
-      return startPlan({
-        proActive: snap.proActive,
-        credit: availableCredit(snap, spent()),
-        freeUsed: repo.freeCount(t),
-      });
+      return startPlan({ proActive: snap.proActive });
     } catch {
       return { kind: 'free' };
     }
@@ -177,10 +156,11 @@ export function createPaymentsStore(
     },
 
     /**
-     * The one (default) offering. A Pass bought here is a credit for a later start; a Pass that shows up by a restore
-     * is never a credit: it goes to the ledger. Never throws.
+     * Opens `offering` (Pro by default, the Single Pass with 'pass'). A Pass bought here is a credit until the player
+     * unlocks a recording with it; a Pass that shows up by a restore is never a credit: it goes to the ledger. Never
+     * throws.
      */
-    async showPaywall(): Promise<PaywallOutcome> {
+    async showPaywall(offering: Offering = 'default'): Promise<PaywallOutcome> {
       if (open) return 'cancelled';
       open = true;
       let dropped: Pending | null = null;
@@ -203,7 +183,7 @@ export function createPaymentsStore(
         }
         let outcome: PaywallOutcome;
         try {
-          outcome = await client.showPaywall();
+          outcome = await client.showPaywall(offering);
         } catch {
           return 'error';
         }
@@ -260,20 +240,14 @@ export function createPaymentsStore(
       }
     },
 
-    /** "Começar gravação" with what is known now (the status line). */
-    peekStart(): StartDecision {
-      return decide();
-    },
-
     /** The plan the next start would get: what the preparation shows and opens the camera with. */
     nextPlan(): Plan {
       return planOf(decide());
     },
 
     /**
-     * "Começar gravação": reads first when there is no snapshot yet or a purchase waits (it may be a credit now).
-     * Never throws: a failed read decides with what is known (the empty snapshot at worst), any failure is 'free'.
-     * Never spends a credit (the session start does).
+     * "Começar gravação": reads first when there is no snapshot yet or a purchase waits (it may be Pro now). Never
+     * throws: a failed read decides with what is known (the empty snapshot at worst), any failure is 'free'.
      */
     async startDecision(): Promise<StartDecision> {
       try {
@@ -302,27 +276,7 @@ export function createPaymentsStore(
       }
     },
 
-    /** Free recordings left this month. A failure counts as the whole allowance, like `decide`. */
-    freeLeft(): number {
-      try {
-        return freeLeft(repo.freeCount(now()));
-      } catch {
-        return FREE_RECORDINGS_PER_MONTH;
-      }
-    },
-
-    /** Notifies when the clock is in another month than the last notify: the counter reads 0 there. */
-    recheckMonth(): void {
-      try {
-        if (monthKey(now()) !== lastMonth) {
-          notify();
-        }
-      } catch {
-        // no clock: nothing to recheck
-      }
-    },
-
-    /** Unused Passes, counted like `peekStart`. */
+    /** Unused Passes: bought and not yet used to unlock a recording. */
     credits(): number {
       try {
         return creditCount(current ?? EMPTY_SNAPSHOT, spent());

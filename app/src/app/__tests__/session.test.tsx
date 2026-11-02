@@ -225,9 +225,9 @@ describe('free recording', () => {
     setup('free');
     await render(<SessionSummary />);
     expect(screen.getByText('Desbloqueie os recursos PRO')).toBeTruthy();
-    expect(screen.getByText('Som, Modo Foco, sem marca d’água e os melhores momentos compilados em um vídeo só. Com o Pro ou um Passe Avulso.')).toBeTruthy();
+    expect(screen.getByText('Full HD, som, Modo Foco, sem marca d’água e os melhores lances compilados em um vídeo só. Com o PRO ou liberando os recursos PRO nesta gravação.')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: /^Desbloqueie os recursos PRO/ }));
-    expect(payments.showPaywall).toHaveBeenCalledWith();
+    expect(payments.showPaywall).toHaveBeenCalledWith('pass');
   });
 
   test('with Pro active a recording made on the free plan has no card: Pro unlocks it', async () => {
