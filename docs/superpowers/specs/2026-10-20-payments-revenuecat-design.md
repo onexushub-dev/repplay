@@ -22,7 +22,7 @@
 
 | Produto | Tipo | Brasil | EUA | Observação |
 |---|---|---|---|---|
-| `pro_annual` | Assinatura anual, entitlement `pro` | R$ 99,90 (≈ R$ 8,33/mês) | $49.90 (≈ $4.16/mês) | Teste grátis de 7 dias, cobrança no oitavo dia; pré-selecionado no paywall |
+| `pro_annual` | Assinatura anual, entitlement `pro` | R$ 119,90 (≈ R$ 9,99/mês) | $49.90 (≈ $4.16/mês) | Teste grátis de 7 dias, cobrança no oitavo dia; pré-selecionado no paywall |
 | `pro_monthly` | Assinatura mensal, entitlement `pro` | R$ 14,90 | $6.90 | Teste grátis de 7 dias, cobrança no oitavo dia |
 | `single_pass` | Consumível | R$ 4,90 | $2.49 | Paywall "Liberar esta gravação" |
 
@@ -30,7 +30,7 @@
 
 | País | 12 mensalidades | Anual | Economia | Selo esperado |
 |---|---|---|---|---|
-| Brasil | R$ 178,80 | R$ 99,90 | 44,1% | ECONOMIZE 44% |
+| Brasil | R$ 178,80 | R$ 119,90 | 32,9% | ECONOMIZE 33% |
 | EUA | $82.80 | $49.90 | 39,7% | ECONOMIZE 40% (ou 39%, conforme o arredondamento do RevenueCat) |
 
 Nos outros países, o preço vem da equivalência automática da loja a partir do preço dos EUA (Apple) ou do preço-base (Google), e a economia acompanha. Conferir os países principais antes de publicar.

@@ -14,7 +14,7 @@ O app abre a oferta `default` pelos cadeados PRO (preparação, compilar, Apple 
 | "… som e controle de velocidade" | sem a velocidade | A velocidade é grátis |
 | "Relógio (Apple Watch) como gatilho" | **Apple Watch** | Sem jargão |
 | Faltavam Full HD, som no clipe e 4K | entram na grade | São o que o PRO mais vende |
-| Selo "ECONOMIZE 19%" | **ECONOMIZE 44%** (calculado pelo painel contra o mensal) | R$ 99,90 contra 12 × R$ 14,90 dá 44% (nos EUA, $49.90 contra 12 × $6.90 dá 40%); o número estava digitado |
+| Selo "ECONOMIZE 19%" | **ECONOMIZE 33%** (calculado pelo painel contra o mensal) | R$ 119,90 contra 12 × R$ 14,90 dá 33% (nos EUA, $49.90 contra 12 × $6.90 dá 40%); o número estava digitado |
 | Passe avulso como terceira linha da assinatura | oferta própria (`pass`) | Não libera 4K, 60 s nem Apple Watch; quem chega pelo cadeado do 4K compraria algo que não resolve |
 | Teste de 7 dias não aparecia | "Grátis por 7 dias, depois PREÇO/ano." embaixo do botão | A Apple exige o valor cobrado depois do teste |
 | "Assinar o Pro" | "Assinar o PRO" | Mesmo nome dos cadeados |
@@ -171,6 +171,6 @@ RULES
 
 ## Depois de publicar
 
-1. Preços: Brasil, Anual R$ 99,90, Mensal R$ 14,90 e Passe R$ 4,90; EUA, Anual $49.90, Mensal $6.90 e Passe $2.49. Conferir nas lojas antes de publicar. Selo esperado: 44% no Brasil e 40% (ou 39%) nos EUA.
+1. Preços: Brasil, Anual R$ 119,90, Mensal R$ 14,90 e Passe R$ 4,90; EUA, Anual $49.90, Mensal $6.90 e Passe $2.49. Conferir nas lojas antes de publicar. Selo esperado: 33% no Brasil e 40% (ou 39%) nos EUA.
 2. Criar o teste de 7 dias no `pro_annual` e no `pro_monthly` nas duas lojas (App Store Connect: oferta introdutória gratuita de 1 semana; Play Console: oferta de teste grátis de 7 dias em cada plano base). A cobrança acontece no oitavo dia.
-3. Abrir os dois paywalls no aparelho (`presentPaywall`), não só no preview do painel: fonte, selo de economia (44% no Brasil, 40% nos EUA), texto do teste com e sem direito a ele, botão trocando entre anual e mensal e rodapé visível num iPhone de 6,1".
+3. Abrir os dois paywalls no aparelho (`presentPaywall`), não só no preview do painel: fonte, selo de economia (33% no Brasil, 40% nos EUA), texto do teste com e sem direito a ele, botão trocando entre anual e mensal e rodapé visível num iPhone de 6,1".
