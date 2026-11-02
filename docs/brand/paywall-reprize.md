@@ -13,7 +13,7 @@ O app abre a oferta `default` pelos cadeados PRO (preparação, compilar, Apple 
 | "Gravações ilimitadas, com todos os recursos" | removido | As gravações são ilimitadas nos dois planos |
 | "… som e controle de velocidade" | sem a velocidade | A velocidade é grátis |
 | "Relógio (Apple Watch) como gatilho" | **Apple Watch** | Sem jargão |
-| Faltavam Full HD, som no vídeo e 4K | entram na grade | São o que o PRO mais vende |
+| Faltavam Full HD, som no clipe e 4K | entram na grade | São o que o PRO mais vende |
 | Selo "ECONOMIZE 19%" | **ECONOMIZE 44%** (calculado pelo painel contra o mensal) | 99,90 contra 12 × 14,90 dá 44%; o selo usava outra base |
 | Passe avulso como terceira linha da assinatura | oferta própria (`pass`) | Não libera 4K, 60 s nem Apple Watch; quem chega pelo cadeado do 4K compraria algo que não resolve |
 | Teste de 7 dias não aparecia | Botão "Começar 7 dias grátis" e as condições embaixo | A Apple exige o valor cobrado depois do teste |
@@ -68,7 +68,7 @@ Em pt-BR. Termos do app: "gravação" é a sessão, "clipe" é o vídeo salvo e 
 |---|---|
 | Título | SEUS LANCES (branco) / COM QUALIDADE PRO (Âmbar) |
 | Subtítulo | Todos os recursos para gravar, editar e compartilhar. |
-| Grade (2 × 4) | Full HD · Som no vídeo · Modo Foco · Sem marca d’água · Clipes de 60 s · Gravação em 4K · Compilar clipes · Apple Watch |
+| Grade (2 × 4) | Full HD · Som no clipe · Modo Foco · Sem marca d’água · Clipes de 60 s · Gravação em 4K · Compilar clipes · Apple Watch |
 | Anual (em cima, pré-selecionado) | Anual + selo ECONOMIZE N% · Melhor custo-benefício · preço/ano, com o preço/mês embaixo |
 | Mensal | Mensal · O mais escolhido · preço/mês |
 | Botão | Anual com direito ao teste: Começar 7 dias grátis · nos outros casos: Assinar o PRO |
@@ -84,7 +84,7 @@ Em pt-BR. Termos do app: "gravação" é a sessão, "clipe" é o vídeo salvo e 
 |---|---|
 | Título | LIBERAR (branco) / ESTA GRAVAÇÃO (Âmbar) |
 | Subtítulo | Recursos PRO em todos os clipes desta gravação, sem assinatura. |
-| Grade | Full HD · Som no vídeo · Modo Foco · Sem marca d’água · Compilar os clipes dela (linha inteira) |
+| Grade | Full HD · Som no clipe · Modo Foco · Sem marca d’água · Compilar os clipes dela (linha inteira) |
 | Produto (pré-selecionado) | Passe avulso · Vale só para esta gravação · preço |
 | Botão | Liberar esta gravação |
 | Embaixo do botão | Pagamento único, sem renovação automática. |
@@ -93,7 +93,7 @@ Em pt-BR. Termos do app: "gravação" é a sessão, "clipe" é o vídeo salvo e 
 ### Regras atrás do texto
 
 - Gravações são ilimitadas nos dois planos: o paywall não fala em limite de gravações.
-- O grátis grava em Full HD e mostra som e Modo Foco no app; o PRO vende o vídeo exportado (resolução, som, Modo Foco, sem marca), a gravação em 4K, as durações acima de 15 s, compilar e o Apple Watch.
+- O grátis grava em Full HD e mostra som e Modo Foco no app; o PRO vende o clipe exportado (resolução, som, Modo Foco, sem marca), a gravação em 4K, as durações acima de 15 s, compilar e o Apple Watch.
 - Não prometer velocidade, controle Bluetooth nem celular controle: são grátis.
 - O Passe libera só a exportação e o compilar da gravação escolhida; não libera 4K, durações acima de 15 s nem o Apple Watch.
 - Preço, moeda e percentual de economia vêm sempre da loja; não escrever valores no painel.
@@ -120,7 +120,7 @@ Update the current paywall. Use the attached image as the layout reference. Keep
 
 5. ICONS in the benefit grid, amber line icons:
    - "Full HD": a rounded rectangle with "HD" inside (not a camera)
-   - "Som no vídeo": speaker with sound waves
+   - "Som no clipe": speaker with sound waves
    - "Modo Foco": four corner brackets with a dot in the center
    - "Sem marca d’água": eye with a slash
    - "Clipes de 60 s": stopwatch
@@ -148,7 +148,7 @@ Create a paywall for the "pass" offering with exactly the same look as the PRO p
 - Close button top left, same as the PRO paywall.
 - Title in Barlow Condensed 800, uppercase: "LIBERAR" (white) / "ESTA GRAVAÇÃO" (amber #FFB000).
 - Subtitle, #B3B3B3: "Recursos PRO em todos os clipes desta gravação, sem assinatura."
-- Benefit grid, same tiles and icons as the PRO paywall, 2 columns: "Full HD" | "Som no vídeo"; "Modo Foco" | "Sem marca d’água"; "Compilar os clipes dela" spanning both columns.
+- Benefit grid, same tiles and icons as the PRO paywall, 2 columns: "Full HD" | "Som no clipe"; "Modo Foco" | "Sem marca d’água"; "Compilar os clipes dela" spanning both columns.
 - One product row, preselected (2 px amber border), same style as the PRO plan rows: "Passe avulso", second line "Vale só para esta gravação", price {{ product.price }} on the right.
 - Primary button, amber with #0A0A0A text: "Liberar esta gravação".
 - Under the button, centered, #B3B3B3, 13 px: "Pagamento único, sem renovação automática."
