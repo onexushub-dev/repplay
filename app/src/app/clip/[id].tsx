@@ -592,6 +592,7 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
         clip!.sessionId,
         { focus: focusActive, sound: !edit.muted && edit.speed === 1 },
         kind === 'share' ? 'share' : 'save',
+        { preview: { path: clip!.path, atMs: posterAt } },
       );
       if (!go || exporting.current) return;
     }

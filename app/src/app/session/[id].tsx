@@ -67,7 +67,7 @@ export default function SessionSummary() {
       const proceed = await freeGate.ask(id, {
         focus: clips.some((c) => freeLosses(c).focus),
         sound: clips.some((c) => freeLosses(c).sound),
-      }, kind);
+      }, kind, { preview: clips.length > 0 ? { path: clips[0].path, atMs: clips[0].trim.startMs } : undefined, many: clips.length > 1 });
       if (!proceed) return;
     }
     await go(clips);
