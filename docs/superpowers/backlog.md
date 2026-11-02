@@ -12,7 +12,7 @@ Itens adiados nas revisões finais. Nada aqui bloqueia o uso, mas vale resolver 
 
 ## Plano 2 — telas e gatilhos
 - Erros nativos que não são de calor aparecem todos como "erro na câmera" (LOW_STORAGE no meio do jogo deveria dizer pouco espaço).
-- Toque duplo em "Desfazer" pode descontar dois lances; toque duplo em "Começar jogo" pode iniciar duas vezes.
+- Toque duplo em "Desfazer" pode descontar dois clipes; toque duplo em "Começar jogo" pode iniciar duas vezes.
 - Voltar (Android) na tela de erro ou durante o encerramento pergunta de novo se quer encerrar.
 - `onError` fora da gravação marca a sessão como encerrada na tela de posicionar.
 - Ícones de gatilho na gravação aparecem ativos mesmo com o gesto desligado.
@@ -71,7 +71,6 @@ Itens adiados nas revisões finais. Nada aqui bloqueia o uso, mas vale resolver 
 - Checklist de campo da spec (§8): contra-ataque, jogada parada, público perto da quadra, jogo inteiro com calor e bateria.
 - Story a partir de clipe horizontal com o enquadramento vertical (decisão própria: muda o "nunca cortar a quadra").
 - Bola por esporte (Create ML ou modelo Apache 2.0; nunca Ultralytics/AGPL no app).
-- Modo Foco pago: entra no `entitlement` antes da loja.
 - (revisão) Espelhar o zoom manual nos valores animados em `onChange`, não em `useEffect` (1 quadro de atraso na pinça e possível piscada do quadro inteiro ao assumir o enquadramento).
 - (revisão) `focusQueue.ensure` deve pôr o clipe aberto na frente da fila (hoje espera atrás do acúmulo de um jogo quente).
 - (revisão) Testar o filtro de pessoas paradas diretamente (o teste da arquibancada distingue 0,46 de 0,50 só).

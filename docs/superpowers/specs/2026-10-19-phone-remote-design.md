@@ -6,7 +6,7 @@
 
 ## 1. Goal
 
-A second iPhone running LANCE acts as a big "Salvar" button for the phone that is filming. One tap on the remote saves the lance
+A second iPhone running LANCE acts as a big "Salvar" button for the phone that is filming. One tap on the remote saves the clip
 exactly like a tap on the screen, the watch or a Bluetooth remote.
 
 Success looks like:
@@ -119,7 +119,7 @@ All user-facing text is Brazilian Portuguese. Texts below are the intended copy.
 - `/remote`, screen states (from `RemoteLinkModel`):
   - searching: "Procurando <nome>…"
   - connected, game not started: "Conectado a <nome>. Aguardando o jogo começar." (button disabled)
-  - recording: clock and count ("12:34 · 3 lances") and a huge **SALVAR** button.
+  - recording: clock and count ("12:34 · 3 clipes") and a huge **SALVAR** button.
   - after a tap: a short "Salvo!" in green with a vibration, or "Não salvou" in red with another vibration.
   - stale (no news for 12 s): "Sem conexão com <nome>", button disabled, keeps searching.
   - Local Network denied: "Libere a rede local nos Ajustes para usar o controle." with a button to open Settings.
