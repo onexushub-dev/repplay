@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { useEffect } from 'react';
 
 import { useClipThumbnail } from '../useClipThumbnail';
-import { BRIEF_MS, useFreeExportGate } from '../useFreeExportGate';
+import { useFreeExportGate } from '../useFreeExportGate';
 
 const mockSessions: Record<string, { freeNoticeShown?: boolean }> = {};
 const mockMarked: string[] = [];
@@ -49,8 +49,14 @@ test('the first export of a recording opens the full sheet: the clip as free and
   expect(screen.getByText('Salve seus clipes com qualidade PRO')).toBeTruthy();
   expect(screen.getByText('Seu clipe tem som')).toBeTruthy();
   expect(screen.getByLabelText('GRÁTIS: Sem som, Sem Modo Foco, HD, Com marca d’água')).toBeTruthy();
-  expect(screen.getByLabelText('PRO: Com som, Modo Foco, Full HD, Sem marca d’água')).toBeTruthy();
-  expect(screen.getByText('Passe Avulso · vale para os 8 clipes dela')).toBeTruthy();
+  // The free plan never has Modo Foco: "Sem Modo Foco" is crossed out even when this clip does not use it.
+  expect(screen.getByText('Sem Modo Foco')).toBeTruthy();
+  expect(screen.getByText('Com Modo Foco')).toBeTruthy();
+  expect(screen.getByLabelText('PRO: Com som, Com Modo Foco, Full HD, Sem marca d’água')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Assinar o PRO' })).toBeTruthy();
+  expect(screen.getByText('Todas as gravações · mensal ou anual')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Só para esta gravação' })).toBeTruthy();
+  expect(screen.getByText('Pagamento único · todos os clipes inclusos')).toBeTruthy();
   for (const gone of ['Plano anual com 7 dias grátis', 'Este clipe usa']) expect(screen.queryByText(gone)).toBeNull();
   expect(screen.queryByText(/ sai /)).toBeNull();
   await fireEvent.press(screen.getByRole('button', { name: 'Cancelar' }));
@@ -59,7 +65,7 @@ test('the first export of a recording opens the full sheet: the clip as free and
   expect(mockMarked).toEqual([]);
 });
 
-test('"Continuar no plano grátis" goes on and marks the recording: its next export only shows the short note', async () => {
+test('"Continuar no plano grátis" goes on and marks the recording: its next export goes on with no notice at all', async () => {
   jest.useFakeTimers();
   await render(<Harness />);
   let go: boolean | undefined;
@@ -73,9 +79,9 @@ test('"Continuar no plano grátis" goes on and marks the recording: its next exp
   await act(async () => void gate.ask('s1', { focus: true, sound: false }, 'save').then((g) => (again = g)));
   expect(again).toBe(true); // never stops the export
   expect(screen.queryByText('Continuar no plano grátis')).toBeNull();
-  expect(screen.getByText('Salvo em HD, sem Modo Foco e com marca d’água.')).toBeTruthy();
-  await act(async () => void jest.advanceTimersByTime(BRIEF_MS + 10));
-  expect(screen.queryByText('Salvo em HD, sem Modo Foco e com marca d’água.')).toBeNull();
+  expect(screen.queryByText('Salve seus clipes com qualidade PRO')).toBeNull();
+  expect(screen.queryByText(/^(Salvo|Enviado) em /)).toBeNull(); // no short note any more
+  expect(screen.queryByRole('button', { name: 'Liberar' })).toBeNull();
 });
 
 test('another recording still gets the full sheet', async () => {
@@ -88,21 +94,12 @@ test('another recording still gets the full sheet', async () => {
   expect(screen.getByText('Continuar no plano grátis')).toBeTruthy();
 });
 
-test('"Liberar" on the short note unlocks that recording', async () => {
-  mockSessions.s1 = { freeNoticeShown: true };
-  await render(<Harness />);
-  await act(async () => void gate.ask('s1', { focus: false, sound: false }, 'save'));
-  await fireEvent.press(screen.getByRole('button', { name: 'Liberar' }));
-  await settle();
-  expect(mockUnlock).toHaveBeenCalledWith('s1', expect.any(Function));
-});
-
-test('"Liberar tudo com o PRO" stops the export and opens the Pro paywall only once the sheet has closed', async () => {
+test('"Assinar o PRO" stops the export and opens the Pro paywall only once the sheet has closed', async () => {
   jest.useFakeTimers();
   await render(<Harness />);
   let go: boolean | undefined;
   await act(async () => void gate.ask('s1', { focus: false, sound: true }, 'save').then((g) => (go = g)));
-  await fireEvent.press(screen.getByRole('button', { name: 'Liberar tudo com o PRO' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Assinar o PRO' }));
   await act(async () => {});
   expect(go).toBeUndefined();
   expect(mockOpenPaywall).not.toHaveBeenCalled();
@@ -113,12 +110,12 @@ test('"Liberar tudo com o PRO" stops the export and opens the Pro paywall only o
   expect(mockMarked).toEqual([]);
 });
 
-test('"Liberar só esta gravação" (the Single Pass) stops the export and unlocks the recording', async () => {
+test('"Só para esta gravação" (the Single Pass) stops the export and unlocks the recording', async () => {
   jest.useFakeTimers();
   await render(<Harness />);
   let go: boolean | undefined;
   await act(async () => void gate.ask('s1', { focus: false, sound: true }, 'save').then((g) => (go = g)));
-  await fireEvent.press(screen.getByRole('button', { name: 'Liberar só esta gravação' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Só para esta gravação' }));
   await act(async () => void jest.advanceTimersByTime(900));
   expect(go).toBe(false);
   expect(mockUnlock).toHaveBeenCalledWith('s1', expect.any(Function));
@@ -136,18 +133,22 @@ test('a clip with neither sound nor Modo Foco shows no chip; a batch speaks of "
   await render(<Harness />);
   await act(async () => void gate.ask('s2', { focus: false, sound: false }, 'save'));
   expect(screen.queryByText(/^Seu clipe tem/)).toBeNull();
-  expect(screen.getByText('Passe Avulso · vale para todos os clipes dela')).toBeTruthy();
+  expect(screen.getByText('Pagamento único · todos os clipes inclusos')).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: 'Cancelar' }));
   await settle();
   await act(async () => void gate.ask('s1', { focus: true, sound: true }, 'share', { many: true }));
   expect(screen.getByText('Seus clipes têm som e Modo Foco')).toBeTruthy();
 });
 
-test('the short note after a Send says "Enviado em…"', async () => {
+test('a later Send of a recording that already showed the sheet goes on with nothing on screen', async () => {
   mockSessions.s1 = { freeNoticeShown: true };
   await render(<Harness />);
-  await act(async () => void gate.ask('s1', { focus: false, sound: true }, 'share'));
-  expect(screen.getByText('Enviado em HD, sem som, sem Modo Foco e com marca d’água.')).toBeTruthy();
+  let go: boolean | undefined;
+  await act(async () => void gate.ask('s1', { focus: false, sound: true }, 'share').then((g) => (go = g)));
+  expect(go).toBe(true);
+  expect(screen.queryByText('Envie seus clipes com qualidade PRO')).toBeNull();
+  expect(screen.queryByText(/^Enviado em /)).toBeNull();
+  expect(mockUnlock).not.toHaveBeenCalled();
 });
 
 test('the previews show a frame of the clip, even one already made for the screen behind', async () => {
@@ -164,4 +165,18 @@ test('the previews show a frame of the clip, even one already made for the scree
   const frames = screen.getAllByTestId('export-preview-frame');
   expect(frames).toHaveLength(2);
   for (const f of frames) expect(JSON.stringify(f.props.source)).toContain('file:///tmp/thumb.jpg');
+});
+
+test('offer() opens the sheet from the PRO card of a recording, even after its export notice, with no "continue"', async () => {
+  jest.useFakeTimers();
+  mockSessions.s1 = { freeNoticeShown: true };
+  await render(<Harness />);
+  await act(async () => void gate.offer('s1', { focus: true, sound: true }));
+  expect(screen.getByText('Libere a qualidade PRO nesta gravação')).toBeTruthy();
+  expect(screen.getByText('Seu clipe tem som e Modo Foco')).toBeTruthy();
+  expect(screen.queryByText('Continuar no plano grátis')).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: 'Só para esta gravação' }));
+  await act(async () => void jest.advanceTimersByTime(900));
+  expect(mockUnlock).toHaveBeenCalledWith('s1', expect.any(Function));
+  expect(mockMarked).toEqual([]);
 });

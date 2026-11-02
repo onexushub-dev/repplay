@@ -27,7 +27,7 @@
 | `single_pass` | Consumível | R$ 4,90 | "Liberar recursos PRO nessa gravação" |
 
 - **Oferta `default`:** pacotes Anual e Mensal. Abre pelos cadeados da preparação (duração acima de 15 s, 4K, Apple Watch), por compilar e por "Liberar com o PRO".
-- **Oferta `pass`:** só o `single_pass`. Abre por "Liberar recursos PRO nessa gravação" (aviso de exportação, cartão do resumo, cadeado de som do editor) quando não há Passe guardado.
+- **Oferta `pass`:** só o `single_pass`. Abre por "Liberar recursos PRO nessa gravação" (painel de exportação e card PRO da tela da gravação) quando não há Passe guardado.
 - Textos e visual do paywall: `docs/brand/paywall-reprize.md`.
 
 ## Plano de uma gravação
@@ -43,7 +43,7 @@
 
 ## Passe Avulso: "Liberar recursos PRO nessa gravação"
 
-- Usado **só quando o jogador escolhe**, numa gravação grátis já feita. Pontos de entrada: o painel e o aviso antes de exportar, o cartão "Gravada no plano grátis" do resumo e o botão de som travado do editor. Todos chamam `unlockRecording(sessionId)` (`payments/unlock.ts`).
+- Usado **só quando o jogador escolhe**, numa gravação grátis já feita. Pontos de entrada: o painel antes de exportar e o card PRO da tela da gravação (que abre o mesmo painel, `useFreeExportGate().offer`). Todos chamam `unlockRecording(sessionId)` (`payments/unlock.ts`).
 - **Com PRO ativo:** nada a gastar; a gravação já exporta como paga.
 - **Com Passe guardado** (comprado e ainda não usado): pergunta "Usar o Passe nesta gravação?"; ao confirmar, `repo.upgradeSession` marca a gravação como paga, grava o `passTransactionId` e põe o Passe no livro-razão.
 - **Sem Passe:** abre a oferta `pass`; depois da compra, o Passe é usado nessa gravação.
@@ -53,7 +53,7 @@
 
 - Antes de salvar ou enviar (um clipe ou em lote) numa gravação grátis, com plano de visão grátis.
 - **Primeira exportação da gravação:** painel destacado (`FreeExportSheet`) com a lista completa do que o vídeo não terá (HD em vez de Full HD, sem som, sem Modo Foco, com marca d'água), os itens que o clipe usou em destaque e as ações Liberar com o PRO · Liberar recursos PRO nessa gravação · Continuar no grátis · Cancelar.
-- **Exportações seguintes da mesma gravação:** aviso discreto, sem interromper, com a ação Liberar.
+- **Exportações seguintes da mesma gravação:** seguem direto, sem aviso.
 - Uma exportação em lote conta como uma exportação daquela gravação. O registro de "painel já mostrado" fica na sessão (`Session.freeNoticeShown`).
 
 ## Arquitetura (`app/src/payments/`)
@@ -106,13 +106,13 @@
 
 ## Testes
 
-- **Jest:** `startPlan` (PRO e grátis), `availableCredit`, `sessionPlan`, `captureConfig` (grátis: Full HD, 15 s, com som; pago: o modo), `qualityAllowed`, `triggerAllowed` (só `watch` é pago), `canCompile`, `exportOptions` (grátis 720, sem som, sem Foco, com velocidade e marca; pago Full HD/4K), `unlockRecording` (PRO, Passe guardado, compra), aviso de exportação (painel na primeira exportação da gravação, discreto nas seguintes, lote conta uma vez), store (restauração não cria crédito, pendência única), sessão (plano fixado no início, câmera reabre antes do início se o plano mudar, nunca durante).
+- **Jest:** `startPlan` (PRO e grátis), `availableCredit`, `sessionPlan`, `captureConfig` (grátis: Full HD, 15 s, com som; pago: o modo), `qualityAllowed`, `triggerAllowed` (só `watch` é pago), `canCompile`, `exportOptions` (grátis 720, sem som, sem Foco, com velocidade e marca; pago Full HD/4K), `unlockRecording` (PRO, Passe guardado, compra), aviso de exportação (painel só na primeira exportação da gravação, lote conta uma vez), store (restauração não cria crédito, pendência única), sessão (plano fixado no início, câmera reabre antes do início se o plano mudar, nunca durante).
 - **Aparelho:** sandbox da Apple e license tester do Google.
 
 ## Critérios de aceite
 
 1. Instalação nova: gravações ilimitadas sem paywall; clipes de até 15 s; captura em Full HD com som; no editor, som e Modo Foco funcionam com selo "PRO".
-2. Primeira exportação de uma gravação grátis mostra o painel destacado; as seguintes, o aviso discreto. O vídeo sai em HD, sem som, sem Modo Foco, com marca e com a velocidade escolhida.
+2. Primeira exportação de uma gravação grátis mostra o painel destacado; as seguintes seguem sem aviso. O vídeo sai em HD, sem som, sem Modo Foco, com marca e com a velocidade escolhida.
 3. "Liberar recursos PRO nessa gravação" com Passe guardado libera a gravação; sem Passe, abre a oferta `pass` e libera depois da compra. O Passe nunca é gasto ao começar uma gravação.
 4. Assinar o PRO (mensal ou anual): todas as gravações exportam como pagas; duração até 60 s, 4K e Apple Watch liberados; se o PRO acabar, a gravação em andamento não muda.
 5. Cadeados da preparação e compilar abrem a oferta `default` (Anual pré-selecionado com 7 dias grátis, Mensal sem teste); comprar destrava sem começar nada.
