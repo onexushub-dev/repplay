@@ -72,7 +72,7 @@ Em pt-BR. Termos do app: "gravação" é a sessão, "clipe" é o vídeo salvo e 
 |---|---|
 | Título | SEUS LANCES (branco) / COM QUALIDADE PRO (Âmbar) |
 | Subtítulo | Todos os recursos para gravar, editar e compartilhar. |
-| Grade | Gravação em Full HD ou 4K (linha inteira) · Som no clipe · Modo Foco · Sem marca d’água · Clipes de até 60s · Compilar clipes · Apple Watch |
+| Grade | Gravação em Full HD ou 4K (linha inteira) · Clipe com som · Modo Foco · Sem marca d’água · Clipes de até 60s · Compilar clipes · Apple Watch |
 | Anual (em cima, pré-selecionado) | Anual + selo ECONOMIZE N% · Melhor custo-benefício · preço/ano, com o preço/mês embaixo |
 | Mensal | Mensal · O mais escolhido · preço/mês |
 | Botão | Assinar o PRO (nos dois planos; o teste aparece só na linha embaixo do botão) |
@@ -88,7 +88,7 @@ Em pt-BR. Termos do app: "gravação" é a sessão, "clipe" é o vídeo salvo e 
 |---|---|
 | Título | LIBERAR (branco) / ESTA GRAVAÇÃO (Âmbar) |
 | Subtítulo | Recursos PRO em todos os clipes desta gravação, sem assinatura. |
-| Grade | Full HD · Som no clipe · Modo Foco · Sem marca d’água · Compilar os clipes dela (linha inteira) |
+| Grade | Full HD · Clipe com som · Modo Foco · Sem marca d’água · Compilar os clipes dela (linha inteira) |
 | Produto (pré-selecionado) | Passe avulso · Vale só para esta gravação · preço |
 | Botão | Liberar esta gravação |
 | Embaixo do botão | Pagamento único, sem renovação automática. |
@@ -116,15 +116,15 @@ STYLE
 - Radii: tile 10, plan row 14, button 16, badge 20. Spacing on a 4/8 grid. Full-width button, at least 52 px tall.
 
 LAYOUT, TOP TO BOTTOM
-1. Close button top left: 32 px dark translucent circle with a white X.
+1. Close button in the top-right corner, close to the edge: 32 px dark translucent circle with a white X, 12 px from the right edge and 8 px below the status bar (inside the top safe area). Do not leave a large gap between the button and the corner.
 2. Hero: the current night-court photo, clean, with no overlays (no frames, labels or icons), fading into #0A0A0A at the bottom. All content below (title to footer) is anchored to the bottom of the screen and the photo fills the space above it.
 3. Title, two lines: "SEUS LANCES" (white) / "COM QUALIDADE PRO" (amber).
 4. Subtitle, #B3B3B3: "Todos os recursos para gravar, editar e compartilhar."
-5. Benefit grid, 7 tiles, each with an amber line icon and a bold white label on one line, no descriptions:
+5. Benefit grid, 7 tiles, each with an amber line icon and a bold white label on one line, no descriptions. All icons share one size and style: 20 × 20 px box, 1.75 px stroke, same left padding and the same gap to the label.
    - First row, spanning both columns: "Gravação em Full HD ou 4K" (video camera icon)
-   - "Som no clipe" (speaker with sound waves) | "Modo Foco" (four corner brackets with a dot in the center)
+   - "Clipe com som" (speaker with sound waves) | "Modo Foco" (four corner brackets with a dot in the center)
    - "Sem marca d’água" (eye with a slash) | "Clipes de até 60s" (stopwatch)
-   - "Compilar clipes" (two stacked video frames with a play triangle) | "Apple Watch" (smartwatch, not a pulse line)
+   - "Compilar clipes" (two stacked video frames with a play triangle) | "Apple Watch" (smartwatch outline with straps, not a pulse line; same 20 × 20 px size and stroke as the other icons; it must not look smaller or thinner)
 6. Two full-width plan rows stacked vertically, name and second line on the left, price on the right:
    - Top, Annual, PRESELECTED, 2 px amber border: "Anual" followed by an amber pill badge "ECONOMIZE {{ product.relative_discount }}"; second line "Melhor custo-benefício"; on the right "{{ product.price_per_period_abbreviated }}" in bold and, under it in small #B3B3B3, "{{ product.price_per_month }}/mês".
    - Bottom, Monthly, 1 px #2E2E2E border: "Mensal"; second line "O mais escolhido"; on the right "{{ product.price_per_period_abbreviated }}".
@@ -150,12 +150,12 @@ Anexar a imagem de referência do Passe.
 Create the paywall of the "pass" offering with exactly the same look as the paywall of the "default" offering (copy its components and styles), matching the attached image. The photo in the image is a placeholder: use the same hero photo as the "default" paywall. Language: Brazilian Portuguese; use the copy exactly as written and do not invent claims or numbers.
 
 LAYOUT, TOP TO BOTTOM
-1. Close button top left, same as the "default" paywall.
+1. Close button in the top-right corner, same size and position as the "default" paywall (12 px from the right edge, 8 px below the status bar).
 2. Hero: the same night-court photo, clean, with no overlays, fading into #0A0A0A. Content anchored to the bottom; the photo fills the space above it.
 3. Title, Barlow Condensed 800, uppercase, two lines: "LIBERAR" (white) / "ESTA GRAVAÇÃO" (amber #FFB000).
 4. Subtitle, #B3B3B3: "Recursos PRO em todos os clipes desta gravação, sem assinatura."
 5. Benefit grid, same tiles and icons as the "default" paywall, each label on one line:
-   - "Full HD" (rounded rectangle with "HD" inside) | "Som no clipe" (speaker with sound waves)
+   - "Full HD" (rounded rectangle with "HD" inside) | "Clipe com som" (speaker with sound waves)
    - "Modo Foco" (four corner brackets with a dot) | "Sem marca d’água" (eye with a slash)
    - Spanning both columns: "Compilar os clipes dela" (two stacked video frames with a play triangle)
 6. One full-width product row, preselected, 2 px amber border, same style as the plan rows: "Passe avulso"; second line "Vale só para esta gravação"; "{{ product.price }}" on the right.
