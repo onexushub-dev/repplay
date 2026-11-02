@@ -56,13 +56,7 @@ Raios do app: plano e cartão 14, botão 16, chip e selo 20, folha 24. Espaçame
 
 ## Imagem do topo
 
-A foto escura de quadra à noite, escurecendo até Ink `#0A0A0A` na emenda com o conteúdo. Por cima, o visual da prévia PRO do painel da exportação:
-
-- moldura âmbar do Modo Foco (2 px, raio 14) em volta do jogador;
-- selo **FULL HD** em Âmbar sobre `rgba(10,10,10,0.75)`, no canto superior direito;
-- ícone de som em Âmbar, numa bolinha escura, logo abaixo do selo.
-
-Se o editor não sobrepuser elementos, usar uma imagem só com tudo desenhado. Todo o conteúdo, do título ao rodapé, fica preso à parte de baixo da tela, e a foto preenche o espaço que sobra em cima. Conferido no iPhone 15 (393 × 852 pt), no 16 Pro (402 × 874 pt) e no 16 Pro Max (440 × 956 pt): o rodapé aparece sem rolar nos três.
+A foto escura de quadra à noite, escurecendo até Ink `#0A0A0A` na emenda com o conteúdo, sem nada sobreposto: sem moldura, selo ou ícone. Os benefícios ficam só na grade. Todo o conteúdo, do título ao rodapé, fica preso à parte de baixo da tela, e a foto preenche o espaço que sobra em cima. Conferido no iPhone 15 (393 × 852 pt), no 16 Pro (402 × 874 pt) e no 16 Pro Max (440 × 956 pt): o rodapé aparece sem rolar nos três.
 
 ## Texto
 
@@ -119,7 +113,7 @@ STYLE
 
 LAYOUT, TOP TO BOTTOM
 1. Close button (X) top left, over the photo.
-2. Hero: the current dark night-court photo, fading into #0A0A0A at the bottom. Anchor all the content below (title to footer) to the bottom of the screen and let the photo fill all the remaining space above it, so it grows on taller phones instead of leaving empty space. Over the photo: a 2 px amber rounded rectangle (radius 14) framing the player (the Focus Mode frame), a small badge "FULL HD" (amber text on rgba(10,10,10,0.75)) in the top right corner and, below it, a round speaker icon in amber on the same dark chip. If overlays are not possible, use one image with these elements drawn in.
+2. Hero: the current dark night-court photo, fading into #0A0A0A at the bottom. Anchor all the content below (title to footer) to the bottom of the screen and let the photo fill all the remaining space above it, so it grows on taller phones instead of leaving empty space. No overlays on the photo: no frames, badges or icons.
 3. Title, two lines: "SEUS LANCES" in white and "COM QUALIDADE PRO" in amber.
 4. Subtitle in #B3B3B3: "Todos os recursos para gravar, editar e compartilhar."
 5. Benefit grid, 2 columns × 4 rows. Each cell is a #141414 tile (radius 10) with an amber line icon on the left and a bold white label. No descriptions under the labels.
@@ -153,7 +147,7 @@ Identical to the PRO paywall: background #0A0A0A, cards #141414, text #FFFFFF an
 
 LAYOUT, TOP TO BOTTOM
 1. Close button (X) top left.
-2. Hero, same as the PRO paywall: content anchored to the bottom and the photo filling all the remaining space above it. The night-court photo with the amber Focus Mode frame, the "FULL HD" badge and the amber speaker chip, fading into #0A0A0A.
+2. Hero, same as the PRO paywall: content anchored to the bottom and the photo filling all the remaining space above it. The same night-court photo, with no overlays, fading into #0A0A0A.
 3. Title, two lines: "LIBERAR" in white and "ESTA GRAVAÇÃO" in amber.
 4. Subtitle in #B3B3B3: "Recursos PRO em todos os clipes desta gravação, sem assinatura."
 5. Benefit grid, same tiles as the PRO paywall (#141414, radius 10, amber line icon, bold white label), 2 columns:
