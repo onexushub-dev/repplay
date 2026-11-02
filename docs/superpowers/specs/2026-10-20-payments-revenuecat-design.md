@@ -6,7 +6,7 @@
 
 - **Grátis:** gravações e clipes ilimitados. Tudo funciona dentro do app; o plano limita a duração do clipe (15 s), a gravação em 4K, o que sai do app (HD, sem som, sem Modo Foco, com marca d'água), compilar e o gatilho Apple Watch.
 - **Pro** (assinatura mensal ou anual): libera tudo, em todas as gravações enquanto estiver ativo.
-- **Passe Avulso** (compra avulsa): "Liberar recurso PRO nessa gravação": libera a exportação Pro de uma gravação grátis já feita.
+- **Passe Avulso** (compra avulsa): "Liberar recursos PRO nessa gravação": libera a exportação Pro de uma gravação grátis já feita.
 
 **Princípio:** a experiência vem primeiro. Uma gravação em andamento nunca é interrompida nem perde um clipe por causa de pagamento. Nada de cobrança durante a gravação; o plano nunca impede de começar.
 
@@ -24,10 +24,10 @@
 |---|---|---|---|
 | `pro_annual` | Assinatura anual, entitlement `pro` | R$ 99,90 (≈ R$ 8,33/mês) | Teste grátis de 7 dias; pré-selecionado no paywall |
 | `pro_monthly` | Assinatura mensal, entitlement `pro` | R$ 14,90 | Sem teste grátis |
-| `single_pass` | Consumível | R$ 4,90 | "Liberar recurso PRO nessa gravação" |
+| `single_pass` | Consumível | R$ 4,90 | "Liberar recursos PRO nessa gravação" |
 
 - **Oferta `default`:** pacotes Anual e Mensal. Abre pelos cadeados da preparação (duração acima de 15 s, 4K, Apple Watch), por compilar e por "Liberar com o Pro".
-- **Oferta `pass`:** só o `single_pass`. Abre por "Liberar recurso PRO nessa gravação" (aviso de exportação, cartão do resumo, cadeado de som do editor) quando não há Passe guardado.
+- **Oferta `pass`:** só o `single_pass`. Abre por "Liberar recursos PRO nessa gravação" (aviso de exportação, cartão do resumo, cadeado de som do editor) quando não há Passe guardado.
 - Textos e visual do paywall: `docs/brand/paywall-reprize.md`.
 
 ## Plano de uma gravação
@@ -41,7 +41,7 @@
 - **Gatilho pago:** `PAID_TRIGGERS = ['watch']`, `triggerAllowed(source, plan)`. A trava é sobre ligar o Apple Watch, nunca sobre um toque: um toque que chega durante a gravação sempre vira clipe.
 - **Compilar:** `canCompile(plan)`; no grátis abre a oferta `default`.
 
-## Passe Avulso: "Liberar recurso PRO nessa gravação"
+## Passe Avulso: "Liberar recursos PRO nessa gravação"
 
 - Usado **só quando o jogador escolhe**, numa gravação grátis já feita. Pontos de entrada: o painel e o aviso antes de exportar, o cartão "Gravada no plano grátis" do resumo e o botão de som travado do editor. Todos chamam `unlockRecording(sessionId)` (`payments/unlock.ts`).
 - **Com Pro ativo:** nada a gastar; a gravação já exporta como paga.
@@ -52,7 +52,7 @@
 ## Aviso antes de exportar (grátis)
 
 - Antes de salvar ou enviar (um clipe ou em lote) numa gravação grátis, com plano de visão grátis.
-- **Primeira exportação da gravação:** painel destacado (`FreeExportSheet`) com a lista completa do que o vídeo não terá (HD em vez de Full HD, sem som, sem Modo Foco, com marca d'água), os itens que o clipe usou em destaque e as ações Liberar com o Pro · Liberar recurso PRO nessa gravação · Continuar no grátis · Cancelar.
+- **Primeira exportação da gravação:** painel destacado (`FreeExportSheet`) com a lista completa do que o vídeo não terá (HD em vez de Full HD, sem som, sem Modo Foco, com marca d'água), os itens que o clipe usou em destaque e as ações Liberar com o Pro · Liberar recursos PRO nessa gravação · Continuar no grátis · Cancelar.
 - **Exportações seguintes da mesma gravação:** aviso discreto, sem interromper, com a ação Liberar.
 - Uma exportação em lote conta como uma exportação daquela gravação. O registro de "painel já mostrado" fica na sessão (`Session.freeNoticeShown`).
 
@@ -86,7 +86,7 @@
 ## Fluxo de compra
 
 1. Pontos de entrada, sempre fora da gravação: cadeados da preparação, compilar, aviso de exportação, cartão do resumo, som do editor → `openPaywall(t, offering)`.
-2. `purchased`: a store lê o snapshot novo; o Pro muda o plano; o Passe vira crédito e, se a compra veio de "Liberar recurso PRO nessa gravação", é usado nessa gravação.
+2. `purchased`: a store lê o snapshot novo; o Pro muda o plano; o Passe vira crédito e, se a compra veio de "Liberar recursos PRO nessa gravação", é usado nessa gravação.
 3. `restored` / "Restaurar compras" (em "Minhas gravações"): volta o Pro; Passes restaurados nunca viram crédito.
 4. O listener `onCustomerInfo` atualiza a tela; a preparação destrava e a câmera reabre com a configuração paga. Nada começa sozinho depois de uma compra.
 
@@ -113,7 +113,7 @@
 
 1. Instalação nova: gravações ilimitadas sem paywall; clipes de até 15 s; captura em Full HD com som; no editor, som e Modo Foco funcionam com selo "Pro".
 2. Primeira exportação de uma gravação grátis mostra o painel destacado; as seguintes, o aviso discreto. O vídeo sai em HD, sem som, sem Modo Foco, com marca e com a velocidade escolhida.
-3. "Liberar recurso PRO nessa gravação" com Passe guardado libera a gravação; sem Passe, abre a oferta `pass` e libera depois da compra. O Passe nunca é gasto ao começar uma gravação.
+3. "Liberar recursos PRO nessa gravação" com Passe guardado libera a gravação; sem Passe, abre a oferta `pass` e libera depois da compra. O Passe nunca é gasto ao começar uma gravação.
 4. Assinar o Pro (mensal ou anual): todas as gravações exportam como pagas; duração até 60 s, 4K e Apple Watch liberados; se o Pro acabar, a gravação em andamento não muda.
 5. Cadeados da preparação e compilar abrem a oferta `default` (Anual pré-selecionado com 7 dias grátis, Mensal sem teste); comprar destrava sem começar nada.
 6. "Restaurar compras" em instalação limpa devolve o Pro e não cria crédito.

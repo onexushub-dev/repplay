@@ -79,11 +79,11 @@ Em pt-BR. Termos do app: "gravação" é a sessão, "clipe" é o vídeo salvo e 
 
 | Local | Texto |
 |---|---|
-| Título | LIBERAR RECURSO PRO NESSA GRAVAÇÃO |
+| Título | LIBERAR RECURSOS PRO NESSA GRAVAÇÃO |
 | Subtítulo | Os clipes desta gravação saem em Full HD, com som, com Modo Foco e sem marca d'água. |
 | Produto | Passe Avulso · SEU PREÇO LOCAL · uma gravação, sem assinatura |
 | Nota | A duração e a qualidade gravadas não mudam (15 s, Full HD). |
-| Botão | Liberar recurso PRO nessa gravação |
+| Botão | Liberar recursos PRO nessa gravação |
 
 ### Regras atrás do texto
 
@@ -92,7 +92,7 @@ Fonte da verdade: `docs/modelo-de-negocio-e-pagamentos.md`.
 - Gravações são ilimitadas nos dois planos: o paywall não fala em limite de gravações.
 - O grátis grava em Full HD e mostra som e Modo Foco no app; o Pro vende o que sai do app (resolução, som, Modo Foco, sem marca), a gravação em 4K, as durações acima de 15 s, compilar e o Apple Watch.
 - Não prometer controle Bluetooth, celular controle nem velocidade: são grátis.
-- A oferta `default` tem só Anual e Mensal. O Passe fica na oferta `pass`, aberta por "Liberar recurso PRO nessa gravação".
+- A oferta `default` tem só Anual e Mensal. O Passe fica na oferta `pass`, aberta por "Liberar recursos PRO nessa gravação".
 - Preço e moeda vêm sempre da loja; não escrever valores no painel. O selo de economia só aparece se o painel calcular a diferença sozinho (o anual de R$ 99,90 contra 12 mensalidades de R$ 14,90 dá 44%).
 
 ## Observações
