@@ -14,7 +14,7 @@ O app abre a oferta `default` pelos cadeados PRO (preparação, compilar, Apple 
 | "… som e controle de velocidade" | sem a velocidade | A velocidade é grátis |
 | "Relógio (Apple Watch) como gatilho" | **Apple Watch** | Sem jargão |
 | Faltavam Full HD, som no clipe e 4K | entram na grade | São o que o PRO mais vende |
-| Selo "ECONOMIZE 19%" | **ECONOMIZE 44%** (calculado pelo painel contra o mensal) | 99,90 contra 12 × 14,90 dá 44%; o selo usava outra base |
+| Selo "ECONOMIZE 19%" | **ECONOMIZE 44%** (calculado pelo painel contra o mensal) | R$ 99,90 contra 12 × R$ 14,90 dá 44% (nos EUA, $49.90 contra 12 × $6.90 dá 40%); o número estava digitado |
 | Passe avulso como terceira linha da assinatura | oferta própria (`pass`) | Não libera 4K, 60 s nem Apple Watch; quem chega pelo cadeado do 4K compraria algo que não resolve |
 | Teste de 7 dias não aparecia | "Grátis por 7 dias, depois PREÇO/ano." embaixo do botão | A Apple exige o valor cobrado depois do teste |
 | "Assinar o Pro" | "Assinar o PRO" | Mesmo nome dos cadeados |

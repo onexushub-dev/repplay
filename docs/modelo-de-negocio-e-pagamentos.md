@@ -52,7 +52,7 @@ O jogador vê o que é PRO antes de exportar, em três lugares:
     - **GRÁTIS:** imagem escurecida, selo HD, som cortado e marca d'água; lista "Sem som", "Sem Modo Foco", "HD", "Com marca d'água".
     - **PRO:** borda âmbar, selo Full HD, som e o quadro do Modo Foco quando o clipe usa; lista "Com som", "Modo Foco", "Full HD", "Sem marca d'água".
     - O que o clipe usa vem primeiro nas duas listas e, no grátis, em vermelho.
-    - Ações: **Liberar tudo com o PRO** (botão principal, sem legenda; planos e teste ficam no paywall) · **Liberar só esta gravação**, com a linha "Passe Avulso · vale para os N clipes dela" (o Passe; abre "Liberar recursos PRO nessa gravação") · **Continuar no plano grátis** (link) · **X** para cancelar.
+    - Ações: **Liberar tudo com o PRO** (botão principal, sem legenda; planos e teste ficam no paywall) · **Liberar só esta gravação**, com a linha "Passe Avulso · vale para os N clipes dela" (o Passe; sem Passe guardado, abre o paywall "Liberar esta gravação") · **Continuar no plano grátis** (link) · **X** para cancelar.
   - **Aviso discreto nas exportações seguintes da mesma gravação:** uma linha curta que não interrompe ("Salvo em HD, sem som, sem Modo Foco e com marca d'água." ou "Enviado em…"; sem som só quando o clipe tem som) com a ação **Liberar**; a exportação segue sem toque extra.
   - Exemplo: 5 gravações numa manhã de basquete. O primeiro clipe exportado de cada uma das 5 mostra o painel destacado; do segundo clipe em diante, cada gravação mostra o aviso discreto. Uma exportação em lote conta como uma exportação daquela gravação.
 
