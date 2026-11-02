@@ -61,7 +61,7 @@ describe('createRevenueCatClient', () => {
     expect(Purchases.configure).not.toHaveBeenCalled();
     expect(await c.getSnapshot()).toEqual(EMPTY_SNAPSHOT);
     expect(await c.restore()).toEqual(EMPTY_SNAPSHOT);
-    expect(await c.showPaywall()).toBe('error');
+    expect(await c.showPaywall('default')).toBe('error');
     c.onSnapshot(() => {})();
     expect(Purchases.addCustomerInfoUpdateListener).not.toHaveBeenCalled();
   });
@@ -75,7 +75,7 @@ describe('createRevenueCatClient', () => {
     const c = createRevenueCatClient();
     expect(() => c.configure()).not.toThrow();
     expect(await c.getSnapshot()).toEqual(EMPTY_SNAPSHOT);
-    expect(await c.showPaywall()).toBe('error');
+    expect(await c.showPaywall('default')).toBe('error');
     expect(Purchases.getCustomerInfo).not.toHaveBeenCalled();
   });
 
@@ -98,21 +98,41 @@ describe('createRevenueCatClient', () => {
     const c = createRevenueCatClient();
     c.configure();
     (RevenueCatUI.presentPaywall as jest.Mock).mockResolvedValueOnce('PURCHASED');
-    expect(await c.showPaywall()).toBe('purchased');
+    expect(await c.showPaywall('default')).toBe('purchased');
     expect(RevenueCatUI.presentPaywall).toHaveBeenCalledWith({ displayCloseButton: true });
     (RevenueCatUI.presentPaywall as jest.Mock).mockRejectedValueOnce(new Error('x'));
-    expect(await c.showPaywall()).toBe('error');
+    expect(await c.showPaywall('default')).toBe('error');
   });
 
-  it('always shows the current (default) offering: it never loads a named one', async () => {
+  it('the default offering is the current one: it never loads offerings', async () => {
     setKeys({ test: 'test_x' });
     const c = createRevenueCatClient();
     c.configure();
     (RevenueCatUI.presentPaywall as jest.Mock).mockResolvedValueOnce('CANCELLED');
-    expect(await c.showPaywall()).toBe('cancelled');
+    expect(await c.showPaywall('default')).toBe('cancelled');
     expect(Purchases.getOfferings).not.toHaveBeenCalled();
     expect(RevenueCatUI.presentPaywall).toHaveBeenCalledWith({ displayCloseButton: true });
-    expect(c.showPaywall).toHaveLength(0);
+  });
+
+  it('the pass offering is looked up by its identifier and shown', async () => {
+    setKeys({ test: 'test_x' });
+    const c = createRevenueCatClient();
+    c.configure();
+    const pass = { identifier: 'pass' };
+    (Purchases.getOfferings as jest.Mock).mockResolvedValueOnce({ current: null, all: { pass } });
+    (RevenueCatUI.presentPaywall as jest.Mock).mockResolvedValueOnce('PURCHASED');
+    expect(await c.showPaywall('pass')).toBe('purchased');
+    expect(RevenueCatUI.presentPaywall).toHaveBeenCalledWith({ displayCloseButton: true, offering: pass });
+  });
+
+  it('a missing pass offering falls back to the current one', async () => {
+    setKeys({ test: 'test_x' });
+    const c = createRevenueCatClient();
+    c.configure();
+    (Purchases.getOfferings as jest.Mock).mockResolvedValueOnce({ current: null, all: {} });
+    (RevenueCatUI.presentPaywall as jest.Mock).mockResolvedValueOnce('CANCELLED');
+    expect(await c.showPaywall('pass')).toBe('cancelled');
+    expect(RevenueCatUI.presentPaywall).toHaveBeenCalledWith({ displayCloseButton: true });
   });
 
   it('removes the exact listener it added', () => {

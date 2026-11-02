@@ -1,4 +1,3 @@
-import { monthKey } from '../payments/rules';
 import { type Clip, DEFAULT_PREFS, DEFAULT_TRIM_MS, MAX_CLIP_NAME, MAX_GAME_NAME, type Prefs, type Session, type Sport } from './schema';
 
 export interface KV {
@@ -15,15 +14,14 @@ export interface FileProbe {
 }
 
 const key = {
-  prefs: 'repplay:v1:prefs',
-  session: (id: string) => `repplay:v1:session:${id}`,
-  clip: (id: string) => `repplay:v1:clip:${id}`,
-  clipsOf: (sessionId: string) => `repplay:v1:clips-of:${sessionId}`,
-  sessions: 'repplay:v1:sessions',
-  spentPasses: 'repplay:v1:spentPasses',
-  freeCount: (month: string) => `repplay:v1:freeCount:${month}`,
+  prefs: 'reprize:v1:prefs',
+  session: (id: string) => `reprize:v1:session:${id}`,
+  clip: (id: string) => `reprize:v1:clip:${id}`,
+  clipsOf: (sessionId: string) => `reprize:v1:clips-of:${sessionId}`,
+  sessions: 'reprize:v1:sessions',
+  spentPasses: 'reprize:v1:spentPasses',
 };
-const SESSION_PREFIX = 'repplay:v1:session:';
+const SESSION_PREFIX = 'reprize:v1:session:';
 
 /** Sessions and clips stored on the phone, one JSON value per record. IDs are UUIDs, ready for a future account. */
 export function createRepo(kv: KV, files: FileProbe, newId: () => string) {
@@ -44,12 +42,6 @@ export function createRepo(kv: KV, files: FileProbe, newId: () => string) {
 
   function getSession(id: string): Session | undefined {
     return read<Session>(key.session(id));
-  }
-
-  /** Absent, unreadable or not a whole number >= 0 reads as 0. */
-  function freeCountOf(now: number): number {
-    const n = Number(kv.getString(key.freeCount(monthKey(now))));
-    return Number.isInteger(n) && n >= 0 ? n : 0;
   }
 
   function sessionIds(): string[] {
@@ -122,27 +114,20 @@ export function createRepo(kv: KV, files: FileProbe, newId: () => string) {
       if (addSpent(ids)) changed();
     },
 
-    /** Free recordings started in the month of `now`; only grows (deleting a game gives nothing back). */
-    freeCount(now: number): number {
-      return freeCountOf(now);
-    },
-
-    startSession(sport: Sport, now: number, plan: { paid: boolean; passTransactionId?: string }): Session {
+    startSession(sport: Sport, now: number, plan: { paid: boolean }): Session {
       const ids = sessionIds(); // before writing, so a first-time rebuild doesn't list this game twice
       spentList(); // build the ledger from existing games before this one exists
-      const { passTransactionId } = plan;
-      const session: Session = { id: newId(), sport, startedAt: now, paid: plan.paid, ...(passTransactionId ? { passTransactionId } : {}) };
+      const session: Session = { id: newId(), sport, startedAt: now, paid: plan.paid };
       write(key.session(session.id), session);
       write(key.sessions, [...ids, session.id]);
-      if (passTransactionId) addSpent([passTransactionId]);
-      if (!plan.paid) kv.set(key.freeCount(monthKey(now)), String(freeCountOf(now) + 1));
       changed();
       return session;
     },
 
     /**
-     * Makes a finished free recording a paid one: Full HD and sound open for its clips. With a Single Pass the pass is
-     * spent on this recording; with Pro nothing is spent. Does not touch the free counter.
+     * Makes a finished free recording a paid one ("Liberar recursos PRO nessa gravação"): its clips export in Full HD,
+     * with sound and Modo Foco, without the mark. With a Single Pass the pass is spent on this recording; with Pro
+     * nothing is spent.
      */
     upgradeSession(id: string, plan: { passTransactionId?: string }): Session | undefined {
       const session = getSession(id);
@@ -153,6 +138,14 @@ export function createRepo(kv: KV, files: FileProbe, newId: () => string) {
       if (passTransactionId) addSpent([passTransactionId]);
       changed();
       return next;
+    },
+
+    /** Records that this free recording already showed the full export panel: later exports get the short notice. */
+    markFreeNoticeShown(id: string): void {
+      const session = getSession(id);
+      if (!session || session.freeNoticeShown) return;
+      write(key.session(id), { ...session, freeNoticeShown: true });
+      changed();
     },
 
     endSession(id: string, now: number): Session {
@@ -212,6 +205,31 @@ export function createRepo(kv: KV, files: FileProbe, newId: () => string) {
       return moved;
     },
 
+    /**
+     * One-time cleanup (2026-11-01): the cut suggestion was removed. A clip it had cut (its cut is still the suggested
+     * one) goes back to the cut it was saved with (`bounds`); a cut the player chose stays. The old field is dropped
+     * either way. Returns how many clips it touched.
+     */
+    forgetCutSuggestions(): number {
+      type Old = Clip & { cutSuggestion?: Clip['trim'] };
+      let touched = 0;
+      for (const sessionId of sessionIds()) {
+        for (const clipId of clipIds(sessionId)) {
+          const stored = read<Old>(key.clip(clipId));
+          if (!stored || stored.cutSuggestion === undefined) continue;
+          const { cutSuggestion, ...clip } = stored;
+          const automatic =
+            clip.bounds !== undefined &&
+            clip.trim.startMs === cutSuggestion.startMs &&
+            clip.trim.endMs === cutSuggestion.endMs;
+          write(key.clip(clipId), automatic && clip.bounds ? { ...clip, trim: clip.bounds } : clip);
+          touched += 1;
+        }
+      }
+      if (touched > 0) changed();
+      return touched;
+    },
+
     /** Games with at least one existing clip, newest first. */
     listSessions(): { session: Session; clips: number; firstClip?: Clip }[] {
       return sessionIds()
@@ -234,7 +252,6 @@ export function createRepo(kv: KV, files: FileProbe, newId: () => string) {
         savedAt?: number;
         sharedAt?: number;
         focus?: Clip['focus'];
-        cutSuggestion?: Clip['cutSuggestion'];
       },
     ): Clip | undefined {
       const existing = read<Clip>(key.clip(id));

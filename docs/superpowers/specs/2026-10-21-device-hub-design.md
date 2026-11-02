@@ -7,7 +7,7 @@
 
 ## 1. Goal
 
-One place, the **Dispositivos sheet**, where a player connects, reconnects and disconnects any device that can save a lance,
+One place, the **Dispositivos sheet**, where a player connects, reconnects and disconnects any device that can save a clip,
 with the same layout and the same vocabulary for every kind. Tapping a device tile on the setup screen opens the sheet
 on that device's tab.
 
@@ -70,7 +70,7 @@ The sheet and the setup tiles read only `DeviceView`, so adding a kind later doe
 The mapping from raw status to `DeviceView` is a pure function per kind (unit-tested without React).
 
 **Controle (remote)**
-- `setup` (never tested): steps 1) "Ligue o controle e deixe em modo de pareamento." 2) "Abra Ajustes > Bluetooth e toque no nome dele." 3) "Volte ao LANCE e aperte um botão do controle." The sheet starts listening on open, so the state is already `waiting`; `setup` only means "no press heard yet".
+- `setup` (never tested): steps 1) "Ligue o controle e deixe em modo de pareamento." 2) "No Iphone abra Ajustes > Bluetooth e toque no nome dele." 3) "Volte ao LANCE e aperte um botão do controle." The sheet starts listening on open, so the state is already `waiting`; `setup` only means "no press heard yet".
 - `waiting`: `PulseRing` and "Aperte um botão do controle…". After 15 s without a press, add a note: "Nada ainda? Confira se o controle aparece como Conectado em Ajustes > Bluetooth. Funciona com controles de selfie (tecla de volume)."
 - `connected` (a press was heard): check badge, "Controle conectado", primary "Pronto" (closes).
 - `offline` (used in a previous launch, no press yet): status "Pareado · aperte um botão", same listening as `waiting`, the note replaces the steps.
@@ -80,7 +80,7 @@ The mapping from raw status to `DeviceView` is a pure function per kind (unit-te
 **Relógio (watch)**
 - `unsupported`: status "Sem relógio pareado"; steps "Pareie o Apple Watch com este iPhone no app Watch." State is `setup`, informative only.
 - `notInstalled`: steps "Abra o app Watch no iPhone > LANCE > Instalar." State `setup`.
-- `ready`: "Pronto"; note "Toque no botão do relógio para salvar um lance."
+- `ready`: "Pronto"; note "Toque no botão do relógio para salvar um clipe."
 - No peers list and no disconnect (the watch pairing belongs to iOS). Live updates from `onWatchStatus`.
 
 **Celular (phone)**

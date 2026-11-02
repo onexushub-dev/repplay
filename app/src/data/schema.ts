@@ -43,7 +43,7 @@ export type ModeSettings = {
 /** What was saved for a mode: before zoom existed it held `lens` (read, never written). */
 export type StoredModeSettings = Partial<ModeSettings> & { lens?: 'ultraWide' | 'wide' };
 
-export type Session = { id: string; sport: Sport; startedAt: number; endedAt?: number; name?: string; /** Fixed at start: true if Pro or a Single Pass unlocked this game; absent on games recorded before the free plan. */ paid?: boolean; /** RevenueCat transaction id of the single pass that unlocked this game; absent = no pass. */ passTransactionId?: string };
+export type Session = { id: string; sport: Sport; startedAt: number; endedAt?: number; name?: string; /** Fixed at start: true if Pro or a Single Pass unlocked this game; absent on games recorded before the free plan. */ paid?: boolean; /** RevenueCat transaction id of the single pass that unlocked this game; absent = no pass. */ passTransactionId?: string; /** True once a free export of this recording showed the full panel; later exports get the short notice. */ freeNoticeShown?: boolean };
 
 export const MAX_GAME_NAME = 40;
 export const MAX_CLIP_NAME = 40;
@@ -85,11 +85,6 @@ export type Clip = {
    * too few people for a framing, `failed` when the analysis broke. Absent = never analysed (clips from before it).
    */
   focus?: ClipFocus;
-  /**
-   * The cut the app suggested from the court's motion (src/cutSuggestion), in file ms. Applied as `trim` when it
-   * arrived before the player touched the cut. Absent: not analysed yet, no clear play, or an older clip.
-   */
-  cutSuggestion?: { startMs: number; endMs: number };
   /** Optional name the player gives the clip (like a recording's name). */
   name?: string;
   /** When the edited video was last saved to Photos / sent through the share sheet (the clip itself stays inside the app). */
@@ -105,14 +100,26 @@ export type Prefs = {
   /** Feedback the moment a save is accepted, for a player far from the phone. */
   soundOnSave: boolean;
   flashOnSave: boolean;
-  /** "salvar" / "gravar" by voice (iOS). Off until speech permission is granted. */
+  /** "salvar" by voice (iOS). Off until speech permission is granted. */
   voiceEnabled: boolean;
   /** When a press of the Bluetooth remote was first heard; the app cannot see the iOS pairing, only presses. */
   remoteTestedAt?: number;
+  /**
+   * The Bluetooth remote as iOS shows it (BLE remotes only): its peripheral id and name, learnt at a press when exactly
+   * one connected device could be it. Then the app sees it connect and go without a press.
+   */
+  remoteBleId?: string;
+  remoteBleName?: string;
   /** The Modo Foco introduction (the first framed clip) was shown. */
   focusIntroSeen?: boolean;
   /** Battery saving while recording: the screen goes dark after a while without a touch (the recording goes on). */
   screenEconomy: boolean;
+  /** Battery saving on the remote phone while the camera records: the screen dims after a minute without a touch. */
+  remoteEconomy: boolean;
+  /** "salvar" by voice on the remote phone while the camera records (iOS, with both permissions). */
+  remoteVoice: boolean;
+  /** The remote screen already explained voice and asked for its permissions once. */
+  remoteVoiceAsked?: boolean;
   /** The player's changes to a mode's defaults, kept per mode. */
   modeSettings?: Partial<Record<ModeId, StoredModeSettings>>;
 };
@@ -126,6 +133,8 @@ export const DEFAULT_PREFS: Prefs = {
   flashOnSave: true,
   voiceEnabled: false,
   screenEconomy: true,
+  remoteEconomy: true,
+  remoteVoice: true,
 };
 
 /** Default cut when a save gives none: the last 30s of the saved 60s window (spec 3.3). Saves pass the clip length. */

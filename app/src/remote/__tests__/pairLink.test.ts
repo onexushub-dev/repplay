@@ -1,7 +1,7 @@
 import { parseCode, parsePairLink, parsePairUrl } from '../pairLink';
 
 // The camera phone builds this exact link (Swift test `testQrURLIsPinned`):
-// repplay://pair?h=h1&s=AAECAwQFBgcICQoLDA0ODw&n=Quadra%201
+// reprize://pair?h=h1&s=AAECAwQFBgcICQoLDA0ODw&n=Quadra%201
 const good = { h: 'h1', s: 'AAECAwQFBgcICQoLDA0ODw', n: 'Quadra 1' };
 
 test('reads the link the camera phone builds', () => {
@@ -45,7 +45,7 @@ test('anything else is not a code', () => {
 });
 
 test('reads the link in the QR code, with the name encoded', () => {
-  expect(parsePairUrl('repplay://pair?h=host1&s=AAAAAAAAAAAAAAAAAAAAAA&n=Quadra%201')).toEqual({
+  expect(parsePairUrl('reprize://pair?h=host1&s=AAAAAAAAAAAAAAAAAAAAAA&n=Quadra%201')).toEqual({
     hostId: 'host1',
     secret: 'AAAAAAAAAAAAAAAAAAAAAA',
     hostName: 'Quadra 1',
@@ -54,6 +54,6 @@ test('reads the link in the QR code, with the name encoded', () => {
 
 test('anything else read by the scanner is not a pairing link', () => {
   expect(parsePairUrl('https://example.com')).toBeNull();
-  expect(parsePairUrl('repplay://pair?h=host1')).toBeNull();
-  expect(parsePairUrl('repplay://pair?h=host1&s=curto')).toBeNull();
+  expect(parsePairUrl('reprize://pair?h=host1')).toBeNull();
+  expect(parsePairUrl('reprize://pair?h=host1&s=curto')).toBeNull();
 });

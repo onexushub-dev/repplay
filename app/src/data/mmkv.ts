@@ -6,7 +6,7 @@ import { focusPath } from './focusFile';
 import { createRepo, type FileProbe, type KV } from './repo';
 import { thumbnailPath } from './thumbnailPath';
 
-const storage = createMMKV({ id: 'repplay' });
+const storage = createMMKV({ id: 'reprize' });
 
 export const kv: KV = {
   getString: (k) => storage.getString(k),
@@ -34,6 +34,13 @@ try {
   repo.relocateClips(documentsPath(Paths.document.uri));
 } catch {
   // no file system here (tests, web): nothing to move
+}
+
+// The cut suggestion is gone (2026-11-01): clips it had cut go back to the cut they were saved with.
+try {
+  repo.forgetCutSuggestions();
+} catch {
+  // a cleanup never stops the app from opening
 }
 
 const removalListeners = new Set<(clipPath: string) => void>();

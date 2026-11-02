@@ -1,7 +1,8 @@
 import type { ComponentType } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { ArmsUpIcon, CheckIcon, MicIcon, QrIcon, RemoteIcon, TapIcon, WatchIcon } from '../components/icons';
+import { CheckIcon, MicIcon, QrIcon, RemoteIcon, TapIcon, WatchIcon, WaveIcon } from '../components/icons';
+import { WavingFigure } from '../components/WavingFigure';
 import type { MessageKey } from '../i18n';
 import { useT } from '../i18n/useT';
 import { colors, fonts, radius } from '../theme/tokens';
@@ -11,13 +12,14 @@ import type { WayId } from './slides';
 
 type IconType = ComponentType<{ color?: string; size?: number }>;
 
-const WAYS: Record<WayId, { Icon: IconType; source: MessageKey; pro: boolean }> = {
-  tap: { Icon: TapIcon, source: 'sources.screen', pro: false },
-  wave: { Icon: ArmsUpIcon, source: 'sources.gesture', pro: false },
-  voice: { Icon: MicIcon, source: 'sources.voice', pro: false },
-  phone: { Icon: QrIcon, source: 'sources.phone', pro: false },
-  watch: { Icon: WatchIcon, source: 'sources.watch', pro: true },
-  bluetooth: { Icon: RemoteIcon, source: 'sources.remote', pro: true },
+/** `pro`: needs the paid plan. `undo`: a remote save, which the player confirms or undoes on the phone's screen. */
+const WAYS: Record<WayId, { Icon: IconType; source: MessageKey; pro: boolean; undo: boolean }> = {
+  tap: { Icon: TapIcon, source: 'sources.screen', pro: false, undo: false },
+  wave: { Icon: WaveIcon, source: 'sources.gesture', pro: false, undo: false },
+  voice: { Icon: MicIcon, source: 'sources.voice', pro: false, undo: false },
+  phone: { Icon: QrIcon, source: 'sources.phone', pro: false, undo: false },
+  watch: { Icon: WatchIcon, source: 'sources.watch', pro: true, undo: true },
+  bluetooth: { Icon: RemoteIcon, source: 'sources.remote', pro: false, undo: true },
 };
 
 type Props = {
@@ -31,7 +33,7 @@ type Props = {
 export function SaveMedia({ ways, card, onPick }: Props) {
   const { t } = useT();
   const current = ways[Math.min(card, ways.length - 1)];
-  const { source, pro } = WAYS[current];
+  const { source, pro, undo } = WAYS[current];
 
   return (
     <View style={styles.root} pointerEvents="box-none">
@@ -50,7 +52,7 @@ export function SaveMedia({ ways, card, onPick }: Props) {
               <Text style={styles.savedTitle}>{t('recording.savedTitle', { number: 1 })}</Text>
               <Text style={styles.savedVia}>{t('recording.savedVia', { source: t(source), seconds: 15 })}</Text>
             </View>
-            {pro ? (
+            {undo ? (
               <View style={styles.undo}>
                 <Text style={styles.undoText}>{t('recording.undo')}</Text>
               </View>
@@ -59,23 +61,26 @@ export function SaveMedia({ ways, card, onPick }: Props) {
         </Reveal>
       </View>
 
-      <View style={styles.tabs} accessibilityLabel={t('onboarding.ways')}>
-        {ways.map((id, i) => {
-          const on = i === Math.min(card, ways.length - 1);
-          const { Icon } = WAYS[id];
-          return (
-            <Pressable
-              key={id}
-              accessibilityRole="button"
-              accessibilityLabel={t(`onboarding.${id}.name`)}
-              accessibilityState={{ selected: on }}
-              onPress={() => onPick(i)}
-              style={[styles.tab, on && styles.tabOn]}>
-              <Icon size={24} color={on ? colors.onAccent : colors.text} />
-            </Pressable>
-          );
-        })}
-      </View>
+      {/* With a single way (the Pro slide) there is nothing to pick: only its card. */}
+      {ways.length > 1 ? (
+        <View style={styles.tabs} accessibilityLabel={t('onboarding.ways')}>
+          {ways.map((id, i) => {
+            const on = i === Math.min(card, ways.length - 1);
+            const { Icon } = WAYS[id];
+            return (
+              <Pressable
+                key={id}
+                accessibilityRole="button"
+                accessibilityLabel={t(`onboarding.${id}.name`)}
+                accessibilityState={{ selected: on }}
+                onPress={() => onPick(i)}
+                style={[styles.tab, on && styles.tabOn]}>
+                <Icon size={24} color={on ? colors.onAccent : colors.text} />
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
 
       <Reveal key={`card-${current}`} style={styles.card}>
         <View style={styles.cardHead}>
@@ -84,8 +89,15 @@ export function SaveMedia({ ways, card, onPick }: Props) {
             <Text style={[styles.planText, pro && styles.planTextPro]}>{pro ? t('onboarding.pro') : t('onboarding.free')}</Text>
           </View>
         </View>
-        <Text style={styles.how}>{t(`onboarding.${current}.how`)}</Text>
-        <Text style={styles.when}>{t(`onboarding.${current}.when`)}</Text>
+        {current === 'wave' ? (
+          // The gesture moving, not a still picture of raised arms: just raising them is not the gesture.
+          <View style={styles.waveRow}>
+            <WavingFigure size={56} />
+            <Text style={[styles.how, styles.waveHow]}>{t('onboarding.wave.how')}</Text>
+          </View>
+        ) : (
+          <Text style={styles.how}>{t(`onboarding.${current}.how`)}</Text>
+        )}
       </Reveal>
     </View>
   );
@@ -93,7 +105,7 @@ export function SaveMedia({ ways, card, onPick }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, gap: 10 },
-  photo: { flex: 1, minHeight: 120, borderRadius: 18, overflow: 'hidden', backgroundColor: '#12130F' },
+  photo: { flex: 1, minHeight: 120, borderRadius: 18, overflow: 'hidden', backgroundColor: '#111111' },
   recording: {
     position: 'absolute',
     top: 10,
@@ -104,7 +116,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 999,
-    backgroundColor: 'rgba(15,16,13,0.72)',
+    backgroundColor: 'rgba(12,12,12,0.72)',
   },
   recDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.rec },
   recordingText: { fontFamily: fonts.bodyBold, fontSize: 12, color: colors.text },
@@ -117,7 +129,7 @@ const styles = StyleSheet.create({
     paddingLeft: 6,
     paddingRight: 10,
     borderRadius: 14,
-    backgroundColor: 'rgba(15,16,13,0.9)',
+    backgroundColor: 'rgba(12,12,12,0.9)',
     borderWidth: 2,
     borderColor: colors.accent,
   },
@@ -138,6 +150,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabOn: { borderColor: colors.accent, backgroundColor: colors.accent },
+  waveRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  waveHow: { flex: 1 },
   card: { paddingVertical: 12, paddingHorizontal: 14, borderRadius: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, gap: 4 },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   cardName: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 17, color: colors.text },
@@ -146,5 +160,4 @@ const styles = StyleSheet.create({
   planText: { fontFamily: fonts.bodyBold, fontSize: 12, color: colors.text },
   planTextPro: { color: colors.onAccent },
   how: { fontFamily: fonts.bodySemi, fontSize: 15, lineHeight: 21, color: colors.text, marginTop: 2 },
-  when: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.soft },
 });

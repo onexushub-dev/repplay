@@ -15,7 +15,7 @@
 ## Global Constraints
 
 - Work on a new branch `feat/analytics` off `main`. The working tree has unrelated untracked and modified files (`.agents/`, `.claude/`, `docs/brand/*`, `skills-lock.json`, `targets/watch-widget/Localizable.xcstrings`): stage only the files each task names.
-- PostHog host `https://eu.i.posthog.com`. Project key from env `REPPLAY_POSTHOG_KEY`, read in `app/app.config.js` into `extra.posthog` (`{ key, host }`), same style as `extra.revenueCat`. No key means a no-op adapter.
+- PostHog host `https://eu.i.posthog.com`. Project key from env `REPRIZE_POSTHOG_KEY`, read in `app/app.config.js` into `extra.posthog` (`{ key, host }`), same style as `extra.revenueCat`. No key means a no-op adapter.
 - Anonymous only: `personProfiles: 'never'`, IP/GeoIP capture off, autocapture off, session replay off, automatic lifecycle and screen events off. Confirm each option name against the installed `posthog-react-native` types before using it.
 - Install ID: `randomUUID()` from `expo-crypto`, persisted under the kv key `analytics.installId`. Opt-out flag under `analytics.enabled`.
 - Properties are enumerated strings, booleans or bucketed numbers. Never file names, device names, free text or error messages.
@@ -75,7 +75,7 @@
 
 **Files:**
 - Create: `app/src/analytics/posthogAdapter.ts`, `app/src/analytics/index.ts`
-- Modify: `app/package.json` (add `posthog-react-native` and any peer dependencies its README lists for Expo, using `npx expo install`), `app/app.config.js` (extra.posthog and the header comment documenting `REPPLAY_POSTHOG_KEY`), `app/src/app/_layout.tsx`, `app/jest.setup.js` or `app/__mocks__/posthog-react-native.ts` (stand-in so Jest never loads native code, in the style of `__mocks__/react-native-purchases.ts`)
+- Modify: `app/package.json` (add `posthog-react-native` and any peer dependencies its README lists for Expo, using `npx expo install`), `app/app.config.js` (extra.posthog and the header comment documenting `REPRIZE_POSTHOG_KEY`), `app/src/app/_layout.tsx`, `app/jest.setup.js` or `app/__mocks__/posthog-react-native.ts` (stand-in so Jest never loads native code, in the style of `__mocks__/react-native-purchases.ts`)
 - Test: `app/src/analytics/__tests__/index.test.ts`
 
 **Interfaces:**
@@ -188,7 +188,7 @@
 - Modify: `docs/` backlog or release notes file the repo already keeps (follow the recent `docs(backlog)` commits)
 
 - [ ] **Step 1: Run** `npm test`, `npm run lint` and `npx tsc --noEmit` from `app/`. Expected: all clean.
-- [ ] **Step 2: Build a dev client** with `REPPLAY_POSTHOG_KEY` set and walk the flows (onboarding, one clip from each trigger, edit, export, paywall, pairing, background the app); confirm in PostHog Live Events that each event appears once with only the documented properties and that no person profile is created.
+- [ ] **Step 2: Build a dev client** with `REPRIZE_POSTHOG_KEY` set and walk the flows (onboarding, one clip from each trigger, edit, export, paywall, pairing, background the app); confirm in PostHog Live Events that each event appears once with only the documented properties and that no person profile is created.
 - [ ] **Step 3: Confirm the off paths**: opt-out on sends nothing; a build without the key sends nothing.
 - [ ] **Step 4: Record the follow-ups** (privacy policy line, App Store privacy label "data not linked to you", PostHog dashboards for retention, onboarding funnel and feature usage) in the backlog doc.
 - [ ] **Step 5: Commit**: `docs(backlog): analytics rollout checklist`.

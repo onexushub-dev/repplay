@@ -12,9 +12,17 @@ import { focusHold } from '../focus/focusQueue';
 // TEMP(diag-remote)
 import { diag } from '../diag/diagLog';
 import { useSessionDiag } from '../diag/useSessionDiag';
-import { useVolumeRemote } from '../triggers/useVolumeRemote';
+import { useBluetoothRemote } from '../triggers/useBluetoothRemote';
 import { type ReplaySession, type SessionDeps, useReplaySession } from './useReplaySession';
 import { useWatchTriggerGate } from './useWatchTriggerGate';
+
+/**
+ * The Bluetooth remote in a game: its presses, and the press that wakes it from sleep (counted from its comeback),
+ * once it was seen connected in this game (a remote switched on mid-game must not save a clip).
+ */
+function useGameRemote(enabled: boolean, onPress: () => void): void {
+  useBluetoothRemote(enabled, onPress, { requireSeenConnected: true });
+}
 
 const appDeps: SessionDeps = {
   camera,
@@ -24,7 +32,7 @@ const appDeps: SessionDeps = {
   now: Date.now,
   locale: currentLocale,
   startDecision: payments.startDecision,
-  useRemote: useVolumeRemote,
+  useRemote: useGameRemote,
   onClipSaved: (clipId) => {
     const clip = repo.getClip(clipId);
     diag(`clipe salvo (${clip ? clip.source : '?'})`); // TEMP(diag-remote)
@@ -45,8 +53,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const plan = usePlan(recording ? session.state.sessionId : undefined);
   useWatchTriggerGate(recording, triggerAllowed('watch', plan), camera.watchSetSaveAllowed);
 
-  // The camera comes first: no Modo Foco analysis while recording, except a clip opened with the phone cool
-  // (focus v2 spec, decision 6).
+  // The camera comes first: no Modo Foco analysis while recording (a running one is stopped and redone afterwards).
   const hold = focusHold(recording, session.state.thermal.level);
   useEffect(() => focusQueue.setHold(hold), [hold]);
   return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>;

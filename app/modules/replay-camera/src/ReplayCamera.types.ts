@@ -38,12 +38,12 @@ export type SaveClipOptions = {
 /** `shortSide`: the saved video's resolution in pixels (1080 Full HD, 2160 4K); missing on Android and older builds. */
 export type SavedClip = { clipPath: string; durationMs: number; shortSide?: number };
 
-/** Apple Watch link: no paired watch · paired without the Repplay app · ready. */
+/** Apple Watch link: no paired watch · paired without the Reprize app · ready. */
 export type WatchStatus = 'unsupported' | 'notInstalled' | 'ready';
 
 /** Second iPhone as a remote: idle · looking for the other phone · talking to it · Local Network not allowed. */
 export type RemoteLink = 'idle' | 'searching' | 'connected' | 'denied';
-/** Why the link is `denied`: Bluetooth is off, or the Repplay is not allowed to use it. */
+/** Why the link is `denied`: Bluetooth is off, or the Reprize is not allowed to use it. */
 export type RemoteLinkReason = 'off' | 'unauthorized';
 /** `connected` is only filled in for the paired remotes of the camera phone (`remoteHostPeers`): is the link up right now. */
 export type RemotePeer = { id: string; name: string; connected?: boolean };
@@ -76,6 +76,8 @@ export type ReplayCameraModuleEvents = {
   onRemoteStart: () => void;
   /** Remote phone only: one picture of the camera phone's view, a JPEG in base64. */
   onRemoteFrame: (e: { jpeg: string }) => void;
+  /** Remote phone only: the save command was heard here (`remoteVoiceSetEnabled`); the screen saves as for a tap. */
+  onRemoteVoice: (e: { at: number }) => void;
   /**
    * `paired` / `failed`: the end of a pairing, on either phone. Camera phone only: `connecting` (a remote proved the code
    * and is linking up), `released` (that link failed, the code is free again) and `offerEnded` (five wrong tries).
@@ -94,6 +96,14 @@ export type ReplayCameraModuleEvents = {
   onThermalChange: (e: { level: ThermalLevel; degraded: boolean; quality?: string }) => void;
   onInterrupted: () => void;
   onResumed: () => void;
+  /**
+   * A volume button (or a Bluetooth selfie remote, which presses "volume up") pressed as a capture event while
+   * `setCaptureButtons(true)` and the camera runs. iOS 17.2+ only. `primary`: volume down, Action button, Camera
+   * Control; `secondary`: volume up.
+   */
+  onCaptureButton: (e: { button: 'primary' | 'secondary' }) => void;
+  /** The audio route changed or the camera is restarting: the volume moves by itself for a moment. iOS only. */
+  onAudioChange: (e: { reason: string }) => void;
   /** TEMP(diag-remote): one line for the in-app diagnostic log. iOS only. */
   onDiag: (e: { message: string }) => void;
   onError: (e: { code: ReplayErrorCode; message: string }) => void;
@@ -224,4 +234,13 @@ export type FocusAnalysis = {
 
 export type ReplayCameraViewProps = {
   style?: StyleProp<ViewStyle>;
+};
+
+/** How the Bluetooth stands for the app: "notDetermined" = never asked (nothing was looked at). */
+export type BluetoothState = 'on' | 'off' | 'unauthorized' | 'unsupported' | 'notDetermined' | 'unknown';
+
+/** The BLE peripherals iOS holds connected right now, and which services showed each ("hid", "battery", "info"). */
+export type BluetoothConnected = {
+  state: BluetoothState;
+  devices: { id: string; name: string; services: string[] }[];
 };

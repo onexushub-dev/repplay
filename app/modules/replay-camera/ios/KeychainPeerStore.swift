@@ -5,7 +5,7 @@ import UIKit
 /// Small wrapper over the Keychain's generic passwords. Items survive reinstalls and are readable after the first
 /// unlock, which is when the app can run.
 enum Keychain {
-  private static let service = "repplay.remote"
+  private static let service = "reprize.remote"
 
   private static func match(_ account: String) -> [String: Any] {
     [
@@ -65,7 +65,7 @@ final class KeychainPeerStore: PeerKeyStore {
 
 /// Who this phone is to the other one: a random id that stays the same, and a name to show.
 enum DeviceIdentity {
-  private static let account = "repplay.remote.deviceId"
+  private static let account = "reprize.remote.deviceId"
 
   static var id: String {
     if let data = Keychain.read(account: account), let saved = String(data: data, encoding: .utf8) { return saved }
@@ -74,7 +74,7 @@ enum DeviceIdentity {
     return fresh
   }
 
-  private static let nameAccount = "repplay.remote.deviceName"
+  private static let nameAccount = "reprize.remote.deviceName"
 
   /// The name the person chose for this phone, if any (an empty or blank one means "use the default").
   static var customName: String? {

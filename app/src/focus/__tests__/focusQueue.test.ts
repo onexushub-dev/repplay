@@ -28,7 +28,7 @@ function setup(opts: { supported?: boolean } = {}) {
   const addOldClip = (path: string) => {
     const clip = addClip(path);
     const { bounds: _bounds, ...old } = clip;
-    map.set(`repplay:v1:clip:${clip.id}`, JSON.stringify(old));
+    map.set(`reprize:v1:clip:${clip.id}`, JSON.stringify(old));
     return old as Clip;
   };
   return { repo, deps, queue, runs, addClip, addOldClip, done, flush };
@@ -158,10 +158,45 @@ test('an analysis interrupted (app sent to the background) stays pending and is 
   expect(runs).toHaveLength(2);
 });
 
+test('an interrupted analysis waits for the app to come back, first in line, and the rest is not lost', async () => {
+  const { queue, runs, addClip, flush } = setup();
+  const a = addClip('/c/1.mp4');
+  const b = addClip('/c/2.mp4');
+  queue.enqueue(a.id);
+  queue.enqueue(b.id);
+  runs[0].reject(Object.assign(new Error('interrupted'), { code: 'FOCUS_INTERRUPTED' }));
+  await flush();
+  expect(runs).toHaveLength(1); // nothing else is tried in the background
+  queue.setForeground(true);
+  expect(runs.map((r) => r.opts.clipPath)).toEqual(['/c/1.mp4', '/c/1.mp4']);
+});
+
+test('in the background nothing starts; back in front the queue goes on', () => {
+  const { queue, runs, addClip } = setup();
+  queue.setForeground(false);
+  queue.enqueue(addClip('/c/1.mp4').id);
+  expect(runs).toHaveLength(0);
+  queue.setForeground(true);
+  expect(runs).toHaveLength(1);
+});
+
+test('restore queues the clips a closed app left pending, newest first, and nothing else', () => {
+  const { repo, queue, runs, addClip } = setup();
+  const older = repo.updateClip(addClip('/c/1.mp4').id, { focus: { v: 1, status: 'pending' } }) as Clip;
+  const ready = repo.updateClip(addClip('/c/2.mp4').id, { focus: { v: 1, status: 'ready', file: '/c/2.focus.json' } }) as Clip;
+  const never = addClip('/c/3.mp4'); // saved before the Modo Foco: left alone
+  const newer = { ...(repo.updateClip(addClip('/c/4.mp4').id, { focus: { v: 1, status: 'pending' } }) as Clip), createdAt: 5 };
+  queue.setHold('all');
+  queue.restore([older, ready, never, newer]);
+  queue.restore([older]); // already queued
+  queue.setHold('none');
+  expect(runs.map((r) => r.opts.clipPath)).toEqual(['/c/4.mp4']);
+});
+
 describe('hold while recording (thermal spec item 1)', () => {
-  test('focusHold: recording holds everything but an opened clip when cool, everything when warmer', () => {
+  test('focusHold: recording holds everything, even with the phone cool', () => {
     expect(focusHold(false, 'serious')).toBe('none');
-    expect(focusHold(true, 'nominal')).toBe('openedOnly');
+    expect(focusHold(true, 'nominal')).toBe('all');
     expect(focusHold(true, 'fair')).toBe('all');
     expect(focusHold(true, 'serious')).toBe('all');
     expect(focusHold(true, 'critical')).toBe('all');
@@ -200,6 +235,37 @@ describe('hold while recording (thermal spec item 1)', () => {
     expect(runs).toHaveLength(1);
   });
 
+  test('a recording that starts stops the running analysis and redoes it first when the recording ends', async () => {
+    const { repo, queue, runs, deps, addClip, done, flush } = setup();
+    const a = addClip('/c/1.mp4');
+    const b = addClip('/c/2.mp4');
+    queue.enqueue(a.id);
+    queue.enqueue(b.id);
+    queue.setHold('all');
+    expect(deps.cancel).toHaveBeenCalledWith('/c/1.mp4');
+    runs[0].reject(Object.assign(new Error('cancelled'), { code: 'CANCELLED' }));
+    await flush();
+    expect(repo.getClip(a.id)!.focus).toEqual({ v: 1, status: 'pending' });
+    expect(runs).toHaveLength(1);
+    queue.setHold('none');
+    expect(runs.map((r) => r.opts.clipPath)).toEqual(['/c/1.mp4', '/c/1.mp4']);
+    runs[1].resolve(done());
+    await flush();
+    expect(runs.map((r) => r.opts.clipPath)).toEqual(['/c/1.mp4', '/c/1.mp4', '/c/2.mp4']);
+  });
+
+  test('a recording that starts as the analysis finishes keeps its result', async () => {
+    const { repo, queue, runs, addClip, done, flush } = setup();
+    const a = addClip('/c/1.mp4');
+    queue.enqueue(a.id);
+    queue.setHold('all');
+    runs[0].resolve(done()); // the native side finished before the cancel landed
+    await flush();
+    expect(repo.getClip(a.id)!.focus!.status).toBe('ready');
+    queue.setHold('none');
+    expect(runs).toHaveLength(1);
+  });
+
   test('an opened clip jumps ahead of clips saved before it', () => {
     const { queue, runs, addClip } = setup();
     queue.setHold('all');
@@ -213,33 +279,3 @@ describe('hold while recording (thermal spec item 1)', () => {
   });
 });
 
-test('after a stored analysis the cut suggestion is told, with the file it reads', async () => {
-  const { deps, runs, addClip, done, flush } = setup();
-  const analyzed = jest.fn();
-  const q = createFocusQueue({ ...deps, analyzed });
-  const clip = addClip('/c/9.mp4');
-  q.enqueue(clip.id);
-  runs[runs.length - 1].resolve(done());
-  await flush();
-  expect(analyzed).toHaveBeenCalledWith(clip.id, '/c/9.focus.json');
-});
-
-test('a failing cut suggestion does not break the queue', async () => {
-  const { deps, runs, addClip, done, flush, repo } = setup();
-  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
-  const q = createFocusQueue({
-    ...deps,
-    analyzed: () => {
-      throw new Error('boom');
-    },
-  });
-  const a = addClip('/c/a.mp4');
-  const b = addClip('/c/b.mp4');
-  q.enqueue(a.id);
-  q.enqueue(b.id);
-  runs[runs.length - 1].resolve(done());
-  await flush();
-  expect(repo.getClip(a.id)!.focus!.status).toBe('ready');
-  expect(runs[runs.length - 1].opts.clipPath).toBe('/c/b.mp4');
-  warn.mockRestore();
-});

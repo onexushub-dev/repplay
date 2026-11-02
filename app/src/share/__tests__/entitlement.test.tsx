@@ -72,12 +72,6 @@ test('without a session it is the next start plan and follows the store', async 
   expect(result.current).toBe('paid');
 });
 
-test('a blocked start is the free plan', async () => {
-  mockStore.decision = { kind: 'blocked' };
-  const { result } = await renderHook(() => usePlan());
-  expect(result.current).toBe('free');
-});
-
 test('re-renders when the repo notifies (a credit spent)', async () => {
   mockStore.plan = 'paid';
   const { result } = await renderHook(() => usePlan());

@@ -182,15 +182,6 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
   const [zoomKey, setZoomKey] = useState(0);
   // Watch (clean, Salvar/Enviar) or edit (tool bar, Cancelar/Concluir); edit keeps what Cancelar puts back.
   const [mode, setMode] = useState<'watch' | 'edit'>('watch');
-  // The suggested cut (src/cutSuggestion) can land while the clip is open: when it became the clip's cut, watching
-  // moves to it (never under the player's fingers in edit mode) (the loop below then jumps into it). Adjusted while rendering, as React suggests for derived state.
-  const suggestionKey = clip?.cutSuggestion ? `${clip.cutSuggestion.startMs}-${clip.cutSuggestion.endMs}` : '';
-  const [seenSuggestion, setSeenSuggestion] = useState(suggestionKey);
-  if (suggestionKey !== seenSuggestion) {
-    setSeenSuggestion(suggestionKey);
-    const s = clip?.cutSuggestion;
-    if (s && clip && mode === 'watch' && clip.trim.startMs === s.startMs && clip.trim.endMs === s.endMs) setTrim(clip.trim);
-  }
   const snapshot = useRef<EditSnapshot | undefined>(undefined);
   // One report per tool per clip: flipping between tabs is browsing, not using.
   const reportedTools = useRef(new Set<string>());
@@ -602,14 +593,19 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
   async function run(kind: ExportJob['kind'], action: (path: string) => Promise<void>) {
     if (exporting.current || !sizeKnown) return;
     // The free-plan notice says what the video loses: nothing while the field test unlocks it all (accessPlan).
-    if (accessPlan(plan) === 'free') {
-      const choice = await freeGate.ask({ focus: focusActive, speed: edit.speed !== 1, sound: !edit.muted && edit.speed === 1 });
-      if (choice === 'unlock') void unlockRecording(clip!.sessionId, t);
-      if (choice !== 'go') return;
-      if (exporting.current) return;
+    const free = accessPlan(plan) === 'free';
+    if (free) {
+      const go = await freeGate.ask(
+        clip!.sessionId,
+        { focus: focusActive, sound: !edit.muted && edit.speed === 1 },
+        kind === 'share' ? 'share' : 'save',
+        { preview: { path: clip!.path, atMs: posterAt } },
+      );
+      if (!go || exporting.current) return;
     }
+    // Only a paid export picks a size: a free one is always HD.
     const choices = exportChoices(clip!.shortSide);
-    if (choices.length > 1 && look) {
+    if (!free && choices.length > 1 && look) {
       const picked = await qualityGate.ask({
         choices,
         landscape: look.frame.width > look.frame.height,

@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 
-import { ArmsUpIcon, BatteryIcon, MicIcon, QrIcon, RemoteIcon, WatchIcon } from '../components/icons';
+import { BatteryIcon, MicIcon, QrIcon, RemoteIcon, WatchIcon, WaveIcon } from '../components/icons';
 import { useT } from '../i18n/useT';
 import { colors, fonts, radius } from '../theme/tokens';
 import { PHOTOS } from './photos';
@@ -38,7 +38,7 @@ export function RecordMedia() {
         <Text style={styles.panelTitle}>{t('setup.howToSave')}</Text>
         <View style={styles.ways}>
           <MicIcon size={30} color={colors.accent} />
-          <ArmsUpIcon size={30} color={colors.accent} />
+          <WaveIcon size={30} color={colors.accent} />
           <RemoteIcon size={30} color={colors.muted} />
           <WatchIcon size={30} color={colors.muted} />
           <QrIcon size={30} color={colors.muted} />
@@ -53,7 +53,7 @@ export function RecordMedia() {
 }
 
 const styles = StyleSheet.create({
-  frame: { flex: 1, minHeight: 160, borderRadius: 18, overflow: 'hidden', backgroundColor: '#12130F' },
+  frame: { flex: 1, minHeight: 160, borderRadius: 18, overflow: 'hidden', backgroundColor: '#111111' },
   top: { position: 'absolute', top: 12, left: 12, right: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   recordings: { minHeight: 40, paddingHorizontal: 16, borderRadius: 999, backgroundColor: colors.accent, justifyContent: 'center' },
   recordingsText: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.onAccent },
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(15,16,13,0.75)',
+    backgroundColor: 'rgba(12,12,12,0.75)',
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center',

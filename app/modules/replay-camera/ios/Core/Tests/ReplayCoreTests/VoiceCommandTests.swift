@@ -3,8 +3,8 @@ import XCTest
 
 final class VoiceCommandTests: XCTestCase {
   func test_wordsPerLocale() {
-    XCTAssertEqual(VoiceCommand.words(for: .ptBR), ["salvar", "gravar"])
-    XCTAssertEqual(VoiceCommand.words(for: .enUS), ["save", "record"])
+    XCTAssertEqual(VoiceCommand.words(for: .ptBR), ["salvar"])
+    XCTAssertEqual(VoiceCommand.words(for: .enUS), ["save"])
   }
 
   func test_localeFromTheJavaScriptTag() {
@@ -13,8 +13,8 @@ final class VoiceCommandTests: XCTestCase {
     XCTAssertNil(VoiceLocale(rawValue: "es-ES"))
   }
 
-  func test_portugueseMatchesSalvarOrGravar() {
-    for phrase in ["salvar", "Gravar!", "ok, SALVAR agora", "pode gravar"] {
+  func test_portugueseMatchesSalvar() {
+    for phrase in ["salvar", "Salvar!", "ok, SALVAR agora", "pode salvar"] {
       XCTAssertTrue(VoiceCommand.matches(phrase, locale: .ptBR), phrase)
     }
   }
@@ -24,13 +24,13 @@ final class VoiceCommandTests: XCTestCase {
   }
 
   func test_portugueseDoesNotFireOnOtherForms() {
-    for phrase in ["que lance", "salvou", "gravando", "salva", "grava", "gravaram", "salvaram o ponto", "save", "record"] {
+    for phrase in ["que lance", "salvou", "salvando", "salva", "salvaram o ponto", "gravar", "pode gravar", "save"] {
       XCTAssertFalse(VoiceCommand.matches(phrase, locale: .ptBR), phrase)
     }
   }
 
-  func test_englishMatchesSaveOrRecord() {
-    for phrase in ["save", "Record!", "ok SAVE it", "please record", "Save."] {
+  func test_englishMatchesSave() {
+    for phrase in ["save", "Save!", "ok SAVE it", "please save", "Save."] {
       XCTAssertTrue(VoiceCommand.matches(phrase, locale: .enUS), phrase)
     }
   }
@@ -40,7 +40,7 @@ final class VoiceCommandTests: XCTestCase {
   }
 
   func test_englishDoesNotFireOnOtherForms() {
-    for phrase in ["saved", "saves", "saving", "recording", "records", "recorded", "safe", "salvar", "gravar"] {
+    for phrase in ["saved", "saves", "saving", "record", "please record", "safe", "salvar"] {
       XCTAssertFalse(VoiceCommand.matches(phrase, locale: .enUS), phrase)
     }
   }

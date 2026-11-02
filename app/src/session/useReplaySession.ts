@@ -59,7 +59,7 @@ export type SessionDeps = {
   onClipSaved?(clipId: string): void;
 };
 
-export type StartResult = 'started' | 'blocked' | 'failed' | 'busy';
+export type StartResult = 'started' | 'failed' | 'busy';
 
 /** What a camera was opened with: the mode's settings as read then, and what the plan allowed of them. */
 type Opened = { settings: ModeSettings; config: CaptureConfig };
@@ -272,11 +272,9 @@ export function useReplaySession(deps: SessionDeps) {
       if (startingRef.current || phase === 'starting' || phase === 'recording' || phase === 'stopping') return 'busy';
       startingRef.current = true;
       try {
-        // decide → (blocked: stop here) → open the camera for that plan → decide again → reopen if the plan changed →
-        // create the session. Nothing paid is ever asked once recording.
+        // decide → open the camera for that plan → decide again → reopen if the plan changed → create the session.
+        // The plan never stops a start, and nothing paid is ever asked once recording.
         let decision = await safeDecision();
-        // Nothing touched: the setup screen opens the paywall.
-        if (decision.kind === 'blocked') return 'blocked';
         dispatch({ type: 'startRequested' });
         // Visible to a prepare() before React commits: from here only start() touches the camera.
         stateRef.current = { ...stateRef.current, phase: 'starting' };
@@ -288,13 +286,9 @@ export function useReplaySession(deps: SessionDeps) {
             dispatch({ type: 'startFailed', code: cameraError.current ?? 'CAMERA_UNAVAILABLE' });
             return 'failed';
           }
-          // The plan can change while the camera opens (Pro lapsing, a credit spent elsewhere, the month's last free
-          // recording used): this check decides, and the camera is reopened to match it.
+          // The plan can change while the camera opens (Pro bought or lapsing): this check decides, and the camera is
+          // reopened to match it.
           const again = await safeDecision();
-          if (again.kind === 'blocked') {
-            dispatch({ type: 'startBlocked' });
-            return 'blocked';
-          }
           if (planOf(again) !== planOf(decision)) {
             opened = await openCamera(sport, planOf(again));
             if (!opened) {
@@ -312,11 +306,8 @@ export function useReplaySession(deps: SessionDeps) {
           toggled = true;
           deps.camera.setGestureEnabled(settings.gestureEnabled);
           deps.camera.setVoiceEnabled(voiceOn, locale);
-          // Last fallible step: it counts a free recording or spends a credit, so a start that failed never does.
-          const session = deps.repo.startSession(sport, deps.now(), {
-            paid: plan === 'paid',
-            ...(decision.kind === 'credit' ? { passTransactionId: decision.passTransactionId } : {}),
-          });
+          // Last fallible step: a start that failed leaves no session behind.
+          const session = deps.repo.startSession(sport, deps.now(), { paid: plan === 'paid' });
           cutSeconds.current = config.cutSeconds;
           cutFloors.current = [session.startedAt];
           bus.quiet(SETTLE_MS);

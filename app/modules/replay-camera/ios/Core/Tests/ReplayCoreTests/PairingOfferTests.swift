@@ -111,7 +111,7 @@ final class PairingOfferTests: XCTestCase {
 
   /// The TypeScript parser (`parsePairLink`) is tested against this same string.
   func testQrURLIsPinned() {
-    XCTAssertEqual(offer().qrURL, "repplay://pair?h=h1&s=AAECAwQFBgcICQoLDA0ODw&n=Quadra%201")
+    XCTAssertEqual(offer().qrURL, "reprize://pair?h=h1&s=AAECAwQFBgcICQoLDA0ODw&n=Quadra%201")
   }
 
   func testQrURLEscapesTheHostName() {

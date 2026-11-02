@@ -26,33 +26,34 @@ import { Chip } from '../components/Chip';
 import { CompactDock } from '../components/CompactDock';
 import { EconomyButton } from '../components/EconomyButton';
 import { EconomyToast } from '../components/EconomyToast';
+import { GestureSheet, VoiceSheet } from '../components/PracticeSheet';
 import { modeTip } from '../components/format';
 import { sourceLabel } from '../components/sourceLabel';
 import { sessionSummary, track } from '../analytics';
 import { PositionGuide } from '../components/PositionGuide';
 import { RecordingPanel } from '../components/RecordingPanel';
 import { ProBadge } from '../components/ProBadge';
-import { ArmsUpIcon, MicIcon, QrIcon, RemoteIcon, TapIcon, WatchIcon } from '../components/icons';
+import { MicIcon, QrIcon, RemoteIcon, TapIcon, WatchIcon, WaveIcon } from '../components/icons';
 import { TriggerTile } from '../components/TriggerTile';
 import { ZoomBubble } from '../components/ZoomBubble';
 import { ZoomButton } from '../components/ZoomButton';
 import { repo } from '../data/mmkv';
-import { useStartPreview } from '../payments/useStartPreview';
 import { openPaywall } from '../payments/feedback';
 import { FREE_MAX_SECONDS, qualityAllowed, triggerAllowed } from '../payments/limits';
 import { accessPlan } from '../payments/rules';
 import { usePlan } from '../share/entitlement';
-import { type MessageKey, type TFunction, VOICE_WORDS, voiceLocale } from '../i18n';
+import { type MessageKey, type TFunction, VOICE_WORD, voiceLocale } from '../i18n';
 import { useT } from '../i18n/useT';
+import { useRemoteLink } from '../devices/bluetoothRemote';
 import { remoteDeviceView } from '../devices/remoteDevice';
-import { clearRemotePress } from '../devices/remoteTest';
+import { clearRemotePress, openingRemoteSheet } from '../devices/remoteTest';
 import { useRemoteSheetOpen, useRemoteTest } from '../devices/useRemoteTest';
 import { CLIP_SECONDS_OPTIONS, type ModeSettings, type Prefs } from '../data/schema';
 import { effectiveSettings, modeById, offeredMode, withModeOverride } from '../modes/registry';
 import { clampZoom, lensFor, nextZoomStep } from '../modes/zoom';
 import { useSession } from '../session/SessionContext';
 import { colors, fonts, radius } from '../theme/tokens';
-import { useVolumeRemote } from '../triggers/useVolumeRemote';
+import { useBluetoothRemote } from '../triggers/useBluetoothRemote';
 
 /** How long the zoom value stays over the preview after the last pinch move. */
 const BUBBLE_MS = 800;
@@ -86,6 +87,8 @@ function cameraStatus(t: TFunction, host: { name: string } | null): string | und
 
 /** How long the battery-saving notice stays after a tap on its button. */
 const ECONOMY_TOAST_MS = 3000;
+
+const PRACTICE_REMOTE = { requireSeenConnected: false };
 
 export default function Setup() {
   const session = useSession();
@@ -143,16 +146,20 @@ export default function Setup() {
   };
   // The Bluetooth remote: the app cannot see the iOS pairing, only presses (this launch, or heard before).
   const remoteTest = useRemoteTest();
+  // The remote's link as iOS shows it (BLE remotes the app has learnt), looked at while this screen is in front.
+  const remoteLink = useRemoteLink(focused);
   const remoteView = remoteDeviceView(
-    { pressed: remoteTest.pressed, testedBefore: remoteTest.testedBefore, waitedLong: false },
+    { pressed: remoteTest.pressed, testedBefore: remoteTest.testedBefore, waitedLong: false, link: remoteLink },
     locale,
   );
-  // Paired counts as ready: a remote heard before works in the recording (which always listens to it), so its icon and
-  // tile show it on like the recording screen does; only a remote never heard in the app stays grey. The texts still
-  // tell paired from connected.
-  const remoteReady = remoteView.state !== 'setup';
+  // Only a press proves the remote works: one used before may have been unpaired in Ajustes since, and the app cannot
+  // tell (2026-11-01 field test). So its icon and tile light up only once a press is heard; the recording still listens
+  // to it either way.
+  const remoteReady = remoteView.state === 'connected';
   // The sheet opens collapsed so the camera and its guide stay visible; mode and triggers sit behind the summary.
   const [expanded, setExpanded] = useState(false);
+  // A trigger's "?" (the wave gesture, voice): how to use it, and practice with the live camera.
+  const [practice, setPractice] = useState<'gesture' | 'voice' | undefined>(undefined);
   const [sheetHeight, setSheetHeight] = useState(0);
   // Swipe up on the sheet opens it, swipe down closes it; taps still reach the controls inside.
   const [swipe] = useState(() =>
@@ -188,7 +195,7 @@ export default function Setup() {
     watchSupported && watchAllowed && watch !== 'ready'
       ? () => Alert.alert(t('setup.watchHelpTitle'), watch === 'notInstalled' ? t('setup.watchHelpInstall') : t('setup.watchHelpPair'))
       : undefined;
-  // The paid triggers are the watch and the Bluetooth remote; the phone remote is free for every plan.
+  // The Apple Watch is the one paid trigger; the Bluetooth remote and the phone remote are free for every plan.
   const remoteAllowed = triggerAllowed('remote', plan);
   // The free plan cuts clips at 15 s: a longer pick is paid, and what the screen shows is what the game will get.
   const isAllowed = (seconds: number) => paidAccess || seconds <= FREE_MAX_SECONDS;
@@ -224,11 +231,17 @@ export default function Setup() {
     });
     return () => sub.remove();
   }, [remoteSupported]);
-  useEffect(() => {
-    if (!remoteSupported || !focused) return;
-    setControlHost(remoteControllerHost()); // it may have been paired or forgotten on the remote screen
-    setRemoteLinked(remoteHostControllers()); // the status events of a remote that connected meanwhile were not heard
-  }, [remoteSupported, focused]);
+  // Coming back to this screen, read the remote again (adjusting state during render, not in an effect): it may have
+  // been paired or forgotten on the remote screen, and the status events of a remote that connected meanwhile were not
+  // heard.
+  const [remoteReadFocused, setRemoteReadFocused] = useState(focused);
+  if (remoteReadFocused !== focused) {
+    setRemoteReadFocused(focused);
+    if (remoteSupported && focused) {
+      setControlHost(remoteControllerHost());
+      setRemoteLinked(remoteHostControllers());
+    }
+  }
   const disconnectControl = () => {
     const name = controlHost === null ? '' : controlHost.name;
     Alert.alert(
@@ -254,10 +267,16 @@ export default function Setup() {
     : !settings.voiceEnabled
       ? t('setup.off')
       : speechGranted
-        ? t('setup.voiceSay', { first: VOICE_WORDS[locale][0], second: VOICE_WORDS[locale][1] })
+        ? t('setup.voiceSay', { word: VOICE_WORD[locale] })
         : speech === 'denied'
           ? t('setup.voiceDenied')
           : t('setup.tapToAllow');
+
+  /** The voice practice asks for the permission on its own (the trigger stays as the player set it). */
+  async function allowSpeech() {
+    const granted = await requestSpeechPermission();
+    setSpeech(granted ? 'granted' : 'denied');
+  }
 
   async function toggleVoice() {
     if (voiceOn) return updateMode({ voiceEnabled: false });
@@ -278,15 +297,21 @@ export default function Setup() {
           ? 'setup.summaryRemoteNotConnected'
           : remoteView.state === 'connected'
           ? 'setup.summaryRemoteConnected'
-          : remoteView.state === 'offline'
-            ? 'setup.summaryRemotePaired'
-            : 'setup.summaryRemoteNotConnected',
+          : remoteLink === 'bluetoothOff'
+            ? 'setup.summaryBluetoothOff'
+            : remoteLink === 'missing'
+              ? 'setup.summaryRemoteMissing'
+              : remoteView.state === 'offline'
+                ? 'setup.summaryRemotePaired'
+                : 'setup.summaryRemoteNotConnected',
       ),
       ...(watchOn ? [t('setup.summaryWatchReady')] : []),
     ].join(', '),
   });
 
   const { phase, error, camera } = session.state;
+  // The practice belongs to the setup: a game starting closes it.
+  if (practice !== undefined && phase !== 'idle') setPractice(undefined);
   const { prepare, release } = session;
 
   // Live preview while positioning; the buffer starts filling now, so "Começar gravação" is instant.
@@ -302,7 +327,8 @@ export default function Setup() {
   }, [focused]);
 
   // A press of the Bluetooth remote here proves it is paired and reaching the app.
-  useVolumeRemote(live && phase === 'idle' && remoteAllowed, remoteTest.press);
+  // The connection test: the press that wakes the remote counts too (requireSeenConnected off: it may be asleep now).
+  useBluetoothRemote(live && phase === 'idle' && remoteAllowed, remoteTest.press, PRACTICE_REMOTE);
 
   // Coming back from another app, whether the remote is still on is unknown: until it is pressed again it shows as paired.
   useEffect(() => {
@@ -312,9 +338,6 @@ export default function Setup() {
     return () => sub.remove();
   }, []);
 
-  const preview = useStartPreview();
-  const startNote =
-    preview.decision.kind === 'credit' ? t('setup.passCredits', { count: preview.credits }) : null;
   const busy = useRef(false);
   /** A tap on something Pro-only: counted as a blocked feature, then the paywall opens. */
   function lockedFeature(feature: 'quality_4k' | 'clip_length' | 'bluetooth_remote' | 'watch') {
@@ -325,11 +348,7 @@ export default function Setup() {
     if (busy.current) return;
     busy.current = true;
     try {
-      if ((await session.start(modeId)) !== 'blocked') return;
-      const outcome = await openPaywall(t, 'start_limit');
-      // One retry right after a purchase: the player already asked to start. A purchase that shows up later
-      // (SDK lag) only changes the status line; the next tap starts.
-      if (outcome === 'purchased' || outcome === 'restored') await session.start(modeId);
+      await session.start(modeId); // the plan never stops a start
     } finally {
       busy.current = false;
     }
@@ -354,6 +373,18 @@ export default function Setup() {
       ) : (
         renderSetupControls()
       )}
+      {practice === 'gesture' ? (
+        <GestureSheet visible={live && phase === 'idle'} onClose={() => setPractice(undefined)} />
+      ) : null}
+      {practice === 'voice' ? (
+        <VoiceSheet
+          visible={live && phase === 'idle'}
+          onClose={() => setPractice(undefined)}
+          locale={locale}
+          speech={speech}
+          onAllow={() => void allowSpeech()}
+        />
+      ) : null}
     </View>
   );
 
@@ -411,7 +442,6 @@ export default function Setup() {
             {expanded ? renderSettings() : renderSummary()}
 
             {errorText ? <Text style={styles.error}>{errorText}</Text> : null}
-            {startNote ? <Text style={styles.startNote}>{startNote}</Text> : null}
             <Button
               label={opening ? t('setup.openingCamera') : t('setup.start')}
               icon={starting ? <ActivityIndicator color={colors.onAccent} /> : undefined}
@@ -438,7 +468,7 @@ export default function Setup() {
         </View>
         <View style={styles.summaryIcons}>
           <MicIcon color={iconColor(voiceOn)} size={32} />
-          <ArmsUpIcon color={iconColor(settings.gestureEnabled)} size={32} />
+          <WaveIcon color={iconColor(settings.gestureEnabled)} size={32} />
           <RemoteIcon color={iconColor(remoteReady && remoteAllowed)} size={32} />
           <WatchIcon color={iconColor(watchOn)} size={32} />
           {remoteSupported ? <QrIcon color={iconColor(remoteLinked > 0)} size={32} /> : null}
@@ -514,7 +544,6 @@ export default function Setup() {
         <Text style={styles.section}>{t('setup.triggers')}</Text>
         {/* The paid triggers (Bluetooth remote and watch) share one outline and one "Pro" badge on the free plan. */}
         <View style={styles.proTriggers}>
-          {showPro ? <View pointerEvents="none" style={styles.proOutline} /> : null}
           <View style={styles.gridRow}>
             <TriggerTile
               icon={<RemoteIcon />}
@@ -524,21 +553,28 @@ export default function Setup() {
               lockedHint={remoteAllowed ? undefined : t('setup.proOnly')}
               onPress={
                 remoteAllowed
-                  ? () => router.push({ pathname: '/devices', params: { kind: 'remote' } })
+                  ? () => {
+                      openingRemoteSheet(); // the camera stays on under the sheet (presses are heard through it)
+                      router.push({ pathname: '/devices', params: { kind: 'remote' } });
+                    }
                   : () => lockedFeature('bluetooth_remote')
               }
             />
-            <TriggerTile
-              icon={<WatchIcon />}
-              title={sourceLabel('watch', locale)}
-              status={watchSupported ? watchStatus : t('setup.watchIosOnly')}
-              active={watchOn}
-              disabled={!watchSupported}
-              lockedHint={watchLocked ? t('setup.watchProOnly') : undefined}
-              onPress={watchLocked ? () => lockedFeature('watch') : watchHelp}
-            />
+            {/* The paid trigger: in the free plan the Apple Watch tile alone carries the outline and the "Pro" badge. */}
+            <View style={styles.proTile}>
+              {showPro ? <View pointerEvents="none" style={styles.proOutline} /> : null}
+              <TriggerTile
+                icon={<WatchIcon />}
+                title={sourceLabel('watch', locale)}
+                status={watchSupported ? watchStatus : t('setup.watchIosOnly')}
+                active={watchOn}
+                disabled={!watchSupported}
+                lockedHint={watchLocked ? t('setup.watchProOnly') : undefined}
+                onPress={watchLocked ? () => lockedFeature('watch') : watchHelp}
+              />
+              {showPro ? <ProBadge label={t('setup.proBadge')} top={-9} right={6} /> : null}
+            </View>
           </View>
-          {showPro ? <ProBadge label={t('setup.proBadge')} top={-9} right={6} /> : null}
         </View>
         <View style={styles.grid}>
           <View style={styles.gridRow}>
@@ -549,13 +585,15 @@ export default function Setup() {
               active={voiceOn}
               disabled={!voiceSupported}
               onPress={voiceSupported ? () => void toggleVoice() : undefined}
+              help={voiceSupported ? { label: t('voiceGuide.help'), onPress: () => setPractice('voice') } : undefined}
             />
             <TriggerTile
-              icon={<ArmsUpIcon />}
+              icon={<WaveIcon />}
               title={sourceLabel('gesture', locale)}
               status={settings.gestureEnabled ? t('setup.on') : t('setup.off')}
               active={settings.gestureEnabled}
               onPress={() => updateMode({ gestureEnabled: !settings.gestureEnabled })}
+              help={{ label: t('gestureGuide.help'), onPress: () => setPractice('gesture') }}
             />
           </View>
         </View>
@@ -625,7 +663,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   pill: {
-    backgroundColor: 'rgba(15,16,13,0.75)',
+    backgroundColor: 'rgba(12,12,12,0.75)',
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 999,
@@ -643,7 +681,7 @@ const styles = StyleSheet.create({
   },
   tip: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(15,16,13,0.8)',
+    backgroundColor: 'rgba(12,12,12,0.8)',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 999,
@@ -696,12 +734,12 @@ const styles = StyleSheet.create({
   },
   // The outline is drawn around the tiles, out in the sheet's side padding, so the tiles keep the width of the free ones.
   proTriggers: { marginTop: 8, marginBottom: 4 }, // room for the badge under the section title
+  proTile: { flex: 1, flexDirection: 'row' },
   proOutline: { position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderWidth: 1, borderColor: colors.accent, borderRadius: 15 },
   triggerPlain: { gap: 8 },
   grid: { gap: 8 },
   gridRow: { flexDirection: 'row', gap: 8 },
   error: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.warning },
-  startNote: { fontFamily: fonts.body, fontSize: 13, color: colors.soft, textAlign: 'center' },
   cameraButtons: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   feedbackRow: {
     flexDirection: 'row',

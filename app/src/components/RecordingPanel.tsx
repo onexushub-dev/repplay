@@ -1,10 +1,10 @@
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { Alert, BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { Alert, BackHandler, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { addReplayListener, setScreenEconomy } from '../../modules/replay-camera';
-import { VOICE_WORDS } from '../i18n';
+import { addReplayListener, getWatchStatus, setScreenEconomy } from '../../modules/replay-camera';
+import { VOICE_WORD } from '../i18n';
 import { useT } from '../i18n/useT';
 import { removeFile, repo } from '../data/mmkv';
 import { triggerAllowed } from '../payments/limits';
@@ -14,8 +14,14 @@ import { diag, diagFlags } from '../diag/diagLog'; // TEMP(diag-remote)
 import { colors, fonts } from '../theme/tokens';
 import { Button } from './Button';
 import { HoldButton } from './HoldButton';
-import { ArmsUpIcon, MicIcon, RemoteIcon, TapIcon, WatchIcon } from './icons';
+import { MicIcon, RemoteIcon, TapIcon, WatchIcon, WaveIcon } from './icons';
 import { SavedOverlay } from './SavedOverlay';
+
+/** The watch link as the native side sees it now; read on every render, as the setup screen does. */
+function subscribeWatch(onChange: () => void): () => void {
+  const sub = addReplayListener('onWatchStatus', onChange);
+  return () => sub.remove();
+}
 
 const OVERLAY_MS = 2000;
 /** How long the battery-saving notice stays up when a recording starts with it on. */
@@ -58,6 +64,9 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
   const { state, trigger, undoLast, stop, reset } = useSession();
   // The Bluetooth remote is paid: it saves only in a game whose plan may use it.
   const remoteOn = triggerAllowed('remote', state.paid ? 'paid' : 'free');
+  // The Apple Watch is paid too, and lit only when a paired watch has the app.
+  const watch = useSyncExternalStore(subscribeWatch, getWatchStatus);
+  const watchOn = Platform.OS === 'ios' && watch === 'ready' && triggerAllowed('watch', state.paid ? 'paid' : 'free');
   const { t, locale } = useT();
   const [now, setNow] = useState(() => Date.now());
   const [dismissed, setDismissed] = useState<string>();
@@ -91,8 +100,10 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
   const showEconomyNotice =
     economyOn && !economy.asleep && noticeFor !== undefined && noticeFor === state.sessionId && noticeGone !== noticeFor;
 
-  // Heat tip: the first time the phone gets warm in this recording, a few words on what helps; gone by itself.
-  const warm = state.phase === 'recording' && state.thermal.level === 'fair' && !state.thermal.degraded;
+  // Heat tip: the first time the phone gets warm in this recording, a few words on what helps; gone by itself. Also when
+  // it gets hot without a step down (a Full HD 30 recording is never lowered: the floor since 2026-10-31).
+  const hot = state.thermal.level === 'fair' || state.thermal.level === 'serious';
+  const warm = state.phase === 'recording' && hot && !state.thermal.degraded;
   const [tipFor, setTipFor] = useState<string>();
   const [tipGone, setTipGone] = useState<string>();
   if (warm && state.sessionId !== undefined && tipFor !== state.sessionId) setTipFor(state.sessionId);
@@ -161,12 +172,14 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
   }
 
   const showOverlay = last !== undefined && dismissed !== last.clipId;
-  const hintSub = [
-    t('recording.lastReady', { seconds: clipSeconds }),
-    ...(voice ? [t('recording.orSay', { word: VOICE_WORDS[locale][0] })] : []),
-    ...(gesture ? [t('recording.orWave')] : []),
-    ...(remoteOn ? [t('recording.orRemote')] : []),
-  ].join(' · ');
+  // The other ways that are on, one short tag each (2026-11-01: a line of "ou … ou … ou" was hard to read). Tapping the
+  // screen always works, so it is the main line; a way that is off is not shown at all.
+  const ways = [
+    ...(voice ? [{ key: 'voice', icon: <MicIcon color={colors.accent} size={16} />, label: t('recording.wayVoice', { word: VOICE_WORD[locale] }) }] : []),
+    ...(gesture ? [{ key: 'wave', icon: <WaveIcon color={colors.accent} size={16} />, label: t('recording.wayWave') }] : []),
+    ...(remoteOn ? [{ key: 'remote', icon: <RemoteIcon color={colors.accent} size={16} />, label: t('recording.wayRemote') }] : []),
+    ...(watchOn ? [{ key: 'watch', icon: <WatchIcon color={colors.accent} size={16} />, label: t('recording.wayWatch') }] : []),
+  ];
   const clips = t('summary.clips', { count: state.clipCount });
 
   return (
@@ -229,17 +242,23 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
         <View pointerEvents="box-none" style={styles.bottom}>
           {economy.asleep ? null : (
             <View pointerEvents="none" style={styles.hintCard}>
-              <TapIcon color={colors.accent} size={28} />
-              <View style={styles.hintText}>
-                <Text style={styles.hint}>{t('recording.tapHint')}</Text>
-                <Text style={styles.hintSub}>{hintSub}</Text>
+              <View style={styles.hintHead}>
+                <TapIcon color={colors.accent} size={26} />
+                {/* Always one line: on a narrower phone (iPhone XR, SE) the text shrinks a little instead of wrapping. */}
+                <Text style={styles.hint} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                  {t('recording.tapToSave', { seconds: clipSeconds })}
+                </Text>
               </View>
-              <View style={styles.icons}>
-                {voice ? <MicIcon color={colors.accent} size={20} /> : null}
-                {gesture ? <ArmsUpIcon color={colors.accent} size={20} /> : null}
-                <RemoteIcon color={remoteOn ? colors.accent : colors.muted} size={20} />
-                <WatchIcon color={colors.muted} size={20} />
-              </View>
+              {ways.length > 0 ? (
+                <View style={styles.ways}>
+                  {ways.map((way) => (
+                    <View key={way.key} style={styles.way} accessible accessibilityLabel={way.label}>
+                      {way.icon}
+                      <Text style={styles.wayText}>{way.label}</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
             </View>
           )}
           <HoldButton
@@ -255,7 +274,7 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
   );
 }
 
-const glass = 'rgba(15,16,13,0.72)';
+const glass = 'rgba(12,12,12,0.72)';
 
 const styles = StyleSheet.create({
   dark: { backgroundColor: colors.screenOff },
@@ -284,24 +303,32 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   bannerText: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.text },
-  notice: { backgroundColor: 'rgba(15,16,13,0.82)', borderRadius: 14, paddingVertical: 10, paddingHorizontal: 14, alignItems: 'center', gap: 2 },
+  notice: { backgroundColor: 'rgba(12,12,12,0.82)', borderRadius: 14, paddingVertical: 10, paddingHorizontal: 14, alignItems: 'center', gap: 2 },
   noticeTitle: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.text, textAlign: 'center' },
   noticeBody: { fontFamily: fonts.body, fontSize: 12, lineHeight: 17, color: colors.soft, textAlign: 'center' },
   bold: { fontFamily: fonts.bodyBold },
   bottom: { marginTop: 'auto', gap: 8, marginBottom: 12 },
   hintCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    gap: 10,
     backgroundColor: glass,
     borderRadius: 18,
     paddingVertical: 14,
     paddingHorizontal: 16,
   },
-  hintText: { flex: 1, gap: 2 },
-  hint: { fontFamily: fonts.bodyBold, fontSize: 18, lineHeight: 22, color: colors.text },
-  hintSub: { fontFamily: fonts.body, fontSize: 12, color: colors.soft },
-  icons: { flexDirection: 'column', gap: 6 },
+  hintHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  hint: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 17, lineHeight: 22, color: colors.text },
+  ways: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  way: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 999,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+  },
+  wayText: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.text },
   stopped: { flex: 1, backgroundColor: colors.recordingGround, justifyContent: 'center', padding: 24, gap: 20 },
   stoppedText: { fontFamily: fonts.displayBold, fontSize: 36, lineHeight: 38, color: colors.text, textAlign: 'center' },
 });

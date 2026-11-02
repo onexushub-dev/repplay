@@ -14,7 +14,6 @@ import { ClipIcon, TrashIcon } from '../../components/icons';
 import { clipNumber, dayAndTime, megabytes, modeLabel, recordedLabel, sessionLabel } from '../../components/format';
 import { removeFile, repo } from '../../data/mmkv';
 import { MAX_GAME_NAME } from '../../data/schema';
-import { unlockRecording } from '../../payments/unlock';
 import { accessPlan } from '../../payments/rules';
 import { useFreeExportGate } from '../../components/useFreeExportGate';
 import { useViewPlan } from '../../share/entitlement';
@@ -54,18 +53,21 @@ export default function SessionSummary() {
     labelOf: (c) => (c.name ? c.name : t('batch.clipNumber', { number: clipNumber(c, clips.indexOf(c)) })),
   });
   const working = batch.job !== undefined;
-  // A free recording's clips leave without sound, Modo Foco and the app mark off: say so before saving or sending them.
+  // A free recording's clips leave in HD, without sound and Modo Foco, with the app mark: say so before saving or sending
+  // them (the full notice on the recording's first export; later ones go on). The PRO card opens the same sheet.
   const freeGate = useFreeExportGate();
-  const exportAfterNotice = async (clips: typeof pickedClips, go: (clips: typeof pickedClips) => Promise<void>) => {
+  const exportAfterNotice = async (
+    kind: 'save' | 'share',
+    clips: typeof pickedClips,
+    go: (clips: typeof pickedClips) => Promise<void>,
+  ) => {
     // Nothing is lost while the field test unlocks it all (accessPlan): no notice then.
     if (accessPlan(plan) === 'free') {
-      const choice = await freeGate.ask({
+      const proceed = await freeGate.ask(id, {
         focus: clips.some((c) => freeLosses(c).focus),
-        speed: clips.some((c) => freeLosses(c).speed),
         sound: clips.some((c) => freeLosses(c).sound),
-      });
-      if (choice === 'unlock') void unlockRecording(id, t);
-      if (choice !== 'go') return;
+      }, kind, { preview: clips.length > 0 ? { path: clips[0].path, atMs: clips[0].trim.startMs } : undefined, many: clips.length > 1 });
+      if (!proceed) return;
     }
     await go(clips);
   };
@@ -260,7 +262,13 @@ export default function SessionSummary() {
           message={t('summary.freeNote')}
           action={t('summary.upgrade')}
           badge={t('setup.proBadge')}
-          onPress={() => void unlockRecording(id, t, 'upgrade_card')}
+          onPress={() =>
+            freeGate.offer(
+              id,
+              { focus: clips.some((c) => freeLosses(c).focus), sound: clips.some((c) => freeLosses(c).sound) },
+              { preview: clips.length > 0 ? { path: clips[0].path, atMs: clips[0].trim.startMs } : undefined, many: clips.length > 1 },
+            )
+          }
         />
       ) : null}
 
@@ -299,8 +307,8 @@ export default function SessionSummary() {
             count={pickedClips.length}
             paid={plan === 'paid'}
             busy={working}
-            onShare={() => void exportAfterNotice(pickedClips, batch.share)}
-            onSave={() => void exportAfterNotice(pickedClips, batch.save)}
+            onShare={() => void exportAfterNotice('share', pickedClips, batch.share)}
+            onSave={() => void exportAfterNotice('save', pickedClips, batch.save)}
             onCompile={() => void batch.compile(pickedClips)}
             onDelete={confirmDeleteClips}
           />
@@ -350,7 +358,7 @@ const styles = StyleSheet.create({
   statValue: { fontFamily: fonts.displayBold, fontSize: 28, color: colors.text },
   statLabel: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
   note: { fontFamily: fonts.body, fontSize: 12, color: colors.muted, marginTop: -8 },
-  // The same pattern as the paid groups on the setup screen: lime outline and one small "Pro" pill on the border.
+  // The same pattern as the paid groups on the setup screen: amber outline and one small "Pro" pill on the border.
   grid: { gap: 10, paddingBottom: 12 },
   gridRow: { gap: 10 },
   footer: { gap: 8, paddingBottom: 12 },

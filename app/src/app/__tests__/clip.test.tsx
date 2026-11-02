@@ -67,6 +67,7 @@ jest.mock('../../data/mmkv', () => {
   // Where the open clip sits in its recording: last of two (default) or first of two.
   let first = false;
   let paid = true;
+  let noticeShown = false;
   let version = 0;
   const listeners = new Set<() => void>();
   let prefs: any = jest.requireActual('../../data/schema').DEFAULT_PREFS;
@@ -75,6 +76,7 @@ jest.mock('../../data/mmkv', () => {
     __setPrefs: (p: any) => (prefs = p),
     __setFirst: (f: boolean) => (first = f),
     __setPaid: (p: boolean) => (paid = p),
+    __setNoticeShown: (n: boolean) => (noticeShown = n),
     removeFile: jest.fn(),
     repo: {
       getClip: () => clip,
@@ -85,7 +87,8 @@ jest.mock('../../data/mmkv', () => {
       },
       getPrefs: () => prefs,
       setPrefs: jest.fn((p: object) => (prefs = { ...prefs, ...p })),
-      getSession: () => ({ id: 's1', sport: clip?.durationMs > 60000 ? 'musculacao' : 'beachTennis', startedAt: 0, paid }),
+      getSession: () => ({ id: 's1', sport: clip?.durationMs > 60000 ? 'musculacao' : 'beachTennis', startedAt: 0, paid, freeNoticeShown: noticeShown }),
+      markFreeNoticeShown: jest.fn(() => (noticeShown = true)),
       updateClip: jest.fn((id: string, patch: object) => {
         clip = { ...clip, ...patch };
         version += 1;
@@ -326,7 +329,7 @@ test('a 4K clip asks how to leave: 2K exports at 2560 × 1440', async () => {
   expect(camera.exportClip).not.toHaveBeenCalled();
   // 30 s with no sound change: rough sizes per option.
   expect(screen.getByRole('button', { name: '4K, original, 3840 × 2160, ≈ 150 MB' })).toBeTruthy();
-  expect(screen.getByRole('button', { name: 'Full HD, 1920 × 1080, ≈ 38 MB' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Full HD, 1920 × 1080, ≈ 57 MB' })).toBeTruthy();
   await pressAction('2K, 2560 × 1440, ≈ 68 MB');
   // The overlay is redrawn at the new size (a frame later) before it is captured.
   await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
@@ -728,6 +731,7 @@ describe('Modo Foco', () => {
   describe('on a free recording the framing works in the app and stays out of what leaves it', () => {
     beforeEach(() => {
       jest.requireMock('../../data/mmkv').__setPaid(false);
+      jest.requireMock('../../data/mmkv').__setNoticeShown(false);
     });
 
     test('the clip is shown with the framing on, as for a paid recording', async () => {
@@ -736,31 +740,42 @@ describe('Modo Foco', () => {
       expect(screen.getByRole('button', { name: 'Modo Foco' })).toBeTruthy();
     });
 
-    test('saving first lists what the video will not have, framing included, and nothing is exported yet', async () => {
+    test('saving first lists what PRO puts in the video, framing included, and nothing is exported yet', async () => {
       __setClip({ ...base, focus: ready });
       await open();
       await pressAction('Salvar na galeria');
       expect(camera.exportClip).not.toHaveBeenCalled();
-      expect(screen.getByText('No plano grátis, o vídeo sai com limites')).toBeTruthy();
-      expect(screen.getByText('Full HD (1080p) incluso')).toBeTruthy();
-      expect(screen.getByText('Sem som')).toBeTruthy();
-      expect(screen.getByText('Sem o Modo Foco')).toBeTruthy();
-      expect(screen.getByText('Com a marca do Repplay')).toBeTruthy();
+      expect(screen.getByText('Salve seus clipes com qualidade PRO')).toBeTruthy();
+      expect(screen.getByText('Seu clipe tem som e Modo Foco')).toBeTruthy();
+      expect(screen.getByLabelText('GRÁTIS: Sem som, Sem Modo Foco, HD, Com marca d’água')).toBeTruthy();
+      expect(screen.getByLabelText('PRO: Com som, Com Modo Foco, Full HD, Sem marca d’água')).toBeTruthy();
     });
 
-    test('"Continuar no plano grátis" exports Full HD at 1x with the mark, no sound and no framing', async () => {
+    test('"Continuar no plano grátis" exports HD at the chosen speed with the mark, no sound and no framing', async () => {
       __setClip({ ...base, focus: ready, edit: { speed: 2, muted: false } });
       await open();
       await pressAction('Salvar na galeria');
-      expect(screen.getByText('Sem a velocidade escolhida')).toBeTruthy();
-      expect(screen.queryByText('Sem som')).toBeNull(); // 2x is silent anyway
+      expect(screen.getByText('Seu clipe tem Modo Foco')).toBeTruthy(); // 2x is silent anyway
       await fireEvent.press(screen.getByRole('button', { name: 'Continuar no plano grátis' }));
       await act(async () => {});
       expect(camera.exportClip).toHaveBeenCalledTimes(1);
       expect(camera.exportClip).toHaveBeenCalledWith(
-        expect.objectContaining({ speed: 1, muted: true, watermark: true, width: 1920, height: 1080 }),
+        expect.objectContaining({ speed: 2, muted: true, watermark: true, width: 1280, height: 720 }),
       );
       expect(camera.exportClip.mock.calls[0][0].focus).toBeUndefined();
+      expect(repo.markFreeNoticeShown).toHaveBeenCalledWith('s1');
+    });
+
+    test('a later export of the same recording goes straight on, with no notice', async () => {
+      jest.requireMock('../../data/mmkv').__setNoticeShown(true);
+      __setClip({ ...base, focus: ready });
+      await open();
+      await pressAction('Salvar na galeria');
+      expect(screen.queryByText('Continuar no plano grátis')).toBeNull();
+      expect(screen.queryByText(/^Salvo em /)).toBeNull();
+      await act(async () => {});
+      expect(camera.exportClip).toHaveBeenCalledTimes(1);
+      expect(camera.exportClip).toHaveBeenCalledWith(expect.objectContaining({ width: 1280, height: 720, watermark: true }));
     });
 
     test('"Cancelar" leaves without exporting', async () => {
@@ -772,12 +787,12 @@ describe('Modo Foco', () => {
       expect(camera.exportClip).not.toHaveBeenCalled();
     });
 
-    test('with the framing switched off the notice does not list it', async () => {
+    test('with the framing switched off the notice still lists it, but marks only the sound as used', async () => {
       __setClip({ ...base, focus: ready, edit: { muted: false, focus: false } });
       await open();
       await pressAction('Salvar na galeria');
-      expect(screen.queryByText('Sem o Modo Foco')).toBeNull();
-      expect(screen.getByText('Sem som')).toBeTruthy();
+      expect(screen.getByText('Seu clipe tem som')).toBeTruthy();
+      expect(screen.getByLabelText('GRÁTIS: Sem som, Sem Modo Foco, HD, Com marca d’água')).toBeTruthy();
     });
   });
 
@@ -803,35 +818,6 @@ describe('Modo Foco', () => {
     __setClip({ ...base, focus: ready });
     await open();
     expect(screen.queryByText('Modo Foco: a câmera acompanha o lance')).toBeNull();
-  });
-});
-
-describe('the suggested cut', () => {
-  const suggested = { startMs: 48000, endMs: 60000 };
-
-  test('a clip opened with its suggestion plays from it, marked in the editor', async () => {
-    __setClip({ ...base, trim: suggested, cutSuggestion: suggested });
-    await open();
-    await act(async () => player.emit('timeUpdate', { currentTime: 0 }));
-    expect(player.currentTime).toBe(48);
-    await pressAction('Editar');
-    expect(jest.requireMock('../../components/TrimBar').__props.last.trim).toEqual(suggested);
-  });
-
-  test('a suggestion landing while the clip plays moves playback into it', async () => {
-    await open();
-    await act(async () => void repo.updateClip('c1', { cutSuggestion: suggested, trim: suggested }));
-    await act(async () => player.emit('timeUpdate', { currentTime: 35 }));
-    expect(player.currentTime).toBe(48);
-  });
-
-  test('a suggestion kept beside a cut the player chose changes nothing on screen', async () => {
-    __setClip({ ...base, trim: { startMs: 35000, endMs: 50000 } });
-    await open();
-    await act(async () => void repo.updateClip('c1', { cutSuggestion: suggested }));
-    player.currentTime = 40;
-    await act(async () => player.emit('timeUpdate', { currentTime: 40 }));
-    expect(player.currentTime).toBe(40);
   });
 });
 

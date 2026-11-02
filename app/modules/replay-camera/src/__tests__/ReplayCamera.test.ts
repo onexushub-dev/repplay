@@ -111,7 +111,7 @@ test('without the remote functions on native, the remote calls do nothing and no
 test('with the remote functions on native, the calls pass plain values through', () => {
   const remote = {
     remoteHostStart: jest.fn(),
-    remoteHostBeginPairing: jest.fn(() => ({ url: 'repplay://pair?h=h1', code: '042517', expiresAt: 9, qrPath: '/qr.png' })),
+    remoteHostBeginPairing: jest.fn(() => ({ url: 'reprize://pair?h=h1', code: '042517', expiresAt: 9, qrPath: '/qr.png' })),
     remoteHostPeers: jest.fn(() => [{ id: 'a', name: 'iPhone da Ana' }]),
     remoteHostRemove: jest.fn(),
     remoteSync: jest.fn(),

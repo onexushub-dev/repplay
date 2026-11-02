@@ -21,7 +21,7 @@ Later (not now): a "best moments" compilation built from the raw recording. Noth
 | # | Decision |
 |---|----------|
 | D1 | The compilation is not kept in the app: made on demand, then saved or shared, then the temporary file goes. |
-| D2 | Batch Salvar/Enviar is free for every plan. Compilar is paid: on the free plan the button shows a lock and opens the paywall. |
+| D2 | Batch Salvar/Enviar is free for every plan. Compilar is paid: on the free plan the button shows a lock and opens the paywall. A free batch Salvar/Enviar shows the free-export notice like a single export: the full panel on the recording's first export, a compact non-blocking notice after that (HD, no sound, no Modo Foco, watermark); see `docs/modelo-de-negocio-e-pagamentos.md`. |
 | D3 | Mixed orientations: the compilation takes the orientation most selected clips have (tie: the first clip's). Clips of the other orientation go in whole, centred, with the template bands. Nothing is cropped. |
 | D4 | Hard cuts between clips (no transitions) for now. |
 | D5 | Order: chronological (the recording's clip order). No manual reordering. |

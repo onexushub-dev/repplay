@@ -1,5 +1,5 @@
 import type { PaymentsClient, PaywallOutcome } from './client';
-import { EMPTY_SNAPSHOT, type Snapshot } from './types';
+import { EMPTY_SNAPSHOT, type Offering, type Snapshot } from './types';
 
 export function createFakeClient() {
   const listeners = new Set<(s: Snapshot) => void>();
@@ -9,6 +9,8 @@ export function createFakeClient() {
     failSnapshot: false,
     failPaywall: false,
     failRestore: false,
+    /** The offering of the last showPaywall call. */
+    lastOffering: undefined as Offering | undefined,
     /** When set, showPaywall waits for it (lets tests emit during the paywall). */
     paywallGate: undefined as Promise<void> | undefined,
     configure() {},
@@ -20,7 +22,8 @@ export function createFakeClient() {
       listeners.add(fn);
       return () => void listeners.delete(fn);
     },
-    async showPaywall(): Promise<PaywallOutcome> {
+    async showPaywall(offering: Offering): Promise<PaywallOutcome> {
+      fake.lastOffering = offering;
       if (fake.failPaywall) throw new Error('paywall crashed');
       if (fake.paywallGate) await fake.paywallGate;
       return fake.nextOutcome;

@@ -1,14 +1,23 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { LockIcon } from '../../components/icons';
 import { colors, fonts } from '../../theme/tokens';
 
-/** A tool panel's name and its one plain sentence. */
-export function PanelHead({ title, hint, right }: { title: string; hint: string; right?: ReactNode }) {
+/** A tool panel's name and its one plain sentence. `pro`: the "Pro" pill beside the title, on a tool a free export leaves out. */
+export function PanelHead({ title, hint, right, pro }: { title: string; hint: string; right?: ReactNode; pro?: string }) {
   return (
     <View style={styles.head}>
       <View style={styles.headText}>
-        <Text style={styles.title}>{title}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{title}</Text>
+          {pro !== undefined ? (
+            <View style={styles.pro} accessibilityLabel={pro}>
+              <LockIcon color={colors.onAccent} size={9} />
+              <Text style={styles.proText}>{pro}</Text>
+            </View>
+          ) : null}
+        </View>
         <Text style={styles.hint}>{hint}</Text>
       </View>
       {right}
@@ -16,7 +25,7 @@ export function PanelHead({ title, hint, right }: { title: string; hint: string;
   );
 }
 
-/** A choice in a panel row: lime when it is the current one. */
+/** A choice in a panel row: amber when it is the current one. */
 export function Choice({
   label,
   a11y,
@@ -52,6 +61,17 @@ export const panelStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headText: { flex: 1, gap: 2 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  pro: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    backgroundColor: colors.accent,
+    borderRadius: 999,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+  },
+  proText: { fontFamily: fonts.bodyBold, fontSize: 9, color: colors.onAccent },
   title: { fontFamily: fonts.displayBold, fontSize: 18, letterSpacing: 0.7, textTransform: 'uppercase', color: colors.text },
   hint: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
   choice: {

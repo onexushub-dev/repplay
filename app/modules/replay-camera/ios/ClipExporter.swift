@@ -91,7 +91,10 @@ enum ClipExporter {
 
     let videoComposition = AVMutableVideoComposition()
     videoComposition.renderSize = render
-    videoComposition.frameDuration = CMTime(value: 1, timescale: 30)
+    // The clip's own frame rate (60 for the default 1080p60): a fixed 30 dropped half the frames of a 60 fps clip.
+    let sourceFps = try await source.load(.nominalFrameRate)
+    let fps = FitRect.exportFrameRate(source: Double(sourceFps), speed: o.speed)
+    videoComposition.frameDuration = CMTime(value: 1, timescale: CMTimeScale(fps))
     videoComposition.instructions = [instruction]
 
     if let png = o.overlayPngPath, let image = UIImage(contentsOfFile: png)?.cgImage {
@@ -138,7 +141,7 @@ enum FocusFile {
           let startMs = (file["startMs"] as? NSNumber)?.doubleValue,
           let rows = file[aspect] as? [[NSNumber]]
     else {
-      NSLog("[Repplay] Modo Foco file unreadable: %@", path)
+      NSLog("[Reprize] Modo Foco file unreadable: %@", path)
       return []
     }
     let rects = rows.compactMap { row -> FocusRect? in

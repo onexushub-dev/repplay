@@ -21,7 +21,7 @@ describe('openPaywall', () => {
   it('opens the one paywall and tells the user when it fails', async () => {
     showPaywall.mockResolvedValue('error');
     await expect(openPaywall(t, 'upgrade_card')).resolves.toBe('error');
-    expect(showPaywall).toHaveBeenCalledWith();
+    expect(showPaywall).toHaveBeenCalledWith('default');
     expect(Alert.alert).toHaveBeenCalledWith(t('payments.paywallError'));
   });
   it.each(['cancelled', 'purchased', 'restored'])('stays silent on %s and returns it', async (outcome) => {
@@ -41,9 +41,9 @@ describe('openPaywall analytics', () => {
       order.push('showPaywall');
       return 'cancelled';
     });
-    await openPaywall(t, 'start_limit');
+    await openPaywall(t, 'locked_feature');
     expect(order).toEqual(['paywall_viewed', 'showPaywall']);
-    expect(sent()[0]).toEqual(['paywall_viewed', { source: 'start_limit' }]);
+    expect(sent()[0]).toEqual(['paywall_viewed', { source: 'locked_feature', offering: 'default' }]);
   });
 
   it('reports a purchase, and only a purchase, as purchase_completed', async () => {
@@ -52,11 +52,21 @@ describe('openPaywall analytics', () => {
     expect(sent().map(([name]) => name)).toEqual(['paywall_viewed', 'purchase_completed']);
   });
 
+  it('says which paywall was shown and bought: PRO or the Single Pass', async () => {
+    showPaywall.mockResolvedValue('purchased');
+    await openPaywall(t, 'export_limit', 'pass');
+    expect(showPaywall).toHaveBeenCalledWith('pass');
+    expect(sent()).toEqual([
+      ['paywall_viewed', { source: 'export_limit', offering: 'pass' }],
+      ['purchase_completed', { offering: 'pass' }],
+    ]);
+  });
+
   it('reports a failure as purchase_failed', async () => {
     showPaywall.mockResolvedValue('error');
     await openPaywall(t, 'upgrade_card');
     expect(sent().map(([name, props]) => [name, props])).toEqual([
-      ['paywall_viewed', { source: 'upgrade_card' }],
+      ['paywall_viewed', { source: 'upgrade_card', offering: 'default' }],
       ['purchase_failed', { reason: 'error' }],
     ]);
   });

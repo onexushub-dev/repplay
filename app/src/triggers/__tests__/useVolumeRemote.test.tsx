@@ -2,7 +2,26 @@ import { act, renderHook } from '@testing-library/react-native';
 
 import { AppState } from 'react-native';
 
-import { ARM_MS, useVolumeRemote } from '../useVolumeRemote';
+import { ARM_MS, SETTLE_MS, WATCH_MS, useVolumeRemote } from '../useVolumeRemote';
+
+// The phone's real volume (iOS): undefined by default, so the tests above run the library-only path (Android).
+// Native events (`onCaptureButton`, `onAudioChange`) are kept by name so a test can fire them.
+jest.mock('../../../modules/replay-camera', () => {
+  const events: Record<string, ((e: unknown) => void) | undefined> = {};
+  return {
+    __events: events,
+    outputVolume: jest.fn(() => undefined),
+    setCaptureButtons: jest.fn(() => true),
+    addReplayListener: jest.fn((event: string, fn: (e: unknown) => void) => {
+      events[event] = fn;
+      return {
+        remove: () => {
+          if (events[event] === fn) events[event] = undefined;
+        },
+      };
+    }),
+  };
+});
 
 type Listener = (r: { volume: number }) => void;
 
@@ -26,10 +45,16 @@ jest.mock('react-native-volume-manager', () => {
 });
 
 const lib = jest.requireMock('react-native-volume-manager');
+const camera = jest.requireMock('../../../modules/replay-camera');
 const press = (volume: number) => lib.__state.listeners.forEach((l: Listener) => l({ volume }));
+const fire = (event: string, body: unknown) => {
+  const fn = camera.__events[event];
+  if (fn) fn(body);
+};
 
 beforeEach(() => {
   jest.clearAllMocks();
+  camera.outputVolume.mockImplementation(() => undefined);
   lib.__state.listeners.clear();
   lib.__state.volume = 0.5;
 });
@@ -123,4 +148,191 @@ test('coming back to the front, the volume change iOS makes is ignored, and a pr
   await act(async () => press(0.3625));
   expect(onPress).toHaveBeenCalledTimes(1);
   jest.restoreAllMocks();
+});
+
+describe('2026-10-31 field logs', () => {
+  test('a jump to the earpiece volume (1.00) when the camera restarts is not a press', async () => {
+    const onPress = jest.fn();
+    await renderHook(() => useVolumeRemote(true, onPress));
+    jest.spyOn(Date, 'now').mockReturnValue(Date.now() + ARM_MS + 500);
+    await act(async () => press(1));
+    expect(onPress).not.toHaveBeenCalled();
+    jest.restoreAllMocks();
+  });
+
+  test('after the camera restarts or the audio route changes, volume changes are ignored for a moment', async () => {
+    const onPress = jest.fn();
+    await renderHook(() => useVolumeRemote(true, onPress));
+    const t0 = Date.now() + ARM_MS + 500;
+    const now = jest.spyOn(Date, 'now').mockReturnValue(t0);
+    await act(async () => fire('onAudioChange', { reason: 'cameraRestart' }));
+    now.mockReturnValue(t0 + 300);
+    await act(async () => press(0.5625)); // one step, but it is the system's
+    expect(onPress).not.toHaveBeenCalled();
+    now.mockReturnValue(t0 + ARM_MS + 500);
+    await act(async () => press(0.625));
+    expect(onPress).toHaveBeenCalledTimes(1);
+    jest.restoreAllMocks();
+  });
+
+  test('a press that arrives as a capture event counts at once and leaves the volume alone', async () => {
+    const onPress = jest.fn();
+    await renderHook(() => useVolumeRemote(true, onPress));
+    await act(async () => {});
+    lib.VolumeManager.setVolume.mockClear();
+    await act(async () => fire('onCaptureButton', { button: 'secondary' }));
+    expect(onPress).toHaveBeenCalledTimes(1);
+    expect(lib.VolumeManager.setVolume).not.toHaveBeenCalled();
+  });
+
+  test('capture buttons stay on until the last screen listening stops', async () => {
+    const first = await renderHook(() => useVolumeRemote(true, jest.fn()));
+    const second = await renderHook(() => useVolumeRemote(true, jest.fn()));
+    expect(camera.setCaptureButtons).toHaveBeenCalledWith(true);
+    await act(async () => first.unmount());
+    expect(camera.setCaptureButtons).not.toHaveBeenCalledWith(false);
+    await act(async () => second.unmount());
+    expect(camera.setCaptureButtons).toHaveBeenLastCalledWith(false);
+  });
+
+  test('no capture event counts once the hook stops', async () => {
+    const onPress = jest.fn();
+    const { unmount } = await renderHook(() => useVolumeRemote(true, onPress));
+    await act(async () => unmount());
+    await act(async () => fire('onCaptureButton', { button: 'primary' }));
+    expect(onPress).not.toHaveBeenCalled();
+  });
+});
+
+describe('iOS: the library slider goes stale (2026-10-28 field log)', () => {
+  // The library sets the volume through a hidden slider: setting the value it already holds does nothing, and a
+  // press does not update it. `real` is the phone's volume, `slider` what the library thinks it is.
+  const ios = { real: 0.5, slider: 0.5 };
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    ios.real = 0.5;
+    ios.slider = 0.5;
+    camera.outputVolume.mockImplementation(() => ios.real);
+    lib.VolumeManager.getVolume.mockImplementation(async () => ({ volume: ios.slider }));
+    lib.VolumeManager.setVolume.mockImplementation(async (v: number) => {
+      if (Math.abs(v - ios.slider) < 1e-6) return; // same value: the slider ignores it
+      ios.slider = v;
+      ios.real = v;
+      lib.__state.listeners.forEach((l: Listener) => l({ volume: v }));
+    });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  const advance = (ms: number) => act(async () => {
+    await jest.advanceTimersByTimeAsync(ms);
+  });
+  /** A remote press: the phone's volume goes up a step, the slider does not follow. */
+  const remote = () => act(async () => {
+    ios.real += 0.0625;
+    lib.__state.listeners.forEach((l: Listener) => l({ volume: ios.real }));
+  });
+
+  test('a parking that does not take is retried, so the volume does not creep up press after press', async () => {
+    const onPress = jest.fn();
+    const { unmount } = await renderHook(() => useVolumeRemote(true, onPress));
+    await advance(ARM_MS + 500);
+
+    for (let i = 0; i < 6; i += 1) {
+      await remote();
+      await advance(3 * SETTLE_MS + 500);
+    }
+
+    expect(onPress).toHaveBeenCalledTimes(6);
+    expect(ios.real).toBeCloseTo(0.5, 5);
+    await act(async () => unmount());
+  });
+
+  test('a volume that drifted away without a press is put back by the watch, and the next press counts', async () => {
+    const onPress = jest.fn();
+    const { unmount } = await renderHook(() => useVolumeRemote(true, onPress));
+    await advance(ARM_MS + 500);
+
+    ios.real = 1; // at the top a press changes nothing: the remote would look dead
+    await advance(WATCH_MS + 3 * SETTLE_MS + 500);
+    expect(ios.real).toBeCloseTo(0.5, 5);
+    expect(onPress).not.toHaveBeenCalled();
+
+    await remote();
+    expect(onPress).toHaveBeenCalledTimes(1);
+    await act(async () => unmount());
+  });
+
+  test('the previous screen putting back a full volume while this one arms does not become the parked level', async () => {
+    const onPress = jest.fn();
+    const { unmount } = await renderHook(() => useVolumeRemote(true, onPress));
+    await act(async () => {
+      ios.real = 1; // the screen that stopped listening restores the phone's volume, late
+      ios.slider = 1;
+      lib.__state.listeners.forEach((l: Listener) => l({ volume: 1 }));
+    });
+    await advance(ARM_MS + 3 * SETTLE_MS + 500);
+    expect(ios.real).toBeCloseTo(0.5, 5);
+    await advance(2 * WATCH_MS);
+    expect(ios.real).toBeCloseTo(0.5, 5); // the watch keeps it there, it does not push it back up
+    await remote();
+    expect(onPress).toHaveBeenCalledTimes(1);
+    await act(async () => unmount());
+  });
+
+  test('presses while the app is not in front (Control Center) push the volume up; back in front it is parked again', async () => {
+    let onChange: (state: string) => void = () => {};
+    jest.spyOn(AppState, 'addEventListener').mockImplementation(((_: string, fn: (state: string) => void) => {
+      onChange = fn;
+      return { remove: jest.fn() };
+    }) as never);
+    // The app's state as the hook reads it (the React Native mock may not have one).
+    const before = Object.getOwnPropertyDescriptor(AppState, 'currentState');
+    let current = 'active';
+    Object.defineProperty(AppState, 'currentState', { configurable: true, get: () => current });
+    const onPress = jest.fn();
+    const { unmount } = await renderHook(() => useVolumeRemote(true, onPress));
+    await advance(ARM_MS + 500);
+
+    current = 'inactive';
+    for (let i = 0; i < 8; i += 1) await remote(); // up to the top: 0.5 + 8 steps
+    expect(onPress).not.toHaveBeenCalled();
+    expect(ios.real).toBeCloseTo(1, 5);
+
+    current = 'active';
+    await act(async () => onChange('active'));
+    await advance(ARM_MS + 3 * SETTLE_MS + 500);
+    expect(ios.real).toBeCloseTo(0.5, 5);
+    await remote();
+    expect(onPress).toHaveBeenCalledTimes(1);
+    await act(async () => unmount());
+    jest.restoreAllMocks();
+    if (before) Object.defineProperty(AppState, 'currentState', before);
+    else delete (AppState as { currentState?: string }).currentState;
+  });
+
+  test('a route reporting 1.00 while arming, then going back silently, does not turn the next press into a jump', async () => {
+    // 2026-10-31 night log: "volume 0.55 ignorado (salto do sistema)". The earpiece route reported 1.00 while arming,
+    // the volume went back to 0.5 with no event, the parking changed nothing (the slider already held 0.5) and the next
+    // real press was measured from 1.00.
+    const onPress = jest.fn();
+    const { unmount } = await renderHook(() => useVolumeRemote(true, onPress));
+    await act(async () => lib.__state.listeners.forEach((l: Listener) => l({ volume: 1 }))); // ios.real stays 0.5
+    await advance(ARM_MS + 3 * SETTLE_MS + 500);
+    await remote();
+    expect(onPress).toHaveBeenCalledTimes(1);
+    await act(async () => unmount());
+  });
+
+  test('starting near the top parks in the middle using the real volume, not the stale slider', async () => {
+    ios.real = 0.9;
+    ios.slider = 0.75;
+    const { unmount } = await renderHook(() => useVolumeRemote(true, jest.fn()));
+    await advance(3 * SETTLE_MS + 500);
+    expect(ios.real).toBeCloseTo(0.5, 5);
+    await act(async () => unmount());
+  });
 });

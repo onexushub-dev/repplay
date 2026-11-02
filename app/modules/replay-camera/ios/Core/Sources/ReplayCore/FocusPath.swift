@@ -83,14 +83,18 @@ public struct FocusTuning {
   /// play instead of on everybody.
   public var activeSpread = false
   public var activeWeight = 2.0
+  /// The zoomed rect is made this much closer once sized and fitted (1.1 = 10% more zoom; the cap grows with it).
+  /// 2026-10-28: +10% kept every player in action in the frame on the references; +20% started cutting them.
+  public var zoomIn = 1.0
 
   public init() {}
   public static let standard = FocusTuning()
-  /// v14: what FocusAnalyzer uses since 2026-10-28, with the tiles finding the far players.
+  /// v14: what FocusAnalyzer uses since 2026-10-28, with the tiles finding the far players; 10% more zoom (v15).
   public static let action: FocusTuning = {
     var t = FocusTuning()
     t.activity = true
     t.activeSpread = true
+    t.zoomIn = 1.1
     return t
   }()
 }
@@ -183,6 +187,7 @@ public enum FocusPath {
       var w = zoom ? widths[i] : min(1, ratio * H / W)
       var h = w * W / (ratio * H)
       if h > 1 { h = 1; w = ratio * H / W }
+      if zoom && t.zoomIn > 1 { w /= t.zoomIn; h /= t.zoomIn }
       let left = min(max(x[i] - w / 2, 0), 1 - w)
       let top = min(max(y[i] - t.lift * h - h / 2, 0), 1 - h)
       return FocusRect(x: left, y: top, width: w, height: h)

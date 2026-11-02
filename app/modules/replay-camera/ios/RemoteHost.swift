@@ -15,11 +15,11 @@ final class RemoteHost: NSObject {
   static let rxUUID = CBUUID(string: "6E3F1002-8C1B-4F6E-9D4B-2A7C5E0B1A10")
   static let txUUID = CBUUID(string: "6E3F1003-8C1B-4F6E-9D4B-2A7C5E0B1A10")
   /// The advertised name says whether a pairing is open, so a remote that is pairing only talks to such phones.
-  static let advertisedName = "Repplay"
-  static let advertisedPairingName = "Repplay+"
+  static let advertisedName = "Reprize"
+  static let advertisedPairingName = "Reprize+"
 
-  /// Console.app (filter: subsystem `Repplay`, category `RemoteHost`) shows each step.
-  private static let log = Logger(subsystem: "Repplay", category: "RemoteHost")
+  /// Console.app (filter: subsystem `Reprize`, category `RemoteHost`) shows each step.
+  private static let log = Logger(subsystem: "Reprize", category: "RemoteHost")
   /// How often every connected remote hears from this phone, recording or not. The remote calls the link silent after 12 s.
   private static let beatEvery: TimeInterval = 5
   /// How long a "are you there?" waits for the answer.
@@ -67,7 +67,7 @@ final class RemoteHost: NSObject {
   private var links: [UUID: Link] = [:]
   /// Notifications waiting for room in the system queue, in order.
   private var outbox: [(frame: Data, central: CBCentral)] = []
-  private let trusted = TrustedPeers(store: KeychainPeerStore(account: "repplay.remote.controllers"))
+  private let trusted = TrustedPeers(store: KeychainPeerStore(account: "reprize.remote.controllers"))
   private var offer: PairingOffer?
   private var wanted = false
   private var lastState: RemoteMessage = .state(recording: false, clipCount: 0, startedAt: nil)
@@ -481,6 +481,9 @@ extension RemoteHost: CBPeripheralManagerDelegate {
     // A fresh subscription is a fresh link: whatever this central said before does not count any more.
     links.removeValue(forKey: central.identifier)
     _ = linkFor(central)
+    // Ask for the shortest connection interval: a command and its answer cross faster, and a weak link at a distance
+    // retries sooner. It costs a little more battery on both phones, only while the remote is linked.
+    peripheral.setDesiredConnectionLatency(.low, for: central)
   }
 
   func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didUnsubscribeFrom characteristic: CBCharacteristic) {

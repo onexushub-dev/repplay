@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reprize: A ou C</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root { --ink:#0A0A0A; --white:#FFFFFF; --amber:#FFB000; --amber-d:#946200; --surface:#141414; --line:#2E2E2E; --muted:#B3B3B3; color-scheme:dark; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--ink); color:var(--white); font:16px/1.55 Manrope, system-ui, sans-serif; }
+main { max-width:1280px; margin:0 auto; padding:48px 24px 112px; }
+.eyebrow { font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+h1 { font:800 clamp(40px, 6vw, 68px)/1 "Barlow Condensed", sans-serif; text-transform:uppercase; margin:12px 0 0; }
+h1 em { font-style:normal; color:var(--amber); }
+.lead { color:var(--muted); max-width:70ch; margin:16px 0 0; }
+.base { display:flex; gap:28px; align-items:center; margin-top:36px; padding:24px 28px; background:var(--surface); border:1px solid var(--line); border-radius:20px; flex-wrap:wrap; }
+.base .sy { width:150px; height:auto; } .base p { margin:0; max-width:62ch; color:var(--muted); } .base b { color:var(--white); }
+.cols { display:grid; grid-template-columns:1fr 1fr; gap:28px; margin-top:44px; }
+.col { display:grid; gap:14px; align-content:start; }
+.ch { display:flex; gap:12px; align-items:baseline; } .ch .l { font:800 36px/1 "Barlow Condensed", sans-serif; color:var(--amber); } .ch h2 { margin:0; font-size:24px; }
+.idea { margin:0; color:var(--muted); min-height:3.1em; }
+.tile { border-radius:16px; display:flex; align-items:center; justify-content:center; padding:28px; }
+.tile.hero { background:var(--surface); border:1px solid var(--line); padding:44px 28px; } .tile .lk { width:100%; height:auto; }
+.vers { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.v { margin:0; border-radius:14px; padding:22px 18px 12px; display:flex; flex-direction:column; gap:14px; }
+.v .lk { width:100%; height:auto; } .v figcaption { font-size:12px; font-weight:600; }
+.v.d { border:1px solid var(--line); } .v.d figcaption, .v.g figcaption { color:#D0D0D0; } .v.l figcaption { color:#555; } .v.a figcaption { color:var(--ink); }
+.pair { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.dk { background:var(--surface); border:1px solid var(--line); } .zm { width:100%; height:auto; }
+.smalls { flex-direction:column; align-items:flex-start; gap:14px; }
+.sm { display:flex; align-items:center; gap:12px; } .sm .wo { height:auto; } .sm small { color:var(--muted); font-size:12px; white-space:nowrap; }
+h3 { font:800 36px/1 "Barlow Condensed", sans-serif; text-transform:uppercase; margin:72px 0 16px; }
+.tw { overflow-x:auto; border-top:2px solid var(--white); padding-top:4px; }
+table { width:100%; border-collapse:collapse; font-size:15px; }
+thead th { text-align:left; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); padding:12px 14px 10px 0; border-bottom:1px solid var(--line); }
+tbody th { text-align:left; font-weight:700; width:200px; } tbody th, td { padding:14px 14px 14px 0; border-bottom:1px solid var(--line); vertical-align:top; } td { color:#DADADA; }
+.icons { display:flex; gap:28px; flex-wrap:wrap; align-items:flex-end; background:#E9E9E9; border-radius:20px; padding:28px; } .icons .lead { color:#444 !important; }
+.icons figure { margin:0; text-align:center; } .icons svg { width:128px; height:128px; display:block; } .icons figcaption { color:#444; font-size:13px; margin-top:10px; }
+.px { display:flex; gap:16px; align-items:flex-end; }
+.verdict { background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:26px 30px; max-width:86ch; }
+.verdict p { margin:0 0 10px; color:#DADADA; } .verdict p:last-child { margin:0; } .verdict b { color:var(--white); }
+@media (max-width:900px) { .cols, .pair { grid-template-columns:1fr; } }
+</style></head>
+<body><main>
+  <div class="eyebrow">Reprize · comparativo de logo · paleta Placar</div>
+  <h1>A ou C, <em>lado a lado.</em></h1>
+  <p class="lead">Os dois caminhos com o retroceder sobreposto da rodada 2 e as cores do guia Placar: Ink, Branco, Âmbar e Âmbar escuro. O símbolo é o mesmo nos dois; muda só o detalhe do nome.</p>
+  <div class="base">%SYMBOL%<p><b>Símbolo comum aos dois.</b> O R com o retroceder duplo sobreposto e o play em âmbar. No fundo claro, o play passa para o âmbar escuro: âmbar nunca vai sobre branco.</p></div>
+  <div class="cols">%A%%C%</div>
+  <h3>Comparação</h3>
+  <div class="tw"><table><thead><tr><th>Critério</th><th>A · Z de volta</th><th>C · P de play</th></tr></thead><tbody>%TABLE%</tbody></table></div>
+  <h3>Ícone (igual nos dois)</h3>
+  <div class="icons">%ICONS%<div><div class="px">%PX%</div><p class="lead" style="margin-top:10px;font-size:13px">64 · 48 · 32 · 24 px</p></div></div>
+  <h3>Leitura</h3>
+  <div class="verdict">
+    <p><b>C é o mais coerente com o guia Placar.</b> A cor fica sempre no play, no símbolo e no nome, e a marca parece um sistema só. É a escolha segura.</p>
+    <p><b>A é o mais útil para o nome.</b> O z em âmbar ensina a escrita e cria um grafismo próprio. O custo é abrir uma exceção na regra do “único elemento colorido” e tirar um pouco do protagonismo do símbolo.</p>
+    <p>Se a prioridade é fixar “Reprize” com z, A. Se é consistência e continuidade com o Repplay, C.</p>
+  </div>
+</main></body></html>

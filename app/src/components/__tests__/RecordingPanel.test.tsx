@@ -14,6 +14,7 @@ jest.mock('../../data/mmkv', () => ({
 jest.mock('../../../modules/replay-camera', () => ({
   addReplayListener: jest.fn(() => ({ remove: jest.fn() })),
   setScreenEconomy: jest.fn(),
+  getWatchStatus: jest.fn(() => 'unsupported'),
 }));
 jest.mock('../../session/SessionContext', () => ({ useSession: jest.fn() }));
 
@@ -54,7 +55,10 @@ test('the count is shown in a small pill, not over the preview', async () => {
 test('tells the player clearly how to save', async () => {
   session({});
   await render(<Recording />);
-  expect(screen.getByText('Toque na tela para salvar o clipe')).toBeTruthy();
+  const line = screen.getByText('Toque na tela para salvar os últimos 30s');
+  // One line on every phone: it shrinks to fit instead of wrapping (2026-11-01, iPhone XR).
+  expect(line.props.numberOfLines).toBe(1);
+  expect(line.props.adjustsFontSizeToFit).toBe(true);
 });
 
 test('tapping the screen saves a clipe', async () => {
@@ -134,22 +138,28 @@ test('the saved popup tells the length the clip really has, not the length asked
   expect(screen.queryByText(/60s guardados/)).toBeNull();
 });
 
-test('the hint lists the triggers that are on and the clip length', async () => {
+test('the hint says the clip length and shows one tag per way that is on, without a line of "ou"', async () => {
   session({ paid: true });
   await render(<Recording clipSeconds={45} gesture={false} voice />);
-  expect(screen.getByText('Últimos 45s prontos · ou diga “salvar” · ou use o controle')).toBeTruthy();
+  expect(screen.getByText('Toque na tela para salvar os últimos 45s')).toBeTruthy();
+  expect(screen.getByText('Diga “salvar”')).toBeTruthy();
+  expect(screen.getByText('Controle')).toBeTruthy();
+  expect(screen.queryByText('Acene')).toBeNull();
+  expect(screen.queryByText(/ ou /)).toBeNull();
 });
 
-test('the arms-up hint shows when the gesture is on', async () => {
+test('the wave tag shows when the gesture is on', async () => {
   session({ paid: true });
   await render(<Recording clipSeconds={30} gesture voice={false} />);
-  expect(screen.getByText('Últimos 30s prontos · ou acene com os braços · ou use o controle')).toBeTruthy();
+  expect(screen.getByText('Acene')).toBeTruthy();
+  expect(screen.queryByText('Diga “salvar”')).toBeNull();
 });
 
-test('in a free game the hint leaves the Bluetooth remote out: it is a Pro trigger', async () => {
+test('in a free game the Bluetooth remote has its tag too: it is free', async () => {
   session({ paid: false });
   await render(<Recording clipSeconds={15} gesture voice={false} />);
-  expect(screen.getByText('Últimos 15s prontos · ou acene com os braços')).toBeTruthy();
+  expect(screen.getByText('Acene')).toBeTruthy();
+  expect(screen.getByText('Controle')).toBeTruthy();
 });
 
 test('a remote phone asking to end the recording ends it like the hold button does', async () => {
@@ -216,7 +226,7 @@ describe('screen economy', () => {
     await act(async () => jest.advanceTimersByTime(20_000));
     expect(screen.getByTestId('screen-economy')).toBeTruthy();
     expect(screen.getByText('Tela em economia para não esquentar. Toque para acender a tela.')).toBeTruthy();
-    expect(screen.queryByText('Toque na tela para salvar o clipe')).toBeNull();
+    expect(screen.queryByText(/Toque na tela para salvar/)).toBeNull();
     expect(setScreenEconomy).toHaveBeenLastCalledWith(true);
     jest.useRealTimers();
   });
@@ -316,6 +326,12 @@ describe('heat tip', () => {
     await view.rerender(<Recording />);
     expect(screen.queryByText(tip)).toBeNull();
     jest.useRealTimers();
+  });
+
+  test('shown when the phone gets hot with nothing left to step down (Full HD 30 is the floor)', async () => {
+    session({ thermal: { level: 'serious', degraded: false, quality: '1080p30' } });
+    await render(<Recording />);
+    expect(screen.getByText(tip)).toBeTruthy();
   });
 
   test('not shown while cool, nor next to the step-down banner', async () => {

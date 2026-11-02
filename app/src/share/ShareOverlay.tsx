@@ -10,8 +10,11 @@ import type { Rect as Box } from './layout';
 export const SAFE_BOTTOM = 340;
 const GRADIENT_MAX = SAFE_BOTTOM + 520;
 const GRADIENT_SHARE = 0.6;
-/** The logo is this share of the frame's short side, so it reads the same in a 720 and in a 1080 export, vertical or landscape. */
-export const LOGO_SHARE = 0.272;
+/**
+ * The logo is this share of the frame's short side, so it reads the same in a 720 and in a 1080 export, vertical or
+ * landscape. Kept small: the free plan's mark is meant to be discreet (about two thirds of the first size, 0.272).
+ */
+export const LOGO_SHARE = 0.18;
 /** Room around the logo inside the dark pill, as a share of the frame's short side. */
 const PAD_X = 0.021;
 const PAD_Y = 0.011;
@@ -85,7 +88,7 @@ export const ShareOverlay = forwardRef<ComponentRef<typeof View>, Props>(functio
             },
           ]}>
           <Image
-            accessibilityLabel="Repplay"
+            accessibilityLabel="Reprize"
             fadeDuration={0}
             resizeMode="contain"
             source={BRAND_LOGO}
@@ -99,5 +102,6 @@ export const ShareOverlay = forwardRef<ComponentRef<typeof View>, Props>(functio
 
 const styles = StyleSheet.create({
   band: { backgroundColor: colors.ground },
-  mark: { position: 'absolute', backgroundColor: 'rgba(15,16,13,0.8)', borderRadius: 999 },
+  // Discreet: a lighter pill and a slightly see-through logo.
+  mark: { position: 'absolute', backgroundColor: 'rgba(12,12,12,0.55)', borderRadius: 999, opacity: 0.85 },
 });

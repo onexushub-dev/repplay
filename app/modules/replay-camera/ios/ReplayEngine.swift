@@ -35,7 +35,7 @@ final class ReplayEngine {
   private var generation = 0
   private var pendingSaves: [PendingSave] = []
   private var lens = "ultraWide"
-  /// Steps the recording down as the phone heats up (1080p60 → 1080p30 → 720p30). Only touched on `thermalQueue`.
+  /// Steps the recording down as the phone heats up (1080p60 → 1080p30, never below Full HD). Only touched on `thermalQueue`.
   private var ladder = ThermalLadder(requested: "1080p60", state: .nominal, now: 0)
   private let thermalQueue = DispatchQueue(label: "replay.thermal")
   /// Bumped per session, so a recheck scheduled by an old session does nothing.
@@ -250,6 +250,13 @@ final class ReplayEngine {
     observers.append(center.addObserver(forName: AVCaptureSession.interruptionEndedNotification, object: capture.session, queue: nil) {
       [weak self] _ in self?.emit?("onResumed", [:])
     })
+    // The volume remote reads presses as volume changes, and a new audio route reports a volume of its own (the earpiece
+    // at 1.00 in the 2026-10-31 log): JS ignores volume changes for a moment after one (`onAudioChange`).
+    observers.append(center.addObserver(forName: AVAudioSession.routeChangeNotification, object: nil, queue: nil) {
+      [weak self] note in
+      let raw = (note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? NSNumber)?.uintValue ?? 0
+      self?.emit?("onAudioChange", ["reason": "route \(raw)"])
+    })
     observeAudioForDiag(center) // TEMP(diag-remote)
   }
 
@@ -309,8 +316,8 @@ final class ReplayEngine {
 
   private static func uptime() -> TimeInterval { ProcessInfo.processInfo.systemUptime }
 
-  /// Thermal work, item 3: `fair` slows the gesture checks; `serious` halves the frame rate first and drops to 720p30
-  /// only if it stays `serious` for two minutes; `critical` stops (`ThermalLadder`).
+  /// Thermal work, item 3: `fair` slows the gesture checks; `serious` for two minutes halves the frame rate (never
+  /// below Full HD); `critical` stops (`ThermalLadder`).
   private func thermalChanged() {
     thermalQueue.async { [weak self] in
       guard let self, self.running else { return }
@@ -331,7 +338,8 @@ final class ReplayEngine {
       case .none:
         break
       }
-      // Still `serious` later? Look again when the next step would be allowed: no notification comes by itself.
+      // Still `serious` later? Look again when a step would be allowed: no notification comes by itself while the
+      // level stays the same.
       if state == .serious && !self.thermalRecheck {
         self.thermalRecheck = true
         let epoch = self.thermalEpoch
@@ -347,6 +355,9 @@ final class ReplayEngine {
 
   /// Closes the writer and reopens the camera at `quality`; saves waiting on the old writer fail (the UI says so).
   private func restartCapture(quality: String) {
+    // Before the camera stops: its audio restarts with it and moves the volume the remote reads (a false press at 10:19
+    // in the 2026-10-31 log). JS stops reading volume changes as presses until it has settled.
+    emit?("onAudioChange", ["reason": "cameraRestart"])
     diag("câmera: reiniciando em \(quality) (calor) — \(Self.audioState())") // TEMP(diag-remote)
     capture.stop()
     capture.queue.async {

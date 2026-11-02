@@ -12,7 +12,7 @@ Itens adiados nas revisões finais. Nada aqui bloqueia o uso, mas vale resolver 
 
 ## Plano 2 — telas e gatilhos
 - Erros nativos que não são de calor aparecem todos como "erro na câmera" (LOW_STORAGE no meio do jogo deveria dizer pouco espaço).
-- Toque duplo em "Desfazer" pode descontar dois lances; toque duplo em "Começar jogo" pode iniciar duas vezes.
+- Toque duplo em "Desfazer" pode descontar dois clipes; toque duplo em "Começar jogo" pode iniciar duas vezes.
 - Voltar (Android) na tela de erro ou durante o encerramento pergunta de novo se quer encerrar.
 - `onError` fora da gravação marca a sessão como encerrada na tela de posicionar.
 - Ícones de gatilho na gravação aparecem ativos mesmo com o gesto desligado.
@@ -71,7 +71,6 @@ Itens adiados nas revisões finais. Nada aqui bloqueia o uso, mas vale resolver 
 - Checklist de campo da spec (§8): contra-ataque, jogada parada, público perto da quadra, jogo inteiro com calor e bateria.
 - Story a partir de clipe horizontal com o enquadramento vertical (decisão própria: muda o "nunca cortar a quadra").
 - Bola por esporte (Create ML ou modelo Apache 2.0; nunca Ultralytics/AGPL no app).
-- Modo Foco pago: entra no `entitlement` antes da loja.
 - (revisão) Espelhar o zoom manual nos valores animados em `onChange`, não em `useEffect` (1 quadro de atraso na pinça e possível piscada do quadro inteiro ao assumir o enquadramento).
 - (revisão) `focusQueue.ensure` deve pôr o clipe aberto na frente da fila (hoje espera atrás do acúmulo de um jogo quente).
 - (revisão) Testar o filtro de pessoas paradas diretamente (o teste da arquibancada distingue 0,46 de 0,50 só).
@@ -99,6 +98,7 @@ Itens adiados nas revisões finais. Nada aqui bloqueia o uso, mas vale resolver 
 - Pendências antes do app: testar com basquete e outros ângulos de câmera; gatilho falso do gesto (saque com braços para cima) gera clipe sem lance no fim.
 - No app (2026-10-27, só iOS): a análise do Modo Foco grava o movimento da quadra (`CourtMotion.swift`) e `src/cutSuggestion/` aplica o corte sugerido quando o clipe ainda está com o corte original. Chave: `CUT_SUGGESTION_ENABLED`. Para remover: a pasta `src/cutSuggestion/`, `CourtMotion.swift` (+ testes), o `motion` em `FocusAnalyzer.swift`, `analyzed` na fila do Modo Foco, `cutSuggestion` no schema/repo e o bloco da sugestão em `app/clip/[id].tsx`.
 - Ainda não feito: "Compilar melhores momentos" automático; Android.
+- **Removido do app em 2026-11-01**: o corte sugerido não acertava os melhores momentos com segurança e atrapalhava rever e editar o clipe. Saíram `src/cutSuggestion/`, `CourtMotion.swift` (+ testes), o `motion` do arquivo do Modo Foco, o `analyzed` da fila, `cutSuggestion` do schema/repo e o bloco do editor. Na abertura do app, `repo.forgetCutSuggestions()` devolve ao corte original os clipes que a sugestão tinha cortado. O protótipo em `docs/highlights/` continua como referência se a ideia voltar.
 
 ## Depois dos testes do gesto: retestar o Modo Foco com a busca em partes do quadro
 - Fazer quando os testes de campo do gesto terminarem (`docs/superpowers/spikes/gesture-distance/`).
@@ -117,10 +117,14 @@ Itens adiados nas revisões finais. Nada aqui bloqueia o uso, mas vale resolver 
 - Android: o gesto ainda é o v1 (ML Kit, uma pessoa, quadro de 640x360) — sem partes do quadro, acompanhamento por pessoa nem FireGate.
 - A `/spike` ganhou o teste do gesto (`src/diag/gestureTest.ts`): sai junto com a rota antes da loja (item do Plano 1).
 
+## Modo Foco — zoom e variante "lance" (2026-10-28)
+- No app (v15, `rules: v15-acao-zoom110`): `FocusTuning.action.zoomIn = 1.1`, 10% a mais de zoom sobre o v14 "ação" (o limite sobe de 1,5x para 1,65x). Teste de zoom uniforme em 3 vídeos (`tools/zoom-compare.sh`, `renders/zoom/`): +10% manteve quem está em ação sempre no quadro (parados cortados 3–7% do tempo); +20% já corta jogadores 12–14% do tempo; +30% a +50%, um terço a dois terços. Subir só o limite (1,65x–2x) não muda quase nada: quem define o zoom é a distância entre os jogadores.
+- Adiado (retomar junto com a detecção de bola): variante "lance" em `focus_variant.py` (`--set lance=1 --set maxZoom=2 --set lanceTop=2 --set lanceMinWeight=1.5 --set widthHoldMs=0`): fecha nos 2 jogadores mais rápidos com 0,8 s de antecipação. Zoom típico 1,5–1,8x, jogadores em ação cortados ≤5%, mas os parados saem do quadro 24–48% do tempo e a câmera se move 2–5x mais. Comparar com `tools/variant-compare.sh <vídeo> lance ...`. Ideias para depois: peso extra para o golpe (pose: pulso rápido acima do ombro), som da batida, escolher por esporte (lance no basquete/futebol, atual no beach tennis/vôlei).
+
 ## Métricas de uso anônimas (PostHog, 2026-10-28)
 Antes de lançar com a chave:
 - No projeto do PostHog, ligar "Discard client IP data" (o app já desliga o GeoIP, mas o IP da requisição só deixa de ser guardado com essa opção).
-- Criar o projeto no PostHog Cloud (host EU) e colocar a chave pública em `REPPLAY_POSTHOG_KEY` (`app/.env.local` e no EAS). Sem a chave o app não envia nada.
+- Criar o projeto no PostHog Cloud (host EU) e colocar a chave pública em `REPRIZE_POSTHOG_KEY` (`app/.env.local` e no EAS). Sem a chave o app não envia nada.
 - Gerar um novo dev client: o SDK (`posthog-react-native`, `expo-application`) é nativo.
 - Passar pelo app com a chave e conferir em Live Events: cada evento uma vez, só com as propriedades do spec, nenhum perfil de pessoa criado, nenhum IP.
 - Política de privacidade: uma linha sobre métricas anônimas de uso e a chave em "Minhas gravações".
@@ -131,4 +135,3 @@ Adiado:
 - `session_summary.guides` fica sempre em 0: o app não tem chave de guia.
 - `paywall_viewed` com origem `onboarding` não existe ainda: nenhuma tela das stories abre o paywall.
 - Exportação em lote conta no `session_summary`, mas não gera `export_completed` por clipe.
-- `cut_suggestion_applied` conta quando o corte sugerido substitui um corte intocado, não quando a pessoa o escolhe depois.

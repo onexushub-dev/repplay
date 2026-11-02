@@ -1,7 +1,7 @@
 import AVFoundation
 import Speech
 
-/// Listens for the save command in the app's language ("salvar"/"gravar" in Portuguese, "save"/"record" in English)
+/// Listens for the save command in the app's language ("salvar" in Portuguese, "save" in English)
 /// in the game's own audio (the capture session's microphone samples), strictly on the device (court audio never goes to a server). Each recognition task is restarted every ~50s (Apple's
 /// limit is about a minute) and right after a command, which also clears the transcript.
 final class VoiceTrigger {
@@ -56,7 +56,13 @@ final class VoiceTrigger {
   }
 
   /// Call with every audio sample buffer from the capture session.
-  func consider(_ buffer: CMSampleBuffer) {
+  func consider(_ buffer: CMSampleBuffer) { feed { $0.appendAudioSampleBuffer(buffer) } }
+
+  /// The same for microphone buffers from an audio engine (the remote phone). The buffer must be one its owner does not
+  /// reuse (a copy of the tap's).
+  func consider(_ buffer: AVAudioPCMBuffer) { feed { $0.append(buffer) } }
+
+  private func feed(_ append: @escaping (SFSpeechAudioBufferRecognitionRequest) -> Void) {
     queue.async {
       guard self.enabled, SFSpeechRecognizer.authorizationStatus() == .authorized,
             let recognizer = self.recognizer, recognizer.isAvailable, recognizer.supportsOnDeviceRecognition,
@@ -64,7 +70,7 @@ final class VoiceTrigger {
       if self.request == nil || Date().timeIntervalSince(self.startedAt) > Self.restartAfter {
         self.startTask(recognizer)
       }
-      self.request?.appendAudioSampleBuffer(buffer)
+      if let request = self.request { append(request) }
     }
   }
 

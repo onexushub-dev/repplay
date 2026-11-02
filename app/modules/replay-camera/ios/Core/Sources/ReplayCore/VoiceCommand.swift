@@ -10,15 +10,15 @@ public enum VoiceLocale: String, CaseIterable {
 }
 
 /// Finds the spoken save command in a speech transcript, as whole words, ignoring case and accents
-/// (so "salvou", "gravando", "saved", "recording" and court talk don't fire it).
+/// (so "salvou", "salvando", "saved", "saving" and court talk don't fire it).
 public enum VoiceCommand {
-  /// The command words per language. Kept small on purpose: "save" is also common court talk ("great save!"),
-  /// so if field tests show false triggers, change the English list here (and the app's VOICE_WORDS and the
-  /// speech permission text in app/locales).
+  /// The command word per language: only the one that says what it does (2026-11-01: "gravar"/"record" dropped, the
+  /// app saves a clip, it does not start recording). "save" is also common court talk ("great save!"), so if field
+  /// tests show false triggers, change it here (and the app's VOICE_WORD and the speech permission text in app/locales).
   public static func words(for locale: VoiceLocale) -> [String] {
     switch locale {
-    case .ptBR: return ["salvar", "gravar"]
-    case .enUS: return ["save", "record"]
+    case .ptBR: return ["salvar"]
+    case .enUS: return ["save"]
     }
   }
 

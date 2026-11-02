@@ -24,10 +24,11 @@ export function voiceLocale(locale: AppLocale): VoiceLocale {
 }
 
 /**
- * The spoken save commands shown in the UI, per app language. The native list lives in ReplayCore's
+ * The spoken save command shown in the UI, per app language (one word since 2026-11-01: "salvar"/"save"; "gravar"/
+ * "record" said the wrong thing, the app saves a clip). The native list lives in ReplayCore's
  * VoiceCommand.swift and the permission prompt in app/locales/*.json: change all three together.
  */
-export const VOICE_WORDS: Record<AppLocale, readonly [string, string]> = {
-  'pt-BR': ['salvar', 'gravar'],
-  en: ['save', 'record'],
+export const VOICE_WORD: Record<AppLocale, string> = {
+  'pt-BR': 'salvar',
+  en: 'save',
 };

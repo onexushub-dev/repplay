@@ -7,7 +7,7 @@ const SECRET = /^[A-Za-z0-9_-]{22}$/;
 const CODE = /^[0-9]{6}$/;
 
 /**
- * Reads the parameters of `repplay://pair?h=...&s=...&n=...`, the link the camera phone shows as a QR code.
+ * Reads the parameters of `reprize://pair?h=...&s=...&n=...`, the link the camera phone shows as a QR code.
  * Null when the host id or the secret is missing or malformed; a missing name only falls back to a generic one.
  */
 export function parsePairLink(params: { h?: string; s?: string; n?: string }): PairLink | null {
@@ -26,9 +26,9 @@ export function parseCode(input: string): string | null {
   return CODE.test(digits) ? digits : null;
 }
 
-/** The text read from the QR code (`repplay://pair?h=...&s=...&n=...`), or null when it is anything else. */
+/** The text read from the QR code (`reprize://pair?h=...&s=...&n=...`), or null when it is anything else. */
 export function parsePairUrl(text: string): PairLink | null {
-  const match = /^repplay:\/\/pair\?(.*)$/.exec(text.trim());
+  const match = /^reprize:\/\/pair\?(.*)$/.exec(text.trim());
   if (match === null) return null;
   const params: { h?: string; s?: string; n?: string } = {};
   for (const pair of match[1].split('&')) {

@@ -1,6 +1,7 @@
 import ReplayCameraModule from './ReplayCameraModule';
 import type {
   AnalyzeFocusOptions,
+  BluetoothConnected,
   DeviceUpright,
   ExportClipOptions,
   ExportedClip,
@@ -68,6 +69,36 @@ export function setScreenEconomy(on: boolean): void {
   if (typeof set === 'function') set.call(ReplayCameraModule, on);
 }
 
+/** Screen economy on the remote phone (iOS): the brightness goes down to 15% (never up); false gives it back. */
+export function setRemoteScreenDim(on: boolean): void {
+  const set = ReplayCameraModule.setRemoteScreenDim;
+  if (typeof set === 'function') set.call(ReplayCameraModule, on);
+}
+
+/** The phone's real output volume (0-1), or undefined where the module can't tell (Android, older builds). */
+export function outputVolume(): number | undefined {
+  const get = ReplayCameraModule.outputVolume;
+  return typeof get === 'function' ? get.call(ReplayCameraModule) : undefined;
+}
+
+/**
+ * While true, a volume button or Bluetooth selfie remote press arrives as `onCaptureButton` instead of changing the
+ * volume (iOS 17.2+, camera running). Returns whether this phone delivers them (false on Android and older builds).
+ */
+export function setCaptureButtons(enabled: boolean): boolean {
+  const set = ReplayCameraModule.setCaptureButtons;
+  return typeof set === 'function' ? set.call(ReplayCameraModule, enabled) : false;
+}
+
+/**
+ * The BLE peripherals iOS holds connected now (how the Bluetooth selfie remote is seen); undefined where unsupported
+ * (Android, older builds). `ask` false never makes iOS ask for Bluetooth: the state is then "notDetermined".
+ */
+export async function bluetoothConnected(ask: boolean): Promise<BluetoothConnected | undefined> {
+  const probe = ReplayCameraModule.bluetoothConnected;
+  return typeof probe === 'function' ? probe.call(ReplayCameraModule, ask) : undefined;
+}
+
 /** TEMP(diag-remote): the audio session the Bluetooth remote depends on, in one line; empty where unsupported. */
 export function diagAudioState(): string {
   const get = ReplayCameraModule.diagAudioState;
@@ -107,7 +138,7 @@ export function watchSignal(saved: boolean): void {
   ReplayCameraModule.watchSignal(saved);
 }
 
-/** Listens for the save command in `locale` ("salvar"/"gravar" or "save"/"record") in the game's audio (iOS; no-op on Android for now). */
+/** Listens for the save command in `locale` ("salvar" or "save") in the game's audio (iOS; no-op on Android for now). */
 export function setVoiceEnabled(enabled: boolean, locale: VoiceLocale): void {
   ReplayCameraModule.setVoiceEnabled(enabled, locale);
 }
@@ -257,7 +288,7 @@ export function remoteControllerForget(): void {
   if (ReplayCameraModule.remoteControllerForget) ReplayCameraModule.remoteControllerForget();
 }
 
-/** Pairs with the camera phone named in a scanned `repplay://pair` link; the result arrives as `onRemotePairing`. */
+/** Pairs with the camera phone named in a scanned `reprize://pair` link; the result arrives as `onRemotePairing`. */
 export function remoteControllerPairWithLink(hostId: string, secret: string, hostName: string): void {
   if (ReplayCameraModule.remoteControllerPairWithLink) {
     ReplayCameraModule.remoteControllerPairWithLink(hostId, secret, hostName);
@@ -287,6 +318,21 @@ export function remoteControllerStartRecording(): void {
 /** Remote phone: ask for pictures of the camera view (say it again every second while open) or stop them. */
 export function remoteControllerPreview(on: boolean): void {
   if (ReplayCameraModule.remoteControllerPreview) ReplayCameraModule.remoteControllerPreview(on);
+}
+
+/** Remote phone: listen for the save command (heard ones arrive as `onRemoteVoice`) or stop. */
+export function remoteVoiceSetEnabled(on: boolean, locale: VoiceLocale): void {
+  if (ReplayCameraModule.remoteVoiceSetEnabled) ReplayCameraModule.remoteVoiceSetEnabled(on, locale);
+}
+
+/** Current microphone permission, without asking ('denied' where the module cannot tell). */
+export function getMicrophonePermission(): 'granted' | 'denied' | 'undetermined' {
+  return ReplayCameraModule.getMicrophonePermission ? ReplayCameraModule.getMicrophonePermission() : 'denied';
+}
+
+/** Asks for the microphone; resolves true when granted. */
+export function requestMicrophonePermission(): Promise<boolean> {
+  return ReplayCameraModule.requestMicrophonePermission ? ReplayCameraModule.requestMicrophonePermission() : Promise.resolve(false);
 }
 
 /** The name this phone shows to the other one while pairing ("iPhone XR#1234" unless the person renamed it). */

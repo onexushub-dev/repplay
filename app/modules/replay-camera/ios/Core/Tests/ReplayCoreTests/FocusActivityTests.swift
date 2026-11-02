@@ -58,6 +58,25 @@ final class FocusActivityTests: XCTestCase {
 
   func test_standardTuningIsUnchanged() { // v13 stays available, the app picks .action
     XCTAssertFalse(FocusTuning.standard.activity)
+    XCTAssertEqual(FocusTuning.standard.zoomIn, 1)
     XCTAssertTrue(FocusTuning.action.activity && FocusTuning.action.activeSpread)
+    XCTAssertEqual(FocusTuning.action.zoomIn, 1.1)
+  }
+
+  func test_zoomInMakesTheRect10PercentCloserOnTheSameTarget() {
+    // Away from the edges (from 0.20 and 0.40, ending at 0.44 and 0.64), so neither rect is pushed back inside the frame.
+    let s = samples(12) { [player($0, from: 0.20), player($0, from: 0.40)] }
+    var plain = FocusTuning.action
+    plain.zoomIn = 1
+    let before = FocusPath.compute(samples: s, videoWidth: W, videoHeight: H, aspect: .landscape, zoom: true, tuning: plain)!
+    let after = FocusPath.compute(samples: s, videoWidth: W, videoHeight: H, aspect: .landscape, zoom: true, tuning: .action)!
+    let other = FocusPath.compute(samples: s, videoWidth: W, videoHeight: H, aspect: .portrait, zoom: false, tuning: .action)!
+    let otherPlain = FocusPath.compute(samples: s, videoWidth: W, videoHeight: H, aspect: .portrait, zoom: false, tuning: plain)!
+    for i in [20, 60, 100] {
+      XCTAssertEqual(after[i].width, before[i].width / 1.1, accuracy: 1e-9)
+      XCTAssertEqual(after[i].height, before[i].height / 1.1, accuracy: 1e-9)
+      XCTAssertEqual(after[i].x + after[i].width / 2, before[i].x + before[i].width / 2, accuracy: 1e-9) // same centre
+      XCTAssertEqual(other[i].width, otherPlain[i].width, accuracy: 1e-9) // the other shape's track is not zoomed
+    }
   }
 }

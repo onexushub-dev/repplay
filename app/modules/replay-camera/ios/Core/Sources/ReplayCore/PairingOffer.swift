@@ -80,6 +80,6 @@ public struct PairingOffer {
       .replacingOccurrences(of: "+", with: "-")
       .replacingOccurrences(of: "/", with: "_")
       .replacingOccurrences(of: "=", with: "")
-    return "repplay://pair?h=\(hostId)&s=\(encodedSecret)&n=\(name)"
+    return "reprize://pair?h=\(hostId)&s=\(encodedSecret)&n=\(name)"
   }
 }

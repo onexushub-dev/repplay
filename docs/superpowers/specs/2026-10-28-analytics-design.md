@@ -42,7 +42,7 @@ All app code talks to a thin `track()` wrapper, never to the PostHog SDK directl
 | Recording | `clip_saved` | `trigger`, `mode` |
 | Recording | `trigger_failed` | `trigger`, `reason` |
 | Editing | `clip_edit_tool_used` | `tool` |
-| Editing | `cut_suggestion_applied` | |
+| Editing | ~~`cut_suggestion_applied`~~ | removed with the cut suggestion (main) |
 | Editing | `focus_mode_used` | |
 | Output | `export_completed` | `quality` |
 | Output | `export_failed` | `reason` |

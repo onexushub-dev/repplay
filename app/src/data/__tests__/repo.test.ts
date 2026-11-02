@@ -18,7 +18,7 @@ function setup(sizes: Record<string, number> = {}) {
   return createRepo(memoryKV(), fakeFiles(sizes), () => `id-${++n}`);
 }
 
-test('prefs default to onboarding not done, Quadra, ultra-wide, gesture on, sound and flash on, battery saving on', () => {
+test('prefs default to onboarding not done, Quadra, ultra-wide, gesture on, sound and flash on, battery saving on (camera and remote)', () => {
   expect(setup().getPrefs()).toEqual({
     onboardingDone: false,
     sport: 'quadra',
@@ -28,6 +28,8 @@ test('prefs default to onboarding not done, Quadra, ultra-wide, gesture on, soun
     flashOnSave: true,
     voiceEnabled: false,
     screenEconomy: true,
+    remoteEconomy: true,
+    remoteVoice: true,
   });
 });
 
@@ -177,9 +179,9 @@ test('updateClip stores the new trim and edit', () => {
 test('listSessions finds games stored before the game index existed', () => {
   const map = new Map<string, string>();
   const old = { id: 'old', sport: 'beachTennis', startedAt: 5, endedAt: 9 };
-  map.set('repplay:v1:session:old', JSON.stringify(old));
-  map.set('repplay:v1:clip:c1', JSON.stringify({ id: 'c1', sessionId: 'old', createdAt: 6, source: 'screen', path: '/a.mp4', durationMs: 1, trim: { startMs: 0, endMs: 1 } }));
-  map.set('repplay:v1:clips-of:old', JSON.stringify(['c1']));
+  map.set('reprize:v1:session:old', JSON.stringify(old));
+  map.set('reprize:v1:clip:c1', JSON.stringify({ id: 'c1', sessionId: 'old', createdAt: 6, source: 'screen', path: '/a.mp4', durationMs: 1, trim: { startMs: 0, endMs: 1 } }));
+  map.set('reprize:v1:clips-of:old', JSON.stringify(['c1']));
   const repo = createRepo(memoryKV(map), fakeFiles({ '/a.mp4': 1 }), () => 'x');
   expect(repo.listSessions().map((g) => g.session.id)).toEqual(['old']);
 });
@@ -237,11 +239,11 @@ test('deleteSession removes the game, its clips and the index entry, and returns
 
 test('spentPasses migrates from existing sessions when the key is missing', () => {
   const map = new Map<string, string>();
-  map.set('repplay:v1:session:a', JSON.stringify({ id: 'a', sport: 'quadra', startedAt: 1, passTransactionId: 'old' }));
-  map.set('repplay:v1:session:b', JSON.stringify({ id: 'b', sport: 'quadra', startedAt: 2 }));
+  map.set('reprize:v1:session:a', JSON.stringify({ id: 'a', sport: 'quadra', startedAt: 1, passTransactionId: 'old' }));
+  map.set('reprize:v1:session:b', JSON.stringify({ id: 'b', sport: 'quadra', startedAt: 2 }));
   const repo = createRepo(memoryKV(map), fakeFiles({}), () => 'x');
   expect([...repo.spentPasses()]).toEqual(['old']);
-  expect(map.has('repplay:v1:spentPasses')).toBe(true);
+  expect(map.has('reprize:v1:spentPasses')).toBe(true);
 });
 
 test('spendPasses dedupes and only notifies on change', () => {
@@ -257,7 +259,7 @@ test('spendPasses dedupes and only notifies on change', () => {
 
 const legacy = () => {
   const map = new Map<string, string>();
-  map.set('repplay:v1:session:a', JSON.stringify({ id: 'a', sport: 'quadra', startedAt: 1, passTransactionId: 'old' }));
+  map.set('reprize:v1:session:a', JSON.stringify({ id: 'a', sport: 'quadra', startedAt: 1, passTransactionId: 'old' }));
   return map;
 };
 const repoOver = (map: Map<string, string>) => createRepo(memoryKV(map), fakeFiles({}), () => 'new');
@@ -271,16 +273,16 @@ test('deleting a legacy paid game before any ledger read keeps its id spent', ()
 test('spentPasses rebuilds from games when the ledger is corrupt or not an array', () => {
   for (const bad of ['{not json', '{"a":1}']) {
     const map = legacy();
-    map.set('repplay:v1:spentPasses', bad);
+    map.set('reprize:v1:spentPasses', bad);
     expect([...repoOver(map).spentPasses()]).toEqual(['old']);
   }
 });
 
 test('a corrupt game record does not break migration or startSession', () => {
   const map = legacy();
-  map.set('repplay:v1:session:bad', '{oops');
+  map.set('reprize:v1:session:bad', '{oops');
   const repo = repoOver(map);
-  expect(() => repo.startSession('quadra', 5, { paid: true, passTransactionId: 'tx-9' })).not.toThrow();
+  expect(() => repo.startSession('quadra', 5, { paid: true })).not.toThrow();
   expect(repo.spentPasses().has('old')).toBe(true);
 });
 
@@ -291,14 +293,14 @@ test('fresh install: empty ledger', () => {
 
 test('an existing ledger key is left alone', () => {
   const map = legacy();
-  map.set('repplay:v1:spentPasses', JSON.stringify(['kept']));
+  map.set('reprize:v1:spentPasses', JSON.stringify(['kept']));
   expect([...repoOver(map).spentPasses()]).toEqual(['kept']);
 });
 
-test('startSession during migration adds no duplicates', () => {
+test('startSession during migration keeps the ledger as it was', () => {
   const map = legacy();
   const repo = repoOver(map);
-  repo.startSession('quadra', 5, { paid: true, passTransactionId: 'old' });
+  repo.startSession('quadra', 5, { paid: true });
   expect([...repo.spentPasses()]).toEqual(['old']);
 });
 
@@ -309,17 +311,6 @@ test('startSession records paid: false and no passTransactionId for a free game'
   expect(s.paid).toBe(false);
   expect('passTransactionId' in s).toBe(false);
   expect(repo.getSession(s.id)?.paid).toBe(false);
-});
-
-test('startSession with a pass stores paid and the transaction, spends it, and notifies once', () => {
-  const repo = setup();
-  const fn = jest.fn();
-  repo.subscribe(fn);
-  const s = repo.startSession('quadra', 1, { paid: true, passTransactionId: 'tx-1' });
-  expect(s.paid).toBe(true);
-  expect(repo.getSession(s.id)?.passTransactionId).toBe('tx-1');
-  expect(repo.spentPasses().has('tx-1')).toBe(true);
-  expect(fn).toHaveBeenCalledTimes(1);
 });
 
 test('startSession paid without a pass (Pro) spends nothing', () => {
@@ -334,7 +325,8 @@ test('startSession paid without a pass (Pro) spends nothing', () => {
 
 test('deleting a recording never gives the pass back', () => {
   const repo = setup();
-  const s = repo.startSession('quadra', 1, { paid: true, passTransactionId: 'tx-1' });
+  const s = repo.startSession('quadra', 1, { paid: false });
+  repo.upgradeSession(s.id, { passTransactionId: 'tx-1' });
   repo.deleteSession(s.id);
   expect(repo.spentPasses().has('tx-1')).toBe(true);
 });
@@ -343,7 +335,7 @@ test('startSession does not write the first-session marker', () => {
   const map = new Map<string, string>();
   const repo = createRepo(memoryKV(map), fakeFiles({}), () => 'id-1');
   repo.startSession('quadra', 1, { paid: false });
-  expect(map.get('repplay:v1:firstSessionUsed')).toBeUndefined();
+  expect(map.get('reprize:v1:firstSessionUsed')).toBeUndefined();
 });
 
 test('a legacy game has no paid flag and the migration still ledgers its pass', () => {
@@ -352,51 +344,28 @@ test('a legacy game has no paid flag and the migration still ledgers its pass', 
   expect([...repo.spentPasses()]).toEqual(['old']);
 });
 
-describe('free monthly counter', () => {
-  const t = new Date(2026, 9, 5).getTime();
-  const t2 = new Date(2026, 10, 2).getTime();
+test('startSession keeps no free counter', () => {
+  const map = new Map<string, string>();
+  const repo = createRepo(memoryKV(map), fakeFiles({}), () => 'id-1');
+  repo.startSession('quadra', new Date(2026, 9, 5).getTime(), { paid: false });
+  expect([...map.keys()].some((k) => k.includes('freeCount'))).toBe(false);
+});
 
-  test('free starts count once each and notify once each', () => {
+describe('markFreeNoticeShown', () => {
+  it('records it once on the recording and notifies once', () => {
     const repo = setup();
+    const s = repo.startSession('quadra', 1, { paid: false });
     const fn = jest.fn();
     repo.subscribe(fn);
-    repo.startSession('quadra', t, { paid: false });
-    repo.startSession('quadra', t, { paid: false });
-    expect(repo.freeCount(t)).toBe(2);
-    expect(fn).toHaveBeenCalledTimes(2);
+    repo.markFreeNoticeShown(s.id);
+    repo.markFreeNoticeShown(s.id);
+    expect(repo.getSession(s.id)?.freeNoticeShown).toBe(true);
+    expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  test('paid starts do not count', () => {
+  it('does nothing for a missing recording', () => {
     const repo = setup();
-    repo.startSession('quadra', t, { paid: true });
-    repo.startSession('quadra', t, { paid: true, passTransactionId: 'A' });
-    expect(repo.freeCount(t)).toBe(0);
-  });
-
-  test('deleting never gives a slot back; a new month starts at 0 and keeps the old value', () => {
-    const map = new Map<string, string>();
-    const repo = createRepo(memoryKV(map), fakeFiles({}), (() => { let n = 0; return () => `id-${++n}`; })());
-    const a = repo.startSession('quadra', t, { paid: false });
-    const b = repo.startSession('quadra', t, { paid: false });
-    repo.deleteSession(a.id);
-    repo.deleteSession(b.id);
-    expect(repo.freeCount(t)).toBe(2);
-    expect(repo.freeCount(t2)).toBe(0);
-    expect(map.get('repplay:v1:freeCount:2026-10')).toBe('2');
-  });
-
-  test.each(['abc', '-3', '1.5'])('corrupt value %s reads 0 and the next start writes 1', (bad) => {
-    const map = new Map<string, string>([['repplay:v1:freeCount:2026-10', bad]]);
-    const repo = createRepo(memoryKV(map), fakeFiles({}), () => 'x');
-    expect(repo.freeCount(t)).toBe(0);
-    repo.startSession('quadra', t, { paid: false });
-    expect(repo.freeCount(t)).toBe(1);
-  });
-
-  test('old sessions without a counter do not count', () => {
-    const map = new Map<string, string>([['repplay:v1:session:old', JSON.stringify({ id: 'old', sport: 'quadra', startedAt: t })]]);
-    const repo = createRepo(memoryKV(map), fakeFiles({}), () => 'x');
-    expect(repo.freeCount(t)).toBe(0);
+    expect(() => repo.markFreeNoticeShown('gone')).not.toThrow();
   });
 });
 
@@ -409,6 +378,47 @@ test('updateClip stores the Modo Foco status and never brings back a deleted cli
   repo.deleteClip(clip.id);
   expect(repo.updateClip(clip.id, { focus })).toBeUndefined();
   expect(repo.getClip(clip.id)).toBeUndefined();
+});
+
+describe('clips left by the removed cut suggestion (2026-11-01)', () => {
+  function setupOld() {
+    let n = 0;
+    const map = new Map<string, string>();
+    const kv = memoryKV(map);
+    const repo = createRepo(kv, { exists: () => true, sizeBytes: () => 1 }, () => `id-${++n}`);
+    const session = repo.startSession('quadra', 1000, { paid: false });
+    const add = (createdAt: number) =>
+      repo.addClip({ sessionId: session.id, createdAt, source: 'remote', path: `/c/${createdAt}.mp4`, durationMs: 60000 });
+    const bounds = { startMs: 30000, endMs: 60000 };
+    const suggested = { startMs: 48000, endMs: 60000 };
+    /** Writes a clip as the old app left it: `cutSuggestion` stored, and maybe applied as its cut. */
+    const old = (id: string, trim: { startMs: number; endMs: number }) => {
+      const k = `reprize:v1:clip:${id}`;
+      const clip = JSON.parse(map.get(k) as string);
+      map.set(k, JSON.stringify({ ...clip, bounds, trim, cutSuggestion: suggested }));
+    };
+    return { repo, add, old, bounds, suggested };
+  }
+
+  test('a clip the suggestion had cut goes back to the cut it was saved with', () => {
+    const { repo, add, old, bounds, suggested } = setupOld();
+    const clip = add(2000);
+    old(clip.id, suggested);
+    expect(repo.forgetCutSuggestions()).toBe(1);
+    const after = repo.getClip(clip.id) as Record<string, unknown>;
+    expect(after.trim).toEqual(bounds);
+    expect('cutSuggestion' in after).toBe(false);
+  });
+
+  test("a cut the player chose stays, only the old field goes; a second run changes nothing", () => {
+    const { repo, add, old } = setupOld();
+    const clip = add(2000);
+    const chosen = { startMs: 35000, endMs: 50000 };
+    old(clip.id, chosen);
+    expect(repo.forgetCutSuggestions()).toBe(1);
+    expect(repo.getClip(clip.id)!.trim).toEqual(chosen);
+    expect(repo.forgetCutSuggestions()).toBe(0);
+  });
 });
 
 describe('clips after iOS moved the app folder', () => {
@@ -452,16 +462,14 @@ describe('clips after iOS moved the app folder', () => {
 });
 
 describe('upgradeSession', () => {
-  it('makes a free recording paid without counting another free one', () => {
+  it('makes a free recording paid and notifies once', () => {
     const repo = setup();
-    const t = new Date(2026, 9, 5).getTime();
-    const s = repo.startSession('quadra', t, { paid: false });
+    const s = repo.startSession('quadra', 1, { paid: false });
     const fn = jest.fn();
     repo.subscribe(fn);
     const next = repo.upgradeSession(s.id, {});
     expect(next?.paid).toBe(true);
     expect(repo.getSession(s.id)?.paid).toBe(true);
-    expect(repo.freeCount(t)).toBe(1);
     expect(fn).toHaveBeenCalledTimes(1);
   });
 

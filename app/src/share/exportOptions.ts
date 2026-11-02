@@ -2,7 +2,7 @@ import type { Clip } from '../data/schema';
 import type { Plan } from '../payments/types';
 import { cropRect, readEdit } from './editing';
 import { accessPlan } from '../payments/rules';
-import { type ShortSide, sideSize } from './exportSize';
+import { FREE_SIDE, type ShortSide, sideSize } from './exportSize';
 
 export type ExportOptions = {
   width: number;
@@ -24,14 +24,14 @@ export type ExportOptions = {
 type Tier = Plan | 'pass' | 'pro';
 
 /**
- * Both plans export 1080x1920. Free: no sound (the clip may have it: it is locked here, so a recording already made can
- * be unlocked later), speed always 1x, no Modo Foco, and the app mark. Paid (a paid plan, pass, pro): its sound, any
- * speed, Modo Foco, no app mark. A landscape clip gets the same frame turned on its side, so it fills the screen when
- * the phone is held sideways, like any video in Photos. Any speed other than 1x plays without sound. Modo Foco applies
- * when on, ready, not turned and not zoomed by hand.
+ * Free: HD (720x1280), no sound (the clip may have it: it is locked here, so a recording already made can be unlocked
+ * later), no Modo Foco, and the app mark; the chosen speed goes in. Paid (a paid plan, pass, pro): Full HD (or 2K/4K for
+ * a 4K clip), its sound, any speed, Modo Foco, no app mark. A landscape clip gets the same frame turned on its side, so it
+ * fills the screen when the phone is held sideways, like any video in Photos. Any speed other than 1x plays without
+ * sound. Modo Foco applies when on, ready, not turned and not zoomed by hand.
  */
 /**
- * true: every clip carries the Repplay mark, on every plan. false (the rule since 2026-10-27): only free recordings
+ * true: every clip carries the Reprize mark, on every plan. false (the rule since 2026-10-27): only free recordings
  * carry it, Pro and the Single Pass never do.
  */
 export const WATERMARK_ON_EVERY_PLAN = false as boolean;
@@ -42,16 +42,16 @@ export function exportOptions(
   trim: Clip['trim'],
   landscape = false,
   focus?: { path: string; ready: boolean },
-  /** The export's resolution (short side): Full HD unless a 4K clip is exported as 4K or 2K. */
+  /** A paid export's resolution (short side): Full HD unless a 4K clip is exported as 4K or 2K. Free is always HD. */
   side: ShortSide = 1080,
 ): ExportOptions {
   // What the export may carry (the field test unlocks it all); the screens still label the plan as it is.
   const paid = tier !== 'free' || accessPlan('free') === 'paid';
-  const { width: frameWidth, height: frameHeight } = sideSize(side, true);
+  const { width: frameWidth, height: frameHeight } = sideSize(paid ? side : FREE_SIDE, true);
   const short = frameHeight;
   const long = frameWidth;
   const { speed: chosenSpeed, muted, zoom, rotation, focus: focusOn } = readEdit(edit);
-  const speed = paid ? chosenSpeed : 1;
+  const speed = chosenSpeed;
   const manualZoom = zoom !== undefined && zoom.scale > 1;
   const follow = paid && focus !== undefined && focus.ready && focusOn && rotation === 0 && !manualZoom;
   return {
@@ -69,14 +69,13 @@ export function exportOptions(
   };
 }
 
-/** What a free export drops from this clip: the framing, the speed, the sound (only what the clip actually had). */
-export type FreeLosses = { focus: boolean; speed: boolean; sound: boolean };
+/** What this clip uses that a free export drops: shown first in the free-export notice (it always lists every loss). */
+export type FreeLosses = { focus: boolean; sound: boolean };
 
 export function freeLosses(clip: Pick<Clip, 'edit' | 'focus'>): FreeLosses {
   const { focus, rotation, zoom, speed, muted } = readEdit(clip.edit);
   return {
     focus: clip.focus !== undefined && clip.focus.status === 'ready' && focus && rotation === 0 && !(zoom !== undefined && zoom.scale > 1),
-    speed: speed !== 1,
     // Away from 1x the video is silent anyway, so there is no sound to lose.
     sound: !muted && speed === 1,
   };

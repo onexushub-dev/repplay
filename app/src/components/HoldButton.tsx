@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   button: {
     height: 56,
     borderRadius: radius.button,
-    backgroundColor: 'rgba(15,16,13,0.72)',
+    backgroundColor: 'rgba(12,12,12,0.72)',
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center',

@@ -10,7 +10,9 @@ const cache = new Map<string, string>();
  */
 export function useClipThumbnail(path: string, atMs: number): string | undefined {
   const key = `${path}@${atMs}`;
-  const [uri, setUri] = useState(() => cache.get(key));
+  // Tagged with its key: a component whose clip changes (the export sheet gets one only when it opens) never shows the
+  // last clip's frame, and a frame already cached for the new key is read straight from the cache.
+  const [made, setMade] = useState<{ key: string; uri: string } | null>(null);
 
   useEffect(() => {
     if (!path || cache.has(key)) return;
@@ -19,7 +21,7 @@ export function useClipThumbnail(path: string, atMs: number): string | undefined
       .then((thumbPath) => {
         const fileUri = `file://${thumbPath}`;
         cache.set(key, fileUri);
-        if (alive) setUri(fileUri);
+        if (alive) setMade({ key, uri: fileUri });
       })
       .catch(() => {});
     return () => {
@@ -27,5 +29,5 @@ export function useClipThumbnail(path: string, atMs: number): string | undefined
     };
   }, [key, path, atMs]);
 
-  return uri;
+  return cache.get(key) ?? (made !== null && made.key === key ? made.uri : undefined);
 }

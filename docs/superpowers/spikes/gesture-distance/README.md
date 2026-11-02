@@ -7,7 +7,7 @@ the phone.
 
 Pixel budget for a 1.75 m player (2.2 m with the arms up), iPhone ultra-wide (0.5x, 13 mm equivalent) at 1080p:
 
-| Distance | Player height (arms up), 1080p | 720p (free plan, hot phone) | 4K (the 1x lens: ~1.8x) |
+| Distance | Player height (arms up), 1080p | 720p (hot phone) | 4K (the 1x lens: ~1.8x) |
 |---|---|---|---|
 | 5 m | 300 px | 200 px | 600 px |
 | 10 m | 150 px | 100 px | 300 px |
@@ -87,7 +87,7 @@ is found, `isX`/`raised` whether the pose reads the arms.
    (`AVVideoScalingModeKey`), so the gesture sees 150 px at 20 m instead of 75. Costs heat and battery; the thermal
    ladder already drops to 720p when hot.
 2. **Zoom in a little**: 0.7x instead of 0.5x is 1.4x the pixels, if the court still fits.
-3. **Free plan at 720p** captures 50 px at 20 m: capture 1080p and export 720p, or accept a shorter gesture range there.
+3. **720p when hot** captures 50 px at 20 m: accept a shorter gesture range there (every plan records in Full HD otherwise).
 4. Coach the gesture: "both arms up, still, 3 seconds" (static is sharper than waving; the hold rule also fires on a
    long overhead wave).
 

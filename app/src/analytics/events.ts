@@ -1,8 +1,9 @@
 import type { RemotePairFailure } from '../../modules/replay-camera/src/ReplayCamera.types';
 import type { ModeId, TriggerSource } from '../data/schema';
+import type { Offering } from '../payments/types';
 
 /** Where the paywall was opened from; `locked_feature` is a tap on something Pro-only (see pro_feature_blocked). */
-export type PaywallSource = 'onboarding' | 'export_limit' | 'upgrade_card' | 'start_limit' | 'locked_feature';
+export type PaywallSource = 'onboarding' | 'export_limit' | 'upgrade_card' | 'locked_feature';
 
 /** A count sent as a range, so the number of distinct values stays small and nothing is a precise tally. */
 export type CountBucket = '0' | '1' | '2-5' | '6-20' | '21+';
@@ -39,9 +40,8 @@ export type AnalyticsEvents = {
 
   // Editing and output
   clip_edit_tool_used: { tool: 'focus' | 'speed' | 'sound' | 'zoom' | 'rotate' };
-  cut_suggestion_applied: undefined;
   focus_mode_used: undefined;
-  export_completed: { quality: '1080p' | '1440p' | '2160p' };
+  export_completed: { quality: '720p' | '1080p' | '1440p' | '2160p' };
   export_failed: { reason: 'prepare_failed' };
   /** `photos` is Salvar na galeria; `share_sheet` is Enviar (the share sheet does not say which app was picked). */
   clip_shared: { destination: 'photos' | 'share_sheet' };
@@ -52,8 +52,9 @@ export type AnalyticsEvents = {
   pairing_failed: { reason: RemotePairFailure | 'invalid_link' };
 
   // Monetization
-  paywall_viewed: { source: PaywallSource };
-  purchase_completed: undefined;
+  /** `offering` is the paywall shown: Pro (`default`) or the Single Pass (`pass`). */
+  paywall_viewed: { source: PaywallSource; offering: Offering };
+  purchase_completed: { offering: Offering };
   purchase_failed: { reason: 'error' };
   pro_feature_blocked: { feature: 'quality_4k' | 'clip_length' | 'bluetooth_remote' | 'watch' | 'compile' };
   free_export_limit_hit: undefined;

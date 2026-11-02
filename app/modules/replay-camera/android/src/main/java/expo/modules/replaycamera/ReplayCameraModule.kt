@@ -31,7 +31,7 @@ class ExportClipOptions : Record {
   @Field val width: Int = 1080
   @Field val height: Int = 1920
   @Field val overlayPngPath: String? = null
-  @Field val background: String = "#0B0B09"
+  @Field val background: String = "#0A0A0A"
 }
 
 class ReplayCameraModule : Module() {

@@ -78,10 +78,10 @@ describe('analytics core', () => {
 
   test('the 21st send of one event in a session is dropped and a new session starts the count over', () => {
     const { adapter, analytics } = setup();
-    for (let i = 0; i < 25; i++) analytics.track('paywall_viewed', { source: 'upgrade_card' });
+    for (let i = 0; i < 25; i++) analytics.track('paywall_viewed', { source: 'upgrade_card', offering: 'default' });
     expect(adapter.calls).toHaveLength(20);
     analytics.startSession();
-    analytics.track('paywall_viewed', { source: 'upgrade_card' });
+    analytics.track('paywall_viewed', { source: 'upgrade_card', offering: 'default' });
     expect(adapter.calls).toHaveLength(21);
   });
 

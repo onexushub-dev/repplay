@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { requestPermissions } from '../../modules/replay-camera';
@@ -16,7 +16,6 @@ import { ShareMedia } from '../onboarding/ShareMedia';
 import { SLIDES, splitHighlight, waysOf } from '../onboarding/slides';
 import { StoryBars } from '../onboarding/StoryBars';
 import { useStories } from '../onboarding/useStories';
-import { BRAND_LOGO, logoAspect } from '../share/brandLogo';
 import { colors, fonts, radius } from '../theme/tokens';
 
 /** How long a finger must stay down to count as a hold (which freezes the story) and not as a tap. */
@@ -44,13 +43,9 @@ export default function Onboarding() {
     track('onboarding_step_viewed', { step });
   }, [step]);
   const last = stories.index === SLIDES.length - 1;
-  const labels = [
-    `1 ${t('onboarding.stepRecord')}`,
-    `2 ${t('onboarding.stepSave')}`,
-    `3 ${t('onboarding.stepEdit')}`,
-    `4 ${t('onboarding.stepShare')}`,
-  ];
-  const [before, highlighted, after] = splitHighlight(t(`onboarding.${slide.id}.body`));
+  // The Pro way to save has no supporting line: its card and the saved clip on the photo already say it all.
+  const body = slide.id === 'savePro' ? '' : t(`onboarding.${slide.id}.body`);
+  const [before, highlighted, after] = splitHighlight(body);
 
   async function allow() {
     const granted = await requestPermissions();
@@ -89,13 +84,10 @@ export default function Onboarding() {
 
       <SafeAreaView style={styles.content} pointerEvents="box-none">
         <View style={styles.bars}>
-          <StoryBars slides={SLIDES} labels={labels} index={stories.index} progress={stories.progress} />
+          <StoryBars slides={SLIDES} index={stories.index} progress={stories.progress} />
         </View>
 
         <View style={styles.header} pointerEvents="box-none">
-          <View pointerEvents="none">
-            <Image source={BRAND_LOGO} style={styles.logo} resizeMode="contain" accessibilityLabel="Repplay" />
-          </View>
           {last ? null : (
             <Pressable
               accessibilityRole="button"
@@ -121,11 +113,13 @@ export default function Onboarding() {
               </Text>
             </View>
             <Text style={styles.title}>{t(`onboarding.${slide.id}.title`)}</Text>
-            <Text style={styles.body}>
-              {before}
-              {highlighted ? <Text style={styles.highlight}>{highlighted}</Text> : null}
-              {after}
-            </Text>
+            {body ? (
+              <Text style={styles.body}>
+                {before}
+                {highlighted ? <Text style={styles.highlight}>{highlighted}</Text> : null}
+                {after}
+              </Text>
+            ) : null}
           </View>
         </Reveal>
 
@@ -168,26 +162,26 @@ const styles = StyleSheet.create({
   zoneNext: { flex: 7 },
   content: { flex: 1, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 },
   bars: { marginHorizontal: -4 },
-  header: { height: 44, marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  logo: { height: 24, aspectRatio: logoAspect() },
+  // Only Skip up here: the logo is on the splash screen just before.
+  header: { height: 44, marginTop: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' },
   skip: { minWidth: 64, height: 44, alignItems: 'flex-end', justifyContent: 'center' },
   skipText: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.text },
   copy: { marginBottom: 12 },
-  headline: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, height: 80, overflow: 'hidden' },
-  number: { fontFamily: fonts.displayBold, fontSize: 22, color: colors.accent, paddingBottom: 12 },
-  word: { fontFamily: fonts.displayBold, fontSize: 84, lineHeight: 84, color: colors.text },
+  headline: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, height: 56, overflow: 'hidden' },
+  number: { fontFamily: fonts.displayBold, fontSize: 18, color: colors.accent, paddingBottom: 8 },
+  word: { fontFamily: fonts.displayBold, fontSize: 56, lineHeight: 56, color: colors.text },
   title: { fontFamily: fonts.bodyBold, fontSize: 20, lineHeight: 25, color: colors.text, marginTop: 6 },
-  body: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: 'rgba(243,237,225,0.86)', marginTop: 6 },
+  body: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: 'rgba(255,255,255,0.86)', marginTop: 6 },
   highlight: { fontFamily: fonts.bodySemi, color: colors.accent },
   media: { flex: 1, minHeight: 0 },
   footer: { gap: 10, paddingTop: 12 },
-  note: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: 'rgba(243,237,225,0.86)' },
+  note: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: 'rgba(255,255,255,0.86)' },
   denied: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.warning, textAlign: 'center' },
   next: {
     height: 54,
     borderRadius: radius.button,
     borderWidth: 1.5,
-    borderColor: 'rgba(243,237,225,0.5)',
+    borderColor: 'rgba(255,255,255,0.5)',
     backgroundColor: colors.ground,
     alignItems: 'center',
     justifyContent: 'center',

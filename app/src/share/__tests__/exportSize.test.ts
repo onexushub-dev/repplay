@@ -16,10 +16,10 @@ test('each size in both orientations', () => {
 });
 
 test('the size estimate grows with the resolution and the length', () => {
-  // 30 s: 4K ≈ 150 MB, 2K ≈ 68 MB, Full HD ≈ 38 MB with sound.
+  // 30 s: 4K ≈ 150 MB, 2K ≈ 68 MB, Full HD ≈ 57 MB with sound (measured: 55 MB).
   expect(estimateMegabytes(2160, 30_000, true)).toBe(150);
   expect(estimateMegabytes(1440, 30_000, true)).toBe(68);
-  expect(estimateMegabytes(1080, 30_000, true)).toBe(38);
-  expect(estimateMegabytes(1080, 30_000, false)).toBe(38);
+  expect(estimateMegabytes(1080, 30_000, true)).toBe(57);
+  expect(estimateMegabytes(1080, 30_000, false)).toBe(56);
   expect(estimateMegabytes(1080, 0, true)).toBe(1);
 });

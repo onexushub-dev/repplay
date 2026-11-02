@@ -5,7 +5,7 @@ import { type AppLocale, resolveLocale } from './locale';
 import { en, type Messages } from './locales/en';
 import { ptBR } from './locales/pt-BR';
 
-export { type AppLocale, resolveLocale, voiceLocale, VOICE_WORDS, type VoiceLocale } from './locale';
+export { type AppLocale, resolveLocale, voiceLocale, VOICE_WORD, type VoiceLocale } from './locale';
 export type { Messages };
 
 type Plural = { one: string; other: string };

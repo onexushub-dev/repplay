@@ -5,7 +5,7 @@ import { colors, fonts } from '../theme/tokens';
 import type { ToolId } from './editSession';
 import { EDIT_TOOLS, type EditTool } from './tools';
 
-/** The edit mode's tools side by side (scrolls when there are more than fit); the open one is lime. */
+/** The edit mode's tools side by side (scrolls when there are more than fit); the open one is amber. */
 export function ToolBar({
   open,
   focusOn,

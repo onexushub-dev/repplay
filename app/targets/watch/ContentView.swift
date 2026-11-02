@@ -3,8 +3,8 @@ import SwiftUI
 // Every text is an English key looked up in Localizable.xcstrings (English and Brazilian Portuguese); the watch
 // shows the watch's own language.
 
-private let ground = Color(red: 0.043, green: 0.043, blue: 0.035) // #0B0B09
-private let accent = Color(red: 0.839, green: 0.949, blue: 0.247) // #D6F23F
+private let ground = Color(red: 0.039, green: 0.039, blue: 0.039) // #0A0A0A
+private let accent = Color(red: 1.0, green: 0.690, blue: 0.0) // #FFB000
 
 struct ContentView: View {
   @StateObject private var link = WatchLink()
@@ -46,7 +46,7 @@ struct ContentView: View {
     }
   }
 
-  /// Nothing is recording: one big Start recording button. Without the Repplay app open on the phone it cannot work, so
+  /// Nothing is recording: one big Start recording button. Without the Reprize app open on the phone it cannot work, so
   /// the screen says to open it instead: nothing to tap that would go nowhere.
   @ViewBuilder private var idleView: some View {
     if !link.reachable || link.startFailed {
@@ -56,7 +56,7 @@ struct ContentView: View {
         Header {}
         BigButton(
           title: link.starting ? Text("Starting…") : Text("Start recording"), style: .title2, enabled: !link.starting,
-          action: link.sendStart)
+          doubleTap: true, action: link.sendStart)
       }
     }
   }
@@ -72,7 +72,7 @@ struct ContentView: View {
   /// Save, or (watch trigger locked: it is paid) a short note in its place; the timer and count keep working.
   @ViewBuilder private var saveButton: some View {
     if link.saveAllowed {
-      BigButton(title: Text("Save"), enabled: true, action: link.sendSave)
+      BigButton(title: Text("Save"), enabled: true, doubleTap: true, action: link.sendSave)
     } else {
       ProOnlyNote()
     }
@@ -109,6 +109,11 @@ struct ContentView: View {
       } else {
         ProgressView()
       }
+      // A tap anywhere saves; being a Button lets Double Tap press it too.
+      Button { if link.saveAllowed { link.sendSave() } } label: { Color.clear.contentShape(Rectangle()) }
+        .buttonStyle(.plain)
+        .handGestureShortcut(.primaryAction)
+        .accessibilityLabel(link.saveAllowed ? Text("Save") : Text("Available with PRO"))
       VStack {
         HStack(alignment: .top) {
           CameraToggle(isOn: true) { link.setPreview(false) }
@@ -123,10 +128,6 @@ struct ContentView: View {
       }
       .padding(4)
     }
-    .contentShape(Rectangle())
-    .onTapGesture { if link.saveAllowed { link.sendSave() } }
-    .accessibilityAddTraits(link.saveAllowed ? .isButton : [])
-    .accessibilityLabel(link.saveAllowed ? Text("Save") : Text("Available with Pro"))
     .ignoresSafeArea(edges: .bottom)
   }
 }
@@ -168,7 +169,7 @@ private struct CameraToggle: View {
 }
 
 
-/// The Repplay app is not open on the phone, so nothing here can record or save: say so, large, and say what to do.
+/// The Reprize app is not open on the phone, so nothing here can record or save: say so, large, and say what to do.
 private struct PhoneClosedView: View {
   /// A recording that lost its phone, rather than a watch that never had one.
   let lostRecording: Bool
@@ -177,7 +178,7 @@ private struct PhoneClosedView: View {
       Header { if lostRecording { Text("No connection").foregroundStyle(.red) } }
       VStack(spacing: 8) {
         Image(systemName: "iphone.gen3").font(.system(size: 42, weight: .semibold)).foregroundStyle(accent)
-        Text("Open Repplay on your iPhone")
+        Text("Open Reprize on your iPhone")
           .font(.system(.title3, design: .rounded).weight(.heavy))
           .multilineTextAlignment(.center)
           .foregroundStyle(.white)
@@ -201,7 +202,7 @@ private struct ProOnlyNote: View {
   var body: some View {
     VStack(spacing: 6) {
       Image(systemName: "lock.fill").font(.system(size: 22, weight: .semibold)).foregroundStyle(accent)
-      Text("Available with Pro")
+      Text("Available with PRO")
         .font(.system(.title3, design: .rounded).weight(.heavy))
         .multilineTextAlignment(.center)
         .minimumScaleFactor(0.7)
@@ -255,6 +256,8 @@ private struct BigButton: View {
   let title: Text
   var style: Font.TextStyle = .title
   let enabled: Bool
+  /// The Double Tap gesture (index finger and thumb) presses this button: Save and Start take it.
+  var doubleTap = false
   let action: () -> Void
   var body: some View {
     Button(action: action) {
@@ -269,6 +272,15 @@ private struct BigButton: View {
     }
     .buttonStyle(PressStyle())
     .disabled(!enabled)
+    .modifier(DoubleTapShortcut(on: doubleTap))
+  }
+}
+
+/// `handGestureShortcut` has no "off" value, so the modifier is added only when asked for.
+private struct DoubleTapShortcut: ViewModifier {
+  let on: Bool
+  @ViewBuilder func body(content: Content) -> some View {
+    if on { content.handGestureShortcut(.primaryAction) } else { content }
   }
 }
 

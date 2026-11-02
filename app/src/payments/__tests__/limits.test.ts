@@ -22,12 +22,12 @@ test('captureConfig paid: what the player chose', () => {
   expect(captureConfig({ ...court, quality: '720p30' }, 'paid').quality).toBe('720p30');
 });
 
-test('triggerAllowed: the watch and the Bluetooth remote are paid; every other trigger is free', () => {
-  for (const s of ['screen', 'gesture', 'voice', 'phone'] as const) {
+test('triggerAllowed: the Apple Watch is paid; every other trigger, the Bluetooth remote too, is free', () => {
+  for (const s of ['screen', 'gesture', 'voice', 'phone', 'remote'] as const) {
     expect(triggerAllowed(s, 'free')).toBe(true);
     expect(triggerAllowed(s, 'paid')).toBe(true);
   }
-  for (const s of ['watch', 'remote'] as const) {
+  for (const s of ['watch'] as const) {
     expect(triggerAllowed(s, 'free')).toBe(false);
     expect(triggerAllowed(s, 'paid')).toBe(true);
   }

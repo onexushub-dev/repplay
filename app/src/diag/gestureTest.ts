@@ -192,7 +192,7 @@ export function buildReport(
   const maxEst = Math.max(-1, ...recognized.map((a) => attemptStats(a).estM ?? -1));
 
   const lines: string[] = [];
-  lines.push('TESTE DO GESTO — Repplay');
+  lines.push('TESTE DO GESTO — Reprize');
   lines.push(`gerado ${new Date(now).toISOString()} · aparelho ${meta.device}`);
   lines.push(
     `câmera: zoom ${meta.zoom}x · ${meta.quality} · quadro ${first === undefined ? '-' : first.frame.join('x')} · ` +
@@ -211,7 +211,7 @@ export function buildReport(
       (withLevel.length === 0
         ? 'sem dado (build antigo)'
         : levels.map((l) => `${l} ${pct(withLevel.filter((s) => s.trace.thermal === l).length, withLevel.length)}`).join(' · ')) +
-      ' (fair: gesto mais lento; serious: gravação cai para 30 fps e depois 720p; critical: gravação para)',
+      ' (fair: gesto mais lento; serious: gravação cai para 30 fps, nunca abaixo de Full HD; critical: gravação para)',
   );
   lines.push('');
   lines.push('RESUMO');

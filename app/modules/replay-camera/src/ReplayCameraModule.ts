@@ -2,6 +2,7 @@ import { NativeModule, requireNativeModule } from 'expo';
 
 import type {
   AnalyzeFocusOptions,
+  BluetoothConnected,
   DeviceUpright,
   ExportClipOptions,
   ExportedClip,
@@ -32,10 +33,18 @@ declare class ReplayCameraModule extends NativeModule<ReplayCameraModuleEvents> 
   setZoom?(factor: number, animated: boolean): void;
   // Screen economy while recording (iOS only: missing on Android and in older builds).
   setScreenEconomy?(on: boolean): void;
+  // Screen economy on the remote phone (iOS only: missing on Android and in older builds).
+  setRemoteScreenDim?(on: boolean): void;
   // Whether the phone records a quality (iOS only: missing on Android and in older builds).
   supportsQuality?(quality: Quality): boolean;
+  // The phone's real output volume, 0-1 (iOS only: missing on Android and in older builds).
+  outputVolume?(): number;
+  // Volume buttons as capture events, true when the phone delivers them (iOS only: missing on Android and in older builds).
+  setCaptureButtons?(enabled: boolean): boolean;
   // TEMP(diag-remote) (iOS only: missing on Android and in older builds).
   diagAudioState?(): string;
+  // The Bluetooth selfie remote as iOS shows it (iOS only: missing on Android and in older builds).
+  bluetoothConnected?(ask: boolean): Promise<BluetoothConnected>;
   requestPermissions(): Promise<boolean>;
   signalSaved(sound: boolean, flash: boolean): void;
   signalSaveFailed(sound: boolean): void;
@@ -75,6 +84,9 @@ declare class ReplayCameraModule extends NativeModule<ReplayCameraModuleEvents> 
   remoteControllerEndRecording?(): void;
   remoteControllerStartRecording?(): void;
   remoteControllerPreview?(on: boolean): void;
+  remoteVoiceSetEnabled?(on: boolean, locale: VoiceLocale): void;
+  getMicrophonePermission?(): 'granted' | 'denied' | 'undetermined';
+  requestMicrophonePermission?(): Promise<boolean>;
   remoteDeviceName?(): string;
   remoteSetDeviceName?(name: string): void;
   shareToInstagramStory(videoPath: string, metaAppId: string): Promise<'opened' | 'unavailable'>;
