@@ -30,12 +30,30 @@ const run = (ms: number) =>
     jest.advanceTimersByTime(ms);
   });
 
-test('opens on the Record story with the steps in the bar', async () => {
+test('opens on the Record story, with only the bars on top: no step names and no logo', async () => {
   await render(<Onboarding />);
   expect(screen.getByText('GRAVE.')).toBeTruthy();
-  expect(screen.getByText('Grave o jogo. Guarde só os melhores lances.')).toBeTruthy();
-  for (const label of ['1 Grave', '2 Salve', '3 Edite', '4 Envie']) expect(screen.getByText(label)).toBeTruthy();
+  expect(screen.getByText('Grave o jogo com o celular parado.')).toBeTruthy();
+  for (const label of ['1 Grave', '2 Salve', '3 Edite', '4 Envie']) expect(screen.queryByText(label)).toBeNull();
+  expect(screen.queryByLabelText('Reprize')).toBeNull();
   expect(screen.getByText('Começar gravação')).toBeTruthy();
+});
+
+test('the Pro Save story has no supporting line and no tabs, only the Apple Watch card', async () => {
+  await render(<Onboarding />);
+  await fireEvent.press(next());
+  await fireEvent.press(next());
+  expect(screen.getByText('Salve pelo pulso com o PRO.')).toBeTruthy();
+  expect(screen.getByText('Apple Watch')).toBeTruthy();
+  expect(screen.queryByLabelText('Formas de salvar o lance')).toBeNull();
+});
+
+test('the Edit story does not talk about PRO', async () => {
+  await render(<Onboarding />);
+  for (let i = 0; i < 3; i++) await fireEvent.press(next());
+  expect(screen.getByText('EDITE.')).toBeTruthy();
+  expect(screen.getByText('O clipe é cortado automaticamente no momento do lance.')).toBeTruthy();
+  expect(screen.queryByText('PRO')).toBeNull();
 });
 
 test('a tap on the right edge goes forward and one on the left goes back', async () => {
@@ -100,7 +118,7 @@ test('the Save story shows its ways, and tapping one opens it', async () => {
 test('the last story explains the camera and asking for it ends the onboarding', async () => {
   await render(<Onboarding />);
   await fireEvent.press(screen.getByText('Pular'));
-  expect(screen.getByText(/a permissão será solicitada a seguir/)).toBeTruthy();
+  expect(screen.getByText('Grátis, sem cadastro e com gravações ilimitadas. A seguir, o Reprize pede acesso à câmera.')).toBeTruthy();
   await act(async () => fireEvent.press(screen.getByText('Permitir câmera e começar')));
   expect(repo.setPrefs).toHaveBeenCalledWith({ onboardingDone: true });
   expect(router.replace).toHaveBeenCalledWith('/setup');
@@ -123,7 +141,7 @@ test('is in English on an English phone', async () => {
   setLocale('en');
   await render(<Onboarding />);
   expect(screen.getByText('RECORD.')).toBeTruthy();
-  expect(screen.getByText('1 Record')).toBeTruthy();
+  expect(screen.getByText('Record the game with your phone in a fixed spot.')).toBeTruthy();
   await fireEvent.press(screen.getByText('Skip'));
   expect(screen.getByText('SHARE.')).toBeTruthy();
 });

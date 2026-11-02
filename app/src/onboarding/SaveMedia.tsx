@@ -61,23 +61,26 @@ export function SaveMedia({ ways, card, onPick }: Props) {
         </Reveal>
       </View>
 
-      <View style={styles.tabs} accessibilityLabel={t('onboarding.ways')}>
-        {ways.map((id, i) => {
-          const on = i === Math.min(card, ways.length - 1);
-          const { Icon } = WAYS[id];
-          return (
-            <Pressable
-              key={id}
-              accessibilityRole="button"
-              accessibilityLabel={t(`onboarding.${id}.name`)}
-              accessibilityState={{ selected: on }}
-              onPress={() => onPick(i)}
-              style={[styles.tab, on && styles.tabOn]}>
-              <Icon size={24} color={on ? colors.onAccent : colors.text} />
-            </Pressable>
-          );
-        })}
-      </View>
+      {/* With a single way (the Pro slide) there is nothing to pick: only its card. */}
+      {ways.length > 1 ? (
+        <View style={styles.tabs} accessibilityLabel={t('onboarding.ways')}>
+          {ways.map((id, i) => {
+            const on = i === Math.min(card, ways.length - 1);
+            const { Icon } = WAYS[id];
+            return (
+              <Pressable
+                key={id}
+                accessibilityRole="button"
+                accessibilityLabel={t(`onboarding.${id}.name`)}
+                accessibilityState={{ selected: on }}
+                onPress={() => onPick(i)}
+                style={[styles.tab, on && styles.tabOn]}>
+                <Icon size={24} color={on ? colors.onAccent : colors.text} />
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
 
       <Reveal key={`card-${current}`} style={styles.card}>
         <View style={styles.cardHead}>
@@ -95,7 +98,6 @@ export function SaveMedia({ ways, card, onPick }: Props) {
         ) : (
           <Text style={styles.how}>{t(`onboarding.${current}.how`)}</Text>
         )}
-        <Text style={styles.when}>{t(`onboarding.${current}.when`)}</Text>
       </Reveal>
     </View>
   );
@@ -158,5 +160,4 @@ const styles = StyleSheet.create({
   planText: { fontFamily: fonts.bodyBold, fontSize: 12, color: colors.text },
   planTextPro: { color: colors.onAccent },
   how: { fontFamily: fonts.bodySemi, fontSize: 15, lineHeight: 21, color: colors.text, marginTop: 2 },
-  when: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.soft },
 });
