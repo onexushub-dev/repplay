@@ -12,13 +12,14 @@ import type { WayId } from './slides';
 
 type IconType = ComponentType<{ color?: string; size?: number }>;
 
-const WAYS: Record<WayId, { Icon: IconType; source: MessageKey; pro: boolean }> = {
-  tap: { Icon: TapIcon, source: 'sources.screen', pro: false },
-  wave: { Icon: WaveIcon, source: 'sources.gesture', pro: false },
-  voice: { Icon: MicIcon, source: 'sources.voice', pro: false },
-  phone: { Icon: QrIcon, source: 'sources.phone', pro: false },
-  watch: { Icon: WatchIcon, source: 'sources.watch', pro: true },
-  bluetooth: { Icon: RemoteIcon, source: 'sources.remote', pro: true },
+/** `pro`: needs the paid plan. `undo`: a remote save, which the player confirms or undoes on the phone's screen. */
+const WAYS: Record<WayId, { Icon: IconType; source: MessageKey; pro: boolean; undo: boolean }> = {
+  tap: { Icon: TapIcon, source: 'sources.screen', pro: false, undo: false },
+  wave: { Icon: WaveIcon, source: 'sources.gesture', pro: false, undo: false },
+  voice: { Icon: MicIcon, source: 'sources.voice', pro: false, undo: false },
+  phone: { Icon: QrIcon, source: 'sources.phone', pro: false, undo: false },
+  watch: { Icon: WatchIcon, source: 'sources.watch', pro: true, undo: true },
+  bluetooth: { Icon: RemoteIcon, source: 'sources.remote', pro: false, undo: true },
 };
 
 type Props = {
@@ -32,7 +33,7 @@ type Props = {
 export function SaveMedia({ ways, card, onPick }: Props) {
   const { t } = useT();
   const current = ways[Math.min(card, ways.length - 1)];
-  const { source, pro } = WAYS[current];
+  const { source, pro, undo } = WAYS[current];
 
   return (
     <View style={styles.root} pointerEvents="box-none">
@@ -51,7 +52,7 @@ export function SaveMedia({ ways, card, onPick }: Props) {
               <Text style={styles.savedTitle}>{t('recording.savedTitle', { number: 1 })}</Text>
               <Text style={styles.savedVia}>{t('recording.savedVia', { source: t(source), seconds: 15 })}</Text>
             </View>
-            {pro ? (
+            {undo ? (
               <View style={styles.undo}>
                 <Text style={styles.undoText}>{t('recording.undo')}</Text>
               </View>

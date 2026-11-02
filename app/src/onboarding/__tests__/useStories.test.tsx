@@ -132,5 +132,6 @@ test('splitHighlight picks the starred word out of a text', () => {
 test('only the Save slides have ways to save, and the Pro slide has the paid ones', () => {
   expect(waysOf('record')).toEqual([]);
   expect(waysOf('saveFree')).toHaveLength(SLIDES[1].cards);
-  expect(waysOf('savePro')).toEqual(['watch', 'bluetooth']);
+  expect(waysOf('savePro')).toEqual(['watch']);
+  expect(waysOf('saveFree')).toContain('bluetooth');
 });

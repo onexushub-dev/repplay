@@ -1,4 +1,4 @@
-/** The onboarding stories: five slides grouped in four steps (Save has two: the free ways and the Pro ones). */
+/** The onboarding stories: five slides grouped in four steps (Save has two: the free ways and the Pro one, the Apple Watch). */
 export type SlideId = 'record' | 'saveFree' | 'savePro' | 'edit' | 'share';
 
 export type Slide = {
@@ -13,8 +13,8 @@ export type Slide = {
 
 export const SLIDES: readonly Slide[] = [
   { id: 'record', step: 0, ms: 7000, cards: 0 },
-  { id: 'saveFree', step: 1, ms: 11000, cards: 4 },
-  { id: 'savePro', step: 1, ms: 9000, cards: 2 },
+  { id: 'saveFree', step: 1, ms: 13500, cards: 5 },
+  { id: 'savePro', step: 1, ms: 6000, cards: 1 },
   { id: 'edit', step: 2, ms: 7500, cards: 0 },
   { id: 'share', step: 3, ms: 0, cards: 0 },
 ];
@@ -26,8 +26,8 @@ export const CARD_MS = 2700;
 
 export type WayId = 'tap' | 'wave' | 'voice' | 'phone' | 'watch' | 'bluetooth';
 
-export const FREE_WAYS: readonly WayId[] = ['tap', 'wave', 'voice', 'phone'];
-export const PRO_WAYS: readonly WayId[] = ['watch', 'bluetooth'];
+export const FREE_WAYS: readonly WayId[] = ['tap', 'wave', 'voice', 'phone', 'bluetooth'];
+export const PRO_WAYS: readonly WayId[] = ['watch'];
 
 /** The ways to save a play a slide shows as cards. */
 export function waysOf(slide: SlideId): readonly WayId[] {
