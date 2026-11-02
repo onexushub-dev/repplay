@@ -71,10 +71,19 @@ describe('openPaywall analytics', () => {
     ]);
   });
 
-  it.each(['cancelled', 'restored'])('reports nothing beyond the view on %s', async (outcome) => {
-    showPaywall.mockResolvedValue(outcome);
+  it('reports nothing beyond the view on cancelled', async () => {
+    showPaywall.mockResolvedValue('cancelled');
     await openPaywall(t, 'upgrade_card');
     expect(sent().map(([name]) => name)).toEqual(['paywall_viewed']);
+  });
+
+  it('reports a restore as purchase_restored, with the paywall it came from', async () => {
+    showPaywall.mockResolvedValue('restored');
+    await openPaywall(t, 'locked_feature', 'pass');
+    expect(sent()).toEqual([
+      ['paywall_viewed', { source: 'locked_feature', offering: 'pass' }],
+      ['purchase_restored', { offering: 'pass' }],
+    ]);
   });
 });
 

@@ -317,6 +317,7 @@ test("the wave gesture's ? opens how to do it and practises with the camera, whi
   await fireEvent.press(screen.getByRole('button', { name: 'Fechar' }));
   expect(screen.queryByText('Como acenar')).toBeNull();
   expect(cam.setGestureEnabled).toHaveBeenLastCalledWith(false);
+  expect(jest.requireMock('../../analytics').sessionSummary.note).toHaveBeenCalledWith('guide');
 });
 
 test("the voice's ? opens how to use it and practises listening, which stops once it closes", async () => {
@@ -416,6 +417,7 @@ test('turning voice on asks for speech permission first', async () => {
   await openSettings();
   await fireEvent.press(screen.getByRole('button', { name: /^Voz/ }));
   expect(camera.requestSpeechPermission).toHaveBeenCalled();
+  expect(jest.requireMock('../../analytics').track).toHaveBeenCalledWith('permission_result', { kind: 'speech', granted: true });
   expect(repo.setPrefs).toHaveBeenCalledWith(
     expect.objectContaining({
       modeSettings: expect.objectContaining({ quadra: expect.objectContaining({ voiceEnabled: true }) }),
@@ -435,6 +437,7 @@ test('voice stays off when speech permission is denied', async () => {
   await fireEvent.press(screen.getByRole('button', { name: /^Voz/ }));
   expect(repo.setPrefs).not.toHaveBeenCalled();
   expect(screen.getByText('Libere o reconhecimento de fala em Ajustes.')).toBeTruthy();
+  expect(jest.requireMock('../../analytics').track).toHaveBeenCalledWith('permission_result', { kind: 'speech', granted: false });
 });
 
 test('the voice tile says when this phone cannot recognize speech offline', async () => {

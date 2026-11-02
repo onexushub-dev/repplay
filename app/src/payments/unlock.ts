@@ -2,6 +2,7 @@ import { Alert } from 'react-native';
 
 import { repo } from '../data/mmkv';
 import type { TFunction } from '../i18n';
+import { track } from '../analytics';
 import type { PaywallSource } from '../analytics/events';
 import { openPaywall } from './feedback';
 import { payments } from '.';
@@ -39,7 +40,10 @@ export async function unlockRecording(sessionId: string, t: TFunction, source: P
   if (option.kind === 'none') return false;
   if (option.kind === 'credit') {
     // A Pass bought just now was bought for this recording; one kept from before is used after the player agrees.
-    if (!boughtHere && !(await askUsePass(t))) return false;
+    if (!boughtHere) {
+      if (!(await askUsePass(t))) return false;
+      track('pass_used');
+    }
     return repo.upgradeSession(sessionId, { passTransactionId: option.passTransactionId }) !== undefined;
   }
   return repo.upgradeSession(sessionId, {}) !== undefined;

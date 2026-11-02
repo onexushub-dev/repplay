@@ -19,6 +19,7 @@ import type { Plan, StartDecision } from '../payments/types';
 import { effectiveSettings } from '../modes/registry';
 import { clampZoom, lensFor } from '../modes/zoom';
 import { sessionSummary, track } from '../analytics';
+import { countBucket, recordingDurationBucket } from '../analytics/session';
 import { createTriggerBus } from '../triggers/bus';
 import { cutMsFor, keepMsFor } from './cut';
 import { initialState, reducer } from './reducer';
@@ -70,6 +71,17 @@ export const SETTLE_MS = 1500;
 const errorCode = (e: unknown): ReplayErrorCode =>
   ((e as { code?: ReplayErrorCode })?.code ?? 'CAMERA_UNAVAILABLE') as ReplayErrorCode;
 
+/** Metrics: one `recording_ended` per game, with how long it ran and how many clips it kept (both as ranges). */
+function reportEnded(repo: Repo, id: string, endedAt: number, reason: 'user' | 'thermal' | 'error'): void {
+  try {
+    const game = repo.getSession(id);
+    const ranMs = game ? endedAt - game.startedAt : 0;
+    track('recording_ended', { reason, duration: recordingDurationBucket(ranMs), clips: countBucket(repo.listClips(id).length) });
+  } catch {
+    // metrics never reach the game
+  }
+}
+
 /** One game: starts the camera, turns triggers into saved clips, and records everything in the repo. */
 export function useReplaySession(deps: SessionDeps) {
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -79,6 +91,8 @@ export function useReplaySession(deps: SessionDeps) {
     stateRef.current = state;
   }, [state]);
   const saving = useRef(false);
+  // Metrics: whether this recording already reported its first quality drop.
+  const qualityLowered = useRef(false);
   // The camera configuration currently open, undefined when off; read synchronously by start().
   // Continuous zoom (iOS): "quality|buffer|audio", the zoom is changed live. Two fixed lenses (Android): "lens|quality|buffer|audio".
   const cameraLens = useRef<string | undefined>(undefined);
@@ -117,7 +131,8 @@ export function useReplaySession(deps: SessionDeps) {
           ...(saved.shortSide !== undefined ? { shortSide: saved.shortSide } : {}),
         }, cutMs);
         if (deps.onClipSaved) deps.onClipSaved(clip.id);
-        track('clip_saved', { trigger: source, mode: deps.repo.getSession(sessionId)?.sport ?? 'quadra' });
+        const game = deps.repo.getSession(sessionId);
+        track('clip_saved', { trigger: source, mode: game ? game.sport : 'quadra' });
         sessionSummary.note('clip_saved', source);
         // A save that finished after its game ended must not move the floor of the next game.
         if (stateRef.current.sessionId === sessionId) cutFloors.current = [...cutFloors.current, at];
@@ -149,9 +164,14 @@ export function useReplaySession(deps: SessionDeps) {
       }),
       camera.addReplayListener('onInterrupted', () => dispatch({ type: 'interrupted' })),
       camera.addReplayListener('onResumed', () => dispatch({ type: 'resumed' })),
-      camera.addReplayListener('onThermalChange', (e) =>
-        dispatch({ type: 'thermal', level: e.level, degraded: e.degraded, quality: e.quality })
-      ),
+      camera.addReplayListener('onThermalChange', (e) => {
+        // Metrics: the first quality drop of a recording, not every later step.
+        if (e.degraded && stateRef.current.phase === 'recording' && !qualityLowered.current) {
+          qualityLowered.current = true;
+          track('recording_quality_lowered', { level: e.level });
+        }
+        dispatch({ type: 'thermal', level: e.level, degraded: e.degraded, quality: e.quality });
+      }),
       camera.addReplayListener('onError', (e) => {
         // The native side has already stopped; keep what was saved and end the game.
         // Forget the camera too, so the next prepare() really reopens it.
@@ -159,7 +179,11 @@ export function useReplaySession(deps: SessionDeps) {
         cameraOpening.current = undefined;
         dispatch({ type: 'cameraOff' });
         const id = stateRef.current.sessionId;
-        if (id) repo.endSession(id, now());
+        if (id) {
+          const endedAt = now();
+          repo.endSession(id, endedAt);
+          reportEnded(repo, id, endedAt, e.message === 'thermal' ? 'thermal' : 'error');
+        }
         dispatch({ type: 'nativeError', code: e.code, thermal: e.message === 'thermal' });
       }),
     ];
@@ -321,6 +345,15 @@ export function useReplaySession(deps: SessionDeps) {
           });
           // Visible to a second start() before React commits.
           stateRef.current = { ...stateRef.current, phase: 'recording', paid };
+          qualityLowered.current = false;
+          track('recording_started', {
+            mode: sport,
+            quality: settings.quality,
+            clip_seconds: config.cutSeconds,
+            plan: paid ? 'pro' : 'free',
+            gesture: settings.gestureEnabled,
+            voice: voiceOn,
+          });
           return 'started';
         } catch (e) {
           // No game: body pose and voice go back off, as while positioning.
@@ -353,7 +386,11 @@ export function useReplaySession(deps: SessionDeps) {
     cameraLens.current = undefined;
     await deps.camera.stopSession().catch(() => {});
     dispatch({ type: 'cameraOff' });
-    if (id) deps.repo.endSession(id, deps.now());
+    if (id) {
+      const endedAt = deps.now();
+      deps.repo.endSession(id, endedAt);
+      reportEnded(deps.repo, id, endedAt, 'user');
+    }
     dispatch({ type: 'stopped' });
     return id;
   }, [deps]);

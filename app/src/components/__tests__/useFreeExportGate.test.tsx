@@ -209,3 +209,17 @@ test('the paywall a sheet leads to says where it was opened: an export or the PR
   await act(async () => void jest.advanceTimersByTime(900));
   expect(mockUnlock).toHaveBeenCalledWith('s1', expect.any(Function), 'upgrade_card');
 });
+
+test('the choice on the sheet is reported with where the sheet came from', async () => {
+  jest.useFakeTimers();
+  await render(<Harness />);
+  (track as jest.Mock).mockClear();
+  await act(async () => void gate.ask('s1', { focus: true, sound: false }, 'share'));
+  await fireEvent.press(screen.getByRole('button', { name: 'Continuar no plano grátis' }));
+  expect(track).toHaveBeenCalledWith('free_export_choice', { choice: 'go', kind: 'share' });
+
+  await act(async () => void jest.advanceTimersByTime(10));
+  await act(async () => void gate.offer('s1', { focus: true, sound: true }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Assinar o PRO' }));
+  expect(track).toHaveBeenCalledWith('free_export_choice', { choice: 'pro', kind: 'unlock' });
+});

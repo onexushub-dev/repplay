@@ -1,10 +1,12 @@
 import { Alert } from 'react-native';
 
+import { track } from '../../analytics';
 import { translate } from '../../i18n';
 import { unlockRecording } from '../unlock';
 import { repo } from '../../data/mmkv';
 import { payments } from '..';
 
+jest.mock('../../analytics', () => ({ track: jest.fn() }));
 jest.mock('..', () => ({ payments: { showPaywall: jest.fn(), unlockOption: jest.fn() } }));
 jest.mock('../../data/mmkv', () => ({ repo: { upgradeSession: jest.fn(() => ({ id: 's1', paid: true })) } }));
 
@@ -40,6 +42,7 @@ test('a waiting Pass is spent on this recording only after the player agrees', a
   answer(t('unlock.use'));
   await expect(done).resolves.toBe(true);
   expect(upgradeSession).toHaveBeenCalledWith('s1', { passTransactionId: 'tx-1' });
+  expect(track).toHaveBeenCalledWith('pass_used');
 });
 
 test('"Agora não" leaves the Pass and the recording as they were', async () => {
@@ -48,6 +51,7 @@ test('"Agora não" leaves the Pass and the recording as they were', async () => 
   answer(t('unlock.keep'));
   await expect(done).resolves.toBe(false);
   expect(upgradeSession).not.toHaveBeenCalled();
+  expect(track).not.toHaveBeenCalledWith('pass_used');
 });
 
 test('with nothing to spend the Single Pass paywall opens, and a cancel changes nothing', async () => {
@@ -65,6 +69,7 @@ test('a Pass bought in the paywall goes to this recording without asking again',
   await expect(unlockRecording('s1', t)).resolves.toBe(true);
   expect(upgradeSession).toHaveBeenCalledWith('s1', { passTransactionId: 'tx-2' });
   expect(alert).not.toHaveBeenCalled();
+  expect(track).not.toHaveBeenCalledWith('pass_used'); // bought here: that is purchase_completed
 });
 
 test('a restore in the paywall never spends a Pass it did not buy: an old one still asks first', async () => {

@@ -15,6 +15,7 @@ export async function openPaywall(t: TFunction, source: PaywallSource, offering:
   track('paywall_viewed', { source, offering });
   const outcome = await payments.showPaywall(offering);
   if (outcome === 'purchased') track('purchase_completed', { offering });
+  if (outcome === 'restored') track('purchase_restored', { offering });
   if (outcome === 'error') track('purchase_failed', { reason: 'error' });
   if (outcome === 'error') Alert.alert(t('payments.paywallError'));
   return outcome;

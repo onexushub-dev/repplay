@@ -1,4 +1,4 @@
-import { createSessionSummary } from '../session';
+import { createSessionSummary, recordingDurationBucket } from '../session';
 
 function setup(now: () => number = () => 0) {
   const sent: { name: string; props?: unknown }[] = [];
@@ -79,4 +79,12 @@ describe('session summary', () => {
     summary.flush();
     expect(sent[0].props).toMatchObject({ clips: '1', top_trigger: 'none' });
   });
+});
+
+test('a recording length falls in the wider ranges of recording_ended', () => {
+  expect(recordingDurationBucket(4 * 60_000)).toBe('<5m');
+  expect(recordingDurationBucket(5 * 60_000)).toBe('5-15m');
+  expect(recordingDurationBucket(29 * 60_000)).toBe('15-30m');
+  expect(recordingDurationBucket(60 * 60_000)).toBe('30-60m');
+  expect(recordingDurationBucket(61 * 60_000)).toBe('>60m');
 });

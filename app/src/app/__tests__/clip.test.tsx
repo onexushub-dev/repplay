@@ -1000,7 +1000,7 @@ describe('analytics', () => {
     await open();
     await pressAction('Salvar na galeria');
     expect(events()).toEqual([
-      ['export_completed', { quality: '1080p' }],
+      ['export_completed', { quality: '1080p', plan: 'pro' }],
       ['clip_shared', { destination: 'photos' }],
     ]);
     expect(sessionSummary.note).toHaveBeenCalledWith('export');
@@ -1010,7 +1010,7 @@ describe('analytics', () => {
     await open();
     await pressAction('Compartilhar');
     expect(events()).toEqual([
-      ['export_completed', { quality: '1080p' }],
+      ['export_completed', { quality: '1080p', plan: 'pro' }],
       ['clip_shared', { destination: 'share_sheet' }],
     ]);
   });

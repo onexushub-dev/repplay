@@ -1,5 +1,5 @@
 import { File } from 'expo-file-system';
-import { Asset, requestPermissionsAsync } from 'expo-media-library';
+import { Asset } from 'expo-media-library';
 import { router, useLocalSearchParams } from 'expo-router';
 import { shareAsync } from 'expo-sharing';
 import { useVideoPlayer } from 'expo-video';
@@ -40,6 +40,8 @@ import { knownShape, rememberShape } from '../../components/clipShape';
 import { useClipThumbnail } from '../../components/useClipThumbnail';
 import { useReduceMotion } from '../../components/useReduceMotion';
 import { sessionSummary, track as trackEvent } from '../../analytics';
+import { exportPlanOf } from '../../analytics/plans';
+import { askPhotos } from '../../share/askPhotos';
 import { readFocusFile } from '../../data/focusFile';
 import { removeFile, repo } from '../../data/mmkv';
 import { focusQueue } from '../../focus/appFocusQueue';
@@ -640,14 +642,14 @@ function ClipEditor({ id, leaving, onSwitch, onShown }: EditorProps) {
 
   /** The export reached the player (the gallery or the share sheet): one report of its size and where it went. */
   function reportDelivered(destination: 'photos' | 'share_sheet') {
-    trackEvent('export_completed', { quality: `${side}p` });
+    trackEvent('export_completed', { quality: `${side}p`, plan: exportPlanOf(plan, repo.getSession(id)) });
     trackEvent('clip_shared', { destination });
     sessionSummary.note('export');
   }
 
   const save = () =>
     run('save', async (path) => {
-      const { granted } = await requestPermissionsAsync(true, ['video']);
+      const granted = await askPhotos();
       if (!granted) return setNotice('clip.noPhotos');
       await Asset.create(`file://${path}`);
       reportDelivered('photos');

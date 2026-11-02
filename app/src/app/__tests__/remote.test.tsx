@@ -556,7 +556,9 @@ describe('analytics', () => {
 
   test('a pairing by QR reports the QR method', async () => {
     await render(<Remote />);
-    await act(async () => mockScanner.onBarcodeScanned?.({ data: LINK }));
+    await act(async () => {
+      if (mockScanner.onBarcodeScanned) mockScanner.onBarcodeScanned({ data: LINK });
+    });
     await emit('onRemotePairing', { phase: 'paired', peer: { id: 'h1', name: 'Quadra 1' } });
     expect(track).toHaveBeenCalledWith('pairing_completed', { method: 'qr', kind: 'remote' });
   });
@@ -695,6 +697,8 @@ test('the first time it is connected it explains voice before iOS asks, once', a
   });
   expect(camera().requestMicrophonePermission).toHaveBeenCalled();
   expect(camera().requestSpeechPermission).toHaveBeenCalled();
+  expect(track).toHaveBeenCalledWith('permission_result', { kind: 'microphone', granted: true });
+  expect(track).toHaveBeenCalledWith('permission_result', { kind: 'speech', granted: true });
   expect(jest.requireMock('../../data/mmkv').repo.getPrefs().remoteVoiceAsked).toBe(true);
   expect(screen.getByLabelText('Salvar por voz, Diga “salvar”')).toBeTruthy();
   alert.mockRestore();

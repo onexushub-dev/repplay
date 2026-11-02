@@ -133,6 +133,5 @@ Antes de lançar com a chave:
 - Montar os painéis: retenção, funil do onboarding (etapa 1 até concluir, paywall, compra) e uso das features pelo `session_summary`.
 
 Adiado:
-- `session_summary.guides` fica sempre em 0: o app não tem chave de guia.
 - `paywall_viewed` com origem `onboarding` não existe ainda: nenhuma tela das stories abre o paywall.
-- Exportação em lote conta no `session_summary`, mas não gera `export_completed` por clipe.
+- Exportação em lote conta no `session_summary`, mas não gera `export_completed` por clipe (e por isso não diz o plano: só a exportação de um clipe traz `plan`).

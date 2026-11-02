@@ -463,10 +463,18 @@ export default function Remote() {
 
   /** Asks for the microphone, then speech recognition; true when both are granted. */
   const askVoice = async (): Promise<boolean> => {
-    const micOk = mic === 'granted' || (await requestMicrophonePermission());
+    let micOk = mic === 'granted';
+    if (!micOk) {
+      micOk = await requestMicrophonePermission();
+      track('permission_result', { kind: 'microphone', granted: micOk });
+    }
     setMic(micOk ? 'granted' : 'denied');
     if (!micOk) return false;
-    const speechOk = speech === 'granted' || (await requestSpeechPermission());
+    let speechOk = speech === 'granted';
+    if (!speechOk) {
+      speechOk = await requestSpeechPermission();
+      track('permission_result', { kind: 'speech', granted: speechOk });
+    }
     setSpeech(speechOk ? 'granted' : 'denied');
     return speechOk;
   };

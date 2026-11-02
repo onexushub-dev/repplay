@@ -160,6 +160,11 @@ export default function Setup() {
   const [expanded, setExpanded] = useState(false);
   // A trigger's "?" (the wave gesture, voice): how to use it, and practice with the live camera.
   const [practice, setPractice] = useState<'gesture' | 'voice' | undefined>(undefined);
+  /** Opens a trigger's guide; each opening counts as a guide in the session summary. */
+  const openPractice = (kind: 'gesture' | 'voice') => {
+    sessionSummary.note('guide');
+    setPractice(kind);
+  };
   const [sheetHeight, setSheetHeight] = useState(0);
   // Swipe up on the sheet opens it, swipe down closes it; taps still reach the controls inside.
   const [swipe] = useState(() =>
@@ -275,12 +280,17 @@ export default function Setup() {
   /** The voice practice asks for the permission on its own (the trigger stays as the player set it). */
   async function allowSpeech() {
     const granted = await requestSpeechPermission();
+    track('permission_result', { kind: 'speech', granted });
     setSpeech(granted ? 'granted' : 'denied');
   }
 
   async function toggleVoice() {
     if (voiceOn) return updateMode({ voiceEnabled: false });
-    const granted = speechGranted || (await requestSpeechPermission());
+    let granted = speechGranted;
+    if (!granted) {
+      granted = await requestSpeechPermission();
+      track('permission_result', { kind: 'speech', granted });
+    }
     setSpeech(granted ? 'granted' : 'denied');
     setSpeechDenied(!granted);
     if (granted) updateMode({ voiceEnabled: true });
@@ -340,7 +350,7 @@ export default function Setup() {
 
   const busy = useRef(false);
   /** A tap on something Pro-only: counted as a blocked feature, then the paywall opens. */
-  function lockedFeature(feature: 'quality_4k' | 'clip_length' | 'bluetooth_remote' | 'watch') {
+  function lockedFeature(feature: 'quality_4k' | 'clip_length' | 'watch') {
     track('pro_feature_blocked', { feature });
     void openPaywall(t, 'locked_feature');
   }
@@ -557,7 +567,7 @@ export default function Setup() {
                       openingRemoteSheet(); // the camera stays on under the sheet (presses are heard through it)
                       router.push({ pathname: '/devices', params: { kind: 'remote' } });
                     }
-                  : () => lockedFeature('bluetooth_remote')
+                  : () => void openPaywall(t, 'locked_feature')
               }
             />
             {/* The paid trigger: in the free plan the Apple Watch tile alone carries the outline and the "Pro" badge. */}
@@ -585,7 +595,7 @@ export default function Setup() {
               active={voiceOn}
               disabled={!voiceSupported}
               onPress={voiceSupported ? () => void toggleVoice() : undefined}
-              help={voiceSupported ? { label: t('voiceGuide.help'), onPress: () => setPractice('voice') } : undefined}
+              help={voiceSupported ? { label: t('voiceGuide.help'), onPress: () => openPractice('voice') } : undefined}
             />
             <TriggerTile
               icon={<WaveIcon />}
@@ -593,7 +603,7 @@ export default function Setup() {
               status={settings.gestureEnabled ? t('setup.on') : t('setup.off')}
               active={settings.gestureEnabled}
               onPress={() => updateMode({ gestureEnabled: !settings.gestureEnabled })}
-              help={{ label: t('gestureGuide.help'), onPress: () => setPractice('gesture') }}
+              help={{ label: t('gestureGuide.help'), onPress: () => openPractice('gesture') }}
             />
           </View>
         </View>

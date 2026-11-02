@@ -1,4 +1,4 @@
-import { Asset, requestPermissionsAsync } from 'expo-media-library';
+import { Asset } from 'expo-media-library';
 import { Directory, File, Paths } from 'expo-file-system';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -7,6 +7,7 @@ import type { ExportJob } from '../components/ExportProgress';
 import type { Clip } from '../data/schema';
 import { repo } from '../data/mmkv';
 import { sessionSummary, track } from '../analytics';
+import { askPhotos } from './askPhotos';
 import { useT } from '../i18n/useT';
 import { openPaywall } from '../payments/feedback';
 import { canCompile } from '../payments/limits';
@@ -96,7 +97,7 @@ export function useBatchActions(o: { plan: Plan; labelOf: (clip: Clip) => string
   }
 
   async function grantPhotos(): Promise<boolean> {
-    const { granted } = await requestPermissionsAsync(true, ['video']);
+    const granted = await askPhotos();
     if (!granted && alive.current) setCard({ text: t('clip.noPhotos') });
     return granted;
   }

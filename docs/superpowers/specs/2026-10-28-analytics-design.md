@@ -29,7 +29,9 @@ All app code talks to a thin `track()` wrapper, never to the PostHog SDK directl
 - User-facing opt-out in Settings; when off, `track()` is a no-op and nothing is queued.
 - Verify at implementation time that these option names match the installed `posthog-react-native` version.
 
-## Event catalogue (21)
+## Event catalogue (27)
+
+Updated 2026-11-02 for main's freemium/PRO/Pass model, thermal stops and trigger guides.
 
 | Area | Event | Properties |
 |---|---|---|
@@ -38,26 +40,32 @@ All app code talks to a thin `track()` wrapper, never to the PostHog SDK directl
 | Onboarding | `onboarding_step_viewed` | `step` 1–4 |
 | Onboarding | `onboarding_completed` | |
 | Onboarding | `onboarding_skipped` | `step` |
-| Onboarding | `permission_result` | `kind`, `granted` |
+| Onboarding | `permission_result` | `kind` (`camera`, `microphone`, `speech`, `photos`), `granted`; only after a real system prompt |
+| Recording | `recording_started` | `mode`, `quality`, `clip_seconds`, `plan` (`free`/`pro`), `gesture`, `voice` |
+| Recording | `recording_ended` | `reason` (`user`/`thermal`/`error`), `duration` (bucket), `clips` (bucket) |
+| Recording | `recording_quality_lowered` | `level` (thermal); once per recording |
 | Recording | `clip_saved` | `trigger`, `mode` |
 | Recording | `trigger_failed` | `trigger`, `reason` |
 | Editing | `clip_edit_tool_used` | `tool` |
 | Editing | ~~`cut_suggestion_applied`~~ | removed with the cut suggestion (main) |
 | Editing | `focus_mode_used` | |
-| Output | `export_completed` | `quality` |
+| Output | `export_completed` | `quality`, `plan` (`free`/`pass`/`pro`) |
 | Output | `export_failed` | `reason` |
 | Output | `clip_shared` | `destination` |
 | Devices | `pairing_completed` | `method`, `kind` |
 | Devices | `pairing_failed` | `reason` |
-| Monetization | `paywall_viewed` | `source` |
-| Monetization | `purchase_completed` | |
+| Monetization | `paywall_viewed` | `source`, `offering` (`default`/`pass`) |
+| Monetization | `purchase_completed` | `offering` |
+| Monetization | `purchase_restored` | `offering` |
+| Monetization | `pass_used` | (a Pass kept from before, spent on a recording) |
 | Monetization | `purchase_failed` | `reason` |
 | Monetization | `pro_feature_blocked` | `feature` |
 | Monetization | `free_export_limit_hit` | |
+| Monetization | `free_export_choice` | `choice` (`pro`/`pass`/`go`/`cancel`), `kind` (`save`/`share`/`unlock`) |
 
 `purchase_started` is not in the catalogue: the RevenueCat paywall performs the purchase itself and `showPaywall()` only reports the outcome, so "started" cannot be told apart from `paywall_viewed`.
 
-Deliberately excluded (low value or high volume): screen views, zoom and toggle events, guides, economy mode, delete and batch actions, feedback and generic error events. Their usage shows up as counts inside `session_summary`.
+Deliberately excluded (low value or high volume): screen views, zoom and toggle events, guide openings (counted as `guides` in `session_summary`), economy mode, delete and batch actions, feedback and generic error events. Their usage shows up as counts inside `session_summary`.
 
 ## Volume control
 

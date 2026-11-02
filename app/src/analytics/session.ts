@@ -1,10 +1,10 @@
 import type { TriggerSource } from '../data/schema';
 import type { Analytics } from './core';
-import type { CountBucket, DurationBucket } from './events';
+import type { CountBucket, DurationBucket, RecordingDurationBucket } from './events';
 
 export type SummaryCounter = 'clip_saved' | 'export' | 'zoom' | 'guide' | 'economy';
 
-function countBucket(n: number): CountBucket {
+export function countBucket(n: number): CountBucket {
   if (n <= 0) return '0';
   if (n === 1) return '1';
   if (n <= 5) return '2-5';
@@ -18,6 +18,16 @@ function durationBucket(ms: number): DurationBucket {
   if (minutes < 5) return '1-5m';
   if (minutes <= 30) return '5-30m';
   return '>30m';
+}
+
+/** How long a recording ran, in the ranges of `recording_ended`. */
+export function recordingDurationBucket(ms: number): RecordingDurationBucket {
+  const minutes = ms / 60_000;
+  if (minutes < 5) return '<5m';
+  if (minutes < 15) return '5-15m';
+  if (minutes < 30) return '15-30m';
+  if (minutes <= 60) return '30-60m';
+  return '>60m';
 }
 
 /**

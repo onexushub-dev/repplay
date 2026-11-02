@@ -84,12 +84,13 @@ export function useFreeExportGate(): {
 
   const choose = useCallback(
     (choice: FreeExportChoice) => {
+      if (open !== null) track('free_export_choice', { choice, kind: open.kind });
       setOpen(null);
       const unlocking = choice === 'pro' || choice === 'pass';
       const timer = setTimeout(settle, unlocking && Platform.OS === 'ios' ? DISMISS_FALLBACK_MS : 0);
       waiting.current = { choice, timer };
     },
-    [settle],
+    [open, settle],
   );
 
   useEffect(

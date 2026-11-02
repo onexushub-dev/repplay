@@ -23,8 +23,9 @@ export const sessionSummary = createSessionSummary(analytics);
 
 /** Reads the project key and host from app.config.js (`extra.posthog`); null when the build has none. */
 function posthogConfig(): { key: string; host: string } | null {
-  const extra = Constants.expoConfig?.extra?.posthog as { key?: string; host?: string } | undefined;
-  return extra?.key && extra.host ? { key: extra.key, host: extra.host } : null;
+  const expo = Constants.expoConfig;
+  const extra = expo && expo.extra ? (expo.extra.posthog as { key?: string; host?: string } | undefined) : undefined;
+  return extra && extra.key && extra.host ? { key: extra.key, host: extra.host } : null;
 }
 
 /** Starts analytics once, from the root layout: picks the vendor, begins the first session and sends `app_open`. */
@@ -39,7 +40,7 @@ export function initAnalytics(): void {
     target = {
       capture(name, props) {
         try {
-          client ??= createPostHogAdapter({ ...config, installId: analytics.installId() });
+          if (client === null) client = createPostHogAdapter({ ...config, installId: analytics.installId() });
         } catch {
           return; // the SDK failed to start: the app goes on without metrics
         }

@@ -1009,4 +1009,42 @@ describe('analytics', () => {
     expect(camera.saveClip).toHaveBeenCalledTimes(1);
     expect(track).not.toHaveBeenCalled();
   });
+
+  test('a started game reports what it records with', async () => {
+    await started();
+    expect(track).toHaveBeenCalledWith(
+      'recording_started',
+      expect.objectContaining({ mode: 'futevolei', plan: 'free', gesture: expect.any(Boolean), voice: expect.any(Boolean) }),
+    );
+    const [, props] = (track as jest.Mock).mock.calls.find(([name]) => name === 'recording_started');
+    expect(typeof props.quality).toBe('string');
+    expect(typeof props.clip_seconds).toBe('number');
+  });
+
+  test('a game the player ends reports its length and clips as ranges', async () => {
+    const { view, finishSave, advance } = await started();
+    await act(async () => view.result.current.trigger('screen'));
+    await act(async () => finishSave());
+    advance(20 * 60_000);
+    await act(async () => void (await view.result.current.stop()));
+    expect(track).toHaveBeenCalledWith('recording_ended', { reason: 'user', duration: '15-30m', clips: '1' });
+  });
+
+  test('a game the heat or the camera ends says so', async () => {
+    const hot = await started();
+    await act(async () => hot.emit('onError', { code: 'ENCODER_FAILED', message: 'thermal' }));
+    expect(track).toHaveBeenCalledWith('recording_ended', { reason: 'thermal', duration: '<5m', clips: '0' });
+
+    const broken = await started();
+    await act(async () => broken.emit('onError', { code: 'ENCODER_FAILED', message: 'boom' }));
+    expect(track).toHaveBeenCalledWith('recording_ended', { reason: 'error', duration: '<5m', clips: '0' });
+  });
+
+  test('the first quality drop of a recording is reported once', async () => {
+    const { emit } = await started();
+    await act(async () => emit('onThermalChange', { level: 'serious', degraded: true }));
+    await act(async () => emit('onThermalChange', { level: 'critical', degraded: true }));
+    const drops = (track as jest.Mock).mock.calls.filter(([name]) => name === 'recording_quality_lowered');
+    expect(drops).toEqual([['recording_quality_lowered', { level: 'serious' }]]);
+  });
 });
