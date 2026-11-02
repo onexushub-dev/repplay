@@ -746,7 +746,7 @@ describe('Modo Foco', () => {
       expect(screen.getByText('Salve seus clipes com qualidade PRO')).toBeTruthy();
       expect(screen.getByText('Seu clipe tem som e Modo Foco')).toBeTruthy();
       expect(screen.getByLabelText('GRÁTIS: Sem som, Sem Modo Foco, HD, Com marca d’água')).toBeTruthy();
-      expect(screen.getByLabelText('PRO: Com som, Modo Foco, Full HD, Sem marca d’água')).toBeTruthy();
+      expect(screen.getByLabelText('PRO: Com som, Com Modo Foco, Full HD, Sem marca d’água')).toBeTruthy();
     });
 
     test('"Continuar no plano grátis" exports HD at the chosen speed with the mark, no sound and no framing', async () => {
@@ -764,13 +764,13 @@ describe('Modo Foco', () => {
       expect(repo.markFreeNoticeShown).toHaveBeenCalledWith('s1');
     });
 
-    test('a later export of the same recording shows only the short note and goes straight on', async () => {
+    test('a later export of the same recording goes straight on, with no notice', async () => {
       jest.requireMock('../../data/mmkv').__setNoticeShown(true);
       __setClip({ ...base, focus: ready });
       await open();
       await pressAction('Salvar na galeria');
       expect(screen.queryByText('Continuar no plano grátis')).toBeNull();
-      expect(screen.getByText(/^Salvo em HD, .*com marca d’água\.$/)).toBeTruthy();
+      expect(screen.queryByText(/^Salvo em /)).toBeNull();
       await act(async () => {});
       expect(camera.exportClip).toHaveBeenCalledTimes(1);
       expect(camera.exportClip).toHaveBeenCalledWith(expect.objectContaining({ width: 1280, height: 720, watermark: true }));

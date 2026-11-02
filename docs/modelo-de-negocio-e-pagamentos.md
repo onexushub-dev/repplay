@@ -13,7 +13,7 @@ Gravações **ilimitadas** no grátis. Dentro do app, todo jogador vê e usa tud
 3. **compilar clipes**;
 4. o gatilho **Apple Watch**.
 
-Antes de exportar no grátis, o jogador sempre vê o que o PRO coloca no vídeo (Full HD, som, Modo Foco, sem marca d'água): um painel destacado na primeira exportação de cada gravação e um aviso discreto nas seguintes. A copy destaca o que o PRO entrega e diz com clareza, numa frase, o que o vídeo grátis daquele clipe não leva. Nenhuma trava aparece de surpresa.
+Antes de exportar no grátis, o jogador sempre vê o que o PRO coloca no vídeo (Full HD, som, Modo Foco, sem marca d'água): um painel destacado na primeira exportação de cada gravação; as seguintes seguem sem aviso. O painel mostra o próprio clipe como sai no grátis e no PRO. Nenhuma trava aparece de surpresa.
 
 ## Planos
 
@@ -43,30 +43,31 @@ Livres nos dois planos, inclusive no vídeo exportado: velocidade (câmera lenta
 
 ## Transparência das travas
 
-O jogador vê o que é PRO antes de exportar, em três lugares:
+O jogador vê o que é PRO antes de exportar, em quatro lugares:
 
 - **Preparação:** a duração acima de 15 s, a qualidade 4K e o Apple Watch têm cadeado e selo "PRO"; tocar abre o paywall. Nada começa sozinho depois de uma compra.
 - **Editor (gravação grátis):** Som e Modo Foco funcionam, com selo "PRO" e a dica "O som toca aqui no app, mas só vai no clipe salvo ou enviado com o PRO" (o mesmo para o Modo Foco). A prévia mostra a marca d'água.
+- **Card PRO na tela de uma gravação grátis:** curto ("Seus clipes com qualidade PRO" · "Full HD, som, Modo Foco e sem marca d'água." · Liberar). Tocar abre o mesmo painel do aviso de exportação, com o título "Libere a qualidade PRO nesta gravação": **Assinar o PRO** abre o paywall `default` (mensal e anual) e **Só para esta gravação** abre o Passe (oferta `pass`, ou o Passe guardado). Sem "Continuar no plano grátis", porque nada está sendo exportado; fecha pelo X. Aparece sempre que o jogador toca, mesmo depois do aviso de exportação. "Minhas gravações" não tem card PRO.
 - **Aviso antes de exportar** (salvar ou enviar, um clipe ou em lote), contado **por gravação**:
   - **Painel destacado na primeira exportação de cada gravação:** título único conforme o botão tocado (Salvar: "Salve seus clipes com qualidade PRO"; Enviar: "Envie seus clipes com qualidade PRO"). Logo abaixo, um selo diz o que o clipe tem e o vídeo grátis deixa de fora: "Seu clipe tem som", "Seu clipe tem Modo Foco" ou "Seu clipe tem som e Modo Foco" ("Seus clipes têm…" no lote); sem selo quando o clipe não tem nenhum dos dois. Em seguida, **duas prévias do próprio clipe**, lado a lado:
-    - **GRÁTIS:** imagem escurecida, selo HD, som cortado e marca d'água; lista "Sem som", "Sem Modo Foco", "HD", "Com marca d'água".
-    - **PRO:** borda âmbar, selo Full HD, som e o quadro do Modo Foco quando o clipe usa; lista "Com som", "Modo Foco", "Full HD", "Sem marca d'água".
-    - O que o clipe usa vem primeiro nas duas listas e, no grátis, em vermelho.
-    - Ações: **Liberar tudo com o PRO** (botão principal, sem legenda; planos e teste ficam no paywall) · **Liberar só esta gravação**, com a linha "Passe Avulso · vale para os N clipes dela" (o Passe; sem Passe guardado, abre o paywall "Liberar esta gravação") · **Continuar no plano grátis** (link) · **X** para cancelar.
-  - **Aviso discreto nas exportações seguintes da mesma gravação:** uma linha curta que não interrompe ("Salvo em HD, sem som, sem Modo Foco e com marca d'água." ou "Enviado em…"; sem som só quando o clipe tem som) com a ação **Liberar**; a exportação segue sem toque extra.
-  - Exemplo: 5 gravações numa manhã de basquete. O primeiro clipe exportado de cada uma das 5 mostra o painel destacado; do segundo clipe em diante, cada gravação mostra o aviso discreto. Uma exportação em lote conta como uma exportação daquela gravação.
+    - **GRÁTIS:** a mesma imagem (sem escurecer), selo HD, som cortado e marca d'água; lista "Sem som", "Sem Modo Foco", "HD", "Com marca d'água".
+    - **PRO:** borda âmbar, selo Full HD, som e o quadro do Modo Foco quando o clipe usa; lista "Com som", "Com Modo Foco", "Full HD", "Sem marca d'água".
+    - O que o clipe usa vem primeiro nas duas listas e, no grátis, em laranja com "X" (cor de aviso; o vermelho é só de "gravando"). "Sem Modo Foco" fica sempre assim, mesmo quando o clipe não usa o Modo Foco, porque o grátis nunca o leva.
+    - Ações: **Assinar o PRO** (botão principal, Âmbar com coroa e a linha "Todas as gravações · mensal ou anual"; planos e teste ficam no paywall) · **Só para esta gravação** (só contorno, discreto), com a linha "Pagamento único · todos os clipes inclusos" (o Passe; abre "Só para esta gravação") · **Continuar no plano grátis** (link) · **X** para cancelar.
+  - **Exportações seguintes da mesma gravação:** seguem direto, sem nenhum aviso.
+  - Exemplo: 5 gravações numa manhã de basquete. O primeiro clipe exportado de cada uma das 5 mostra o painel destacado; do segundo clipe em diante, nenhuma mostra aviso. Uma exportação em lote conta como uma exportação daquela gravação.
 
 Compilar no grátis abre o paywall direto.
 
 ## Como se paga
 
 - **PRO** (assinatura, entitlement `pro`): `pro_monthly` **R$ 14,90/mês** e `pro_annual` **R$ 99,90/ano** (≈ R$ 8,33/mês, 44% abaixo de 12 mensalidades). Nos EUA: **$6.90/mês** e **$49.90/ano** (≈ $4.16/mês, 40% abaixo de 12 mensalidades). **Teste grátis de 7 dias no anual e no mensal; a loja cobra no oitavo dia.**
-- **Passe Avulso** (consumível, `single_pass`, **R$ 4,90**; **$2.49** nos EUA), oferecido como **"Liberar só esta gravação"** no painel da exportação; o paywall dele se chama **"Liberar esta gravação"**:
+- **Passe Avulso** (consumível, `single_pass`, **R$ 4,90**; **$2.49** nos EUA), oferecido como **"Só para esta gravação"**:
   - é usado **só quando o jogador escolhe**, numa gravação grátis já feita; nunca é gasto sozinho ao começar uma gravação;
   - libera nessa gravação a exportação em Full HD, com som, com Modo Foco, sem marca, e compilar os clipes dela;
   - não libera duração acima de 15 s nem 4K, porque a gravação foi feita em 15 s e Full HD;
   - um Passe comprado e ainda não usado fica guardado para a próxima vez que o jogador escolher liberar uma gravação.
-- **Paywall** (RevenueCat): a oferta `default` tem só Anual (pré-selecionado, com preço mensal equivalente e selo de economia calculado pelo painel) e Mensal. O Passe fica numa oferta própria (`pass`), aberta por "Liberar só esta gravação", com o mesmo visual. Textos e prompts do painel: `docs/brand/paywall-reprize.md`.
+- **Paywall** (RevenueCat): a oferta `default` tem só Anual (pré-selecionado, com preço mensal equivalente e selo de economia calculado pelo painel) e Mensal. O Passe fica numa oferta própria (`pass`), aberta por "Só para esta gravação", com o mesmo visual. Textos e prompts do painel: `docs/brand/paywall-reprize.md`.
 - Preço e moeda vêm sempre da loja; nenhum valor no código.
 
 ## Como o app decide
@@ -88,7 +89,7 @@ Tudo é teste até a publicação. Depois de publicar, os números (conversão p
 - [x] `payments/limits.ts`: `captureConfig` e `qualityAllowed` continuam (grátis em Full HD, 4K só no pago, 15 s); `PAID_TRIGGERS = ['watch']`. Conferir os cadeados "PRO" do 4K e das durações acima de 15 s na preparação.
 - [x] Exportação grátis em HD: 720 incluído em `share/exportSize.ts` (`ShortSide`, `FREE_SIDE`, estimativa de tamanho); o grátis não oferece escolha de tamanho em `app/clip/[id].tsx`.
 - [x] `share/exportOptions.ts`: grátis em 720, com a velocidade escolhida (sai o `speed = 1` do grátis), sem som, sem Modo Foco, com marca; pago em Full HD ou 4K/2K; `freeLosses` inclui a resolução e tira a velocidade.
-- [x] `components/FreeExportSheet.tsx` e `components/useFreeExportGate.tsx`: painel destacado na primeira exportação de cada gravação e aviso discreto, sem interromper, nas seguintes; o mesmo no salvar e enviar em lote; ação "Liberar recursos PRO nessa gravação".
+- [x] `components/FreeExportSheet.tsx` e `components/useFreeExportGate.tsx`: painel destacado na primeira exportação de cada gravação; as seguintes, sem aviso; o mesmo no salvar e enviar em lote; ação "Só para esta gravação".
 - [x] Guardar por gravação que o painel já apareceu (`Session.freeNoticeShown`, em `data/schema.ts` e `data/repo.ts`).
 - [x] `payments/unlock.ts`: Passe guardado ou compra pela oferta `pass`; o Passe comprado nesse fluxo é usado na gravação.
 - [x] Editor: selo "PRO" em Som e Modo Foco numa gravação grátis; Velocidade sem selo.

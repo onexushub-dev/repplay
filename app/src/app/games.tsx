@@ -6,10 +6,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../components/Button';
 import { GameCard } from '../components/GameCard';
 import { EmptyState } from '../components/EmptyState';
-import { UpgradeCard } from '../components/UpgradeCard';
-import { openPaywall } from '../payments/feedback';
-import { sessionPlan } from '../payments/rules';
-import { useProActive } from '../share/entitlement';
 import { BackIcon, ReplayIcon } from '../components/icons';
 import { sessionLabel } from '../components/format';
 import { removeFile, repo } from '../data/mmkv';
@@ -31,10 +27,6 @@ export default function Games() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- version is the change signal
     [version],
   );
-
-  // Pro unlocks every recording while it lasts: the gallery says so while some recordings are still on the free plan.
-  const pro = useProActive();
-  const hasFreeRecordings = games.some((g) => g.clips > 0 && sessionPlan(g.session) === 'free');
 
   // A game still being recorded has no end yet: it is never offered for deleting.
   const confirmDelete = (id: string, label: string, clips: number) => {
@@ -74,17 +66,6 @@ export default function Games() {
       </Text>
       <FlatList
         data={games}
-        ListHeaderComponent={
-          !pro && hasFreeRecordings ? (
-            <UpgradeCard
-              title={t('games.proTitle')}
-              message={t('games.proMessage')}
-              action={t('games.proAction')}
-              badge={t('setup.proBadge')}
-              onPress={() => void openPaywall(t)}
-            />
-          ) : undefined
-        }
         keyExtractor={(g) => g.session.id}
         contentContainerStyle={styles.list}
         ListEmptyComponent={

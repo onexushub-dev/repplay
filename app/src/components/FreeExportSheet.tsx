@@ -6,15 +6,17 @@ import type { FreeLosses } from '../share/exportOptions';
 import type { TFunction } from '../i18n';
 import { useT } from '../i18n/useT';
 import { colors, fonts, radius } from '../theme/tokens';
-import { Button } from './Button';
-import { CheckIcon, ClipIcon, CloseIcon, FocusIcon, MutedIcon, SoundIcon } from './icons';
+import { CheckIcon, ClipIcon, CloseIcon, CrownIcon, FocusIcon, MutedIcon, SoundIcon } from './icons';
 import { useClipThumbnail } from './useClipThumbnail';
 
-/** `pro`: buy PRO · `pass`: the Single Pass for the whole recording ("Liberar só esta gravação") · `go`: export on the free plan · `cancel`: nothing. */
+/** `pro`: subscribe to PRO ("Assinar o PRO") · `pass`: the Single Pass for the whole recording ("Só para esta gravação") · `go`: export on the free plan · `cancel`: nothing. */
 export type FreeExportChoice = 'pro' | 'pass' | 'go' | 'cancel';
 
-/** What the player tapped: the title speaks to it ("Salve…" or "Envie…"). */
-export type FreeExportKind = 'save' | 'share';
+/**
+ * What opened the sheet, which its title speaks to: Salvar ("Salve…"), Enviar ("Envie…"), or the PRO card of a
+ * recording (`unlock`: nothing is being exported, so there is no "Continuar no plano grátis").
+ */
+export type FreeExportKind = 'save' | 'share' | 'unlock';
 
 type Props = {
   visible: boolean;
@@ -25,24 +27,10 @@ type Props = {
   preview?: { path: string; atMs: number } | null;
   /** More than one clip leaves at once (a batch): the chip says "Seus clipes…". */
   many?: boolean;
-  /** How many clips the recording has: the Single Pass covers all of them, and the button says so. */
-  clipCount: number;
   onChoose: (choice: FreeExportChoice) => void;
   /** The sheet is fully gone (iOS only: Android has no such event). */
   onDismissed?: () => void;
 };
-
-/**
- * The free video of this clip, in words: always HD, without Modo Foco and with the watermark, plus no sound when the clip
- * has sound ("HD, sem som, sem Modo Foco e com marca d’água"). Used by the short note.
- */
-export function freeVideoItems(losses: FreeLosses, t: TFunction): string {
-  const items = [t('freeExport.itemHd')];
-  if (losses.sound) items.push(t('freeExport.itemNoSound'));
-  items.push(t('freeExport.itemNoFocus'));
-  items.push(t('freeExport.itemWatermark'));
-  return `${items.slice(0, -1).join(', ')} ${t('freeExport.and')} ${items[items.length - 1]}`;
-}
 
 type Item = { key: 'sound' | 'focus' | 'quality' | 'watermark'; used: boolean };
 
@@ -61,7 +49,7 @@ const PRO_KEY = { sound: 'freeExport.proSound', focus: 'freeExport.proFocus', qu
 type CardProps = { pro: boolean; items: Item[]; thumb: string | undefined; focus: boolean };
 
 /**
- * One preview of the clip: the frame as that plan exports it (free: dimmed, HD, muted, with the mark; PRO: Full HD, sound
+ * One preview of the clip: the frame as that plan exports it (free: HD, muted, with the mark; PRO: Full HD, sound
  * and the Modo Foco frame when the clip uses it) and the four things that change, side by side with the other plan.
  */
 function PlanCard({ pro, items, thumb, focus }: CardProps) {
@@ -72,7 +60,6 @@ function PlanCard({ pro, items, thumb, focus }: CardProps) {
     <View style={[styles.card, pro && styles.cardPro]} accessible accessibilityLabel={t('freeExport.cardA11y', { plan, items: labels.join(', ') })}>
       <View style={styles.thumb}>
         {thumb ? <Image testID="export-preview-frame" source={{ uri: thumb }} style={StyleSheet.absoluteFill} contentFit="cover" /> : <ClipIcon color={colors.border} size={28} />}
-        {!pro ? <View style={styles.dim} /> : null}
         {pro && focus ? <View style={styles.focusFrame} /> : null}
         <View style={styles.badge}>
           <Text style={[styles.badgeText, pro && { color: colors.accent }]}>{t(pro ? 'freeExport.proQuality' : 'freeExport.freeQuality')}</Text>
@@ -82,22 +69,26 @@ function PlanCard({ pro, items, thumb, focus }: CardProps) {
       </View>
       <Text style={[styles.cardHead, pro && { color: colors.accent }]}>{plan}</Text>
       <View style={styles.items}>
-        {items.map((i, n) => (
-          <View key={i.key} style={styles.item}>
-            <View style={styles.itemIcon}>
-              {pro ? (
-                <CheckIcon color={colors.accent} size={14} />
-              ) : i.used ? (
-                <CloseIcon color={colors.rec} size={12} />
-              ) : (
-                <Text style={styles.dash}>–</Text>
-              )}
+        {items.map((i, n) => {
+          // The free plan never has Modo Foco: its line is always crossed out, like a lost sound.
+          const marked = i.used || (!pro && i.key === 'focus');
+          return (
+            <View key={i.key} style={styles.item}>
+              <View style={styles.itemIcon}>
+                {pro ? (
+                  <CheckIcon color={colors.accent} size={14} />
+                ) : marked ? (
+                  <CloseIcon color={colors.warning} size={12} />
+                ) : (
+                  <Text style={styles.dash}>–</Text>
+                )}
+              </View>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.itemText, pro && styles.itemTextPro, marked && (pro ? styles.itemUsedPro : styles.itemUsedFree)]}>
+                {labels[n]}
+              </Text>
             </View>
-            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.itemText, pro && styles.itemTextPro, i.used && (pro ? styles.itemUsedPro : styles.itemUsedFree)]}>
-              {labels[n]}
-            </Text>
-          </View>
-        ))}
+          );
+        })}
       </View>
     </View>
   );
@@ -106,9 +97,9 @@ function PlanCard({ pro, items, thumb, focus }: CardProps) {
 /**
  * The full notice before a free recording leaves the app for the first time (save, share, a batch): the clip twice, as
  * the free plan and as PRO export it, a line naming what this clip has that the free video leaves out, and the ways to
- * unlock it. Later exports of the same recording get the short note.
+ * unlock it. Later exports of the same recording go on with no notice.
  */
-export function FreeExportSheet({ visible, kind, losses, preview, many = false, clipCount, onChoose, onDismissed }: Props) {
+export function FreeExportSheet({ visible, kind, losses, preview, many = false, onChoose, onDismissed }: Props) {
   const { t } = useT();
   const thumb = useClipThumbnail(preview ? preview.path : '', preview ? preview.atMs : 0);
   const all: Item[] = [
@@ -120,7 +111,7 @@ export function FreeExportSheet({ visible, kind, losses, preview, many = false, 
   // What this clip uses first: that is what the player cares about.
   const items = [...all.filter((i) => i.used), ...all.filter((i) => !i.used)];
   const used = usedLine(losses, many, t);
-  const passScope = t('freeExport.passScope', { count: Math.max(1, clipCount) });
+  const passScope = t('freeExport.passScope');
   return (
     <Modal
       transparent
@@ -146,7 +137,7 @@ export function FreeExportSheet({ visible, kind, losses, preview, many = false, 
           <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} bounces={false}>
             {/* One line on every phone: the font shrinks to fit rather than wrap. */}
             <Text accessibilityRole="header" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={styles.title}>
-              {t(kind === 'share' ? 'freeExport.titleShare' : 'freeExport.titleSave')}
+              {t(kind === 'share' ? 'freeExport.titleShare' : kind === 'unlock' ? 'freeExport.titleUnlock' : 'freeExport.titleSave')}
             </Text>
             {used !== null ? (
               <View style={styles.chip}>
@@ -161,7 +152,25 @@ export function FreeExportSheet({ visible, kind, losses, preview, many = false, 
           </ScrollView>
 
           <View style={styles.actions}>
-            <Button label={t('freeExport.pro')} onPress={() => onChoose('pro')} />
+            {/* The subscription leads: amber, the crown, and what it covers ("Todas as gravações · mensal ou anual"). */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('freeExport.pro')}
+              accessibilityHint={t('freeExport.proScope')}
+              onPress={() => onChoose('pro')}
+              style={({ pressed }) => [styles.pro, pressed && { opacity: 0.85 }]}>
+              {/* Centered like the Single Pass and the link under it: the crown sits beside the title. */}
+              <View style={styles.proHead}>
+                <CrownIcon color={colors.onAccent} size={20} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={styles.proTitle}>
+                  {t('freeExport.pro')}
+                </Text>
+              </View>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={styles.proScope}>
+                {t('freeExport.proScope')}
+              </Text>
+            </Pressable>
+            {/* The Single Pass is the quiet alternative: outline only, smaller, "Só para esta gravação" against "Todas as gravações". */}
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t('freeExport.pass')}
@@ -175,34 +184,15 @@ export function FreeExportSheet({ visible, kind, losses, preview, many = false, 
                 {passScope}
               </Text>
             </Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel={t('freeExport.go')} hitSlop={8} onPress={() => onChoose('go')} style={styles.link}>
-              <Text style={styles.linkText}>{t('freeExport.go')}</Text>
-            </Pressable>
+            {kind !== 'unlock' ? (
+              <Pressable accessibilityRole="button" accessibilityLabel={t('freeExport.go')} hitSlop={8} onPress={() => onChoose('go')} style={styles.link}>
+                <Text style={styles.linkText}>{t('freeExport.go')}</Text>
+              </Pressable>
+            ) : null}
           </View>
         </SafeAreaView>
       </View>
     </Modal>
-  );
-}
-
-/**
- * The short note on the later exports of a recording that already showed the full notice: one line over the screen
- * that never stops the export, with "Liberar" for the recording.
- */
-export function FreeExportBrief({ losses, kind, onUnlock }: { losses: FreeLosses | null; kind: FreeExportKind; onUnlock: () => void }) {
-  const { t } = useT();
-  if (losses === null) return null;
-  return (
-    <SafeAreaView edges={['top']} pointerEvents="box-none" style={styles.briefWrap}>
-      <View style={styles.brief} accessibilityLiveRegion="polite">
-        <Text style={styles.briefText} numberOfLines={2}>
-          {t(kind === 'share' ? 'freeExport.briefShare' : 'freeExport.briefSave', { items: freeVideoItems(losses, t) })}
-        </Text>
-        <Pressable accessibilityRole="button" hitSlop={8} onPress={onUnlock} style={styles.briefAction}>
-          <Text style={styles.briefActionText}>{t('freeExport.briefUnlock')}</Text>
-        </Pressable>
-      </View>
-    </SafeAreaView>
   );
 }
 
@@ -239,7 +229,6 @@ const styles = StyleSheet.create({
   card: { flex: 1, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.ground, overflow: 'hidden' },
   cardPro: { borderWidth: 1.5, borderColor: colors.accent },
   thumb: { aspectRatio: 16 / 10, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, overflow: 'hidden' },
-  dim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(10,10,10,0.45)' },
   focusFrame: { position: 'absolute', top: '14%', bottom: '14%', left: '30%', right: '30%', borderWidth: 1.5, borderColor: colors.accent, borderRadius: 10 },
   badge: { position: 'absolute', top: 6, left: 6, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, backgroundColor: 'rgba(10,10,10,0.75)' },
   badgeText: { fontFamily: fonts.bodyBold, fontSize: 10, letterSpacing: 0.5, color: colors.text },
@@ -252,29 +241,17 @@ const styles = StyleSheet.create({
   dash: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.muted },
   itemText: { flex: 1, fontFamily: fonts.bodySemi, fontSize: 13, color: colors.muted },
   itemTextPro: { color: colors.text },
-  itemUsedFree: { fontFamily: fonts.bodyBold, color: colors.rec },
+  // Orange, the app's warning color: red (rec) only ever means "recording".
+  itemUsedFree: { fontFamily: fonts.bodyBold, color: colors.warning },
   itemUsedPro: { fontFamily: fonts.bodyBold },
   actions: { gap: 8, marginTop: 14 },
-  pass: { minHeight: 58, borderRadius: radius.button, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, paddingVertical: 8 },
-  passText: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.text },
-  passScope: { fontFamily: fonts.bodySemi, fontSize: 12, color: colors.muted, marginTop: 2 },
+  pro: { minHeight: 66, alignItems: 'center', justifyContent: 'center', borderRadius: radius.button, backgroundColor: colors.accent, paddingHorizontal: 18, paddingVertical: 10 },
+  proHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, maxWidth: '100%' },
+  proTitle: { flexShrink: 1, fontFamily: fonts.bodyBold, fontSize: 18, color: colors.onAccent },
+  proScope: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.onAccent, opacity: 0.75, marginTop: 1, textAlign: 'center' },
+  pass: { minHeight: 52, borderRadius: radius.button, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, paddingVertical: 8 },
+  passText: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.soft },
+  passScope: { fontFamily: fonts.body, fontSize: 12, color: colors.muted, marginTop: 2 },
   link: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   linkText: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.soft },
-  briefWrap: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, elevation: 20 },
-  brief: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginHorizontal: 12,
-    marginTop: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  briefText: { flex: 1, fontFamily: fonts.body, fontSize: 13, color: colors.text },
-  briefAction: { minHeight: 32, justifyContent: 'center' },
-  briefActionText: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.accent },
 });

@@ -221,12 +221,37 @@ describe('free recording', () => {
     repo.sessionStats.mockReturnValue({ clips: 2, bytes: 1, recordedMs: 1 });
   };
 
-  test('the free plan shows the card, and tapping it opens the paywall', async () => {
+  // The sheet waits for its slide-out before a paywall (iOS): give it that time.
+  const afterSheet = () => act(async () => void (await new Promise((r) => setTimeout(r, 900))));
+
+  test('the free plan shows a short card; tapping it opens the PRO sheet, with no "continue" since nothing is exported', async () => {
     setup('free');
     await render(<SessionSummary />);
-    expect(screen.getByText('Desbloqueie os recursos PRO')).toBeTruthy();
-    expect(screen.getByText('Full HD, som, Modo Foco, sem marca d’água e os melhores lances compilados em um vídeo só. Com o PRO ou liberando os recursos PRO nesta gravação.')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: /^Desbloqueie os recursos PRO/ }));
+    expect(screen.getByText('Seus clipes com qualidade PRO')).toBeTruthy();
+    expect(screen.getByText('Full HD, som, Modo Foco e sem marca d’água.')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: /^Seus clipes com qualidade PRO/ }));
+    expect(screen.getByText('Libere a qualidade PRO nesta gravação')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Assinar o PRO' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Só para esta gravação' })).toBeTruthy();
+    expect(screen.queryByText('Continuar no plano grátis')).toBeNull();
+    expect(payments.showPaywall).not.toHaveBeenCalled(); // nothing opens before the player picks
+  });
+
+  test('from the card, "Assinar o PRO" opens the PRO paywall (monthly and annual)', async () => {
+    setup('free');
+    await render(<SessionSummary />);
+    await fireEvent.press(screen.getByRole('button', { name: /^Seus clipes com qualidade PRO/ }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Assinar o PRO' }));
+    await afterSheet();
+    expect(payments.showPaywall).toHaveBeenCalledWith('default');
+  });
+
+  test('from the card, "Só para esta gravação" opens the Single Pass paywall', async () => {
+    setup('free');
+    await render(<SessionSummary />);
+    await fireEvent.press(screen.getByRole('button', { name: /^Seus clipes com qualidade PRO/ }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Só para esta gravação' }));
+    await afterSheet();
     expect(payments.showPaywall).toHaveBeenCalledWith('pass');
   });
 
@@ -234,14 +259,14 @@ describe('free recording', () => {
     setup('free');
     payments.unlockOption.mockReturnValue({ kind: 'pro' });
     await render(<SessionSummary />);
-    expect(screen.queryByText('Desbloqueie os recursos PRO')).toBeNull();
+    expect(screen.queryByText('Seus clipes com qualidade PRO')).toBeNull();
     payments.unlockOption.mockReturnValue({ kind: 'none' });
   });
 
   test.each(['pass', 'pro'])('on the %s plan there is no card', async (tier) => {
     setup(tier);
     await render(<SessionSummary />);
-    expect(screen.queryByText('Desbloqueie os recursos PRO')).toBeNull();
+    expect(screen.queryByText('Seus clipes com qualidade PRO')).toBeNull();
     expect(screen.queryByText('Liberar')).toBeNull();
   });
 
