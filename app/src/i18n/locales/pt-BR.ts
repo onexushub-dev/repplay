@@ -238,8 +238,6 @@ export const ptBR: Messages = {
     title: 'MINHAS GRAVAÇÕES',
     emptyTitle: 'Nenhuma gravação ainda',
     emptyMessage: 'Comece uma gravação e os lances que você salvar aparecem aqui.',
-    metrics: 'Métricas de uso anônimas',
-    metricsNote: 'Nada sobre você nem sobre seus vídeos. Ajuda a melhorar o Reprize.',
     detail: '%{clips} · %{time}',
     deleteRecording: 'Apagar gravação',
     deleteRecordingNamed: 'Apagar gravação %{name}',

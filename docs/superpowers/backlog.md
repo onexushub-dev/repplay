@@ -127,7 +127,8 @@ Antes de lançar com a chave:
 - Criar o projeto no PostHog Cloud dos EUA (us.posthog.com; o app é usado no Brasil e nos EUA) e colocar a chave pública em `REPRIZE_POSTHOG_KEY` (`app/.env.local` e no EAS). Sem a chave o app não envia nada.
 - Gerar um novo dev client: o SDK (`posthog-react-native`, `expo-application`) é nativo.
 - Passar pelo app com a chave e conferir em Live Events: cada evento uma vez, só com as propriedades do spec, nenhum perfil de pessoa criado, nenhum IP.
-- Política de privacidade: uma linha sobre métricas anônimas de uso e a chave em "Minhas gravações".
+- Política de privacidade: uma linha sobre métricas anônimas de uso e um e-mail para quem quiser se opor (LGPD, legítimo interesse): o app ainda não tem onde desligar.
+- Sem tela de configurações, o switch "Métricas de uso anônimas" saiu do app (2026-11-02). O núcleo continua com `analytics.setEnabled()` / `isEnabled()`: quando houver a tela, é só pôr o switch nela. No Data safety do Google Play, declarar a coleta como obrigatória enquanto não houver o switch.
 - Etiqueta de privacidade da App Store: dados de uso não vinculados ao usuário; sem pedido de rastreamento (ATT).
 - Montar os painéis: retenção, funil do onboarding (etapa 1 até concluir, paywall, compra) e uso das features pelo `session_summary`.
 

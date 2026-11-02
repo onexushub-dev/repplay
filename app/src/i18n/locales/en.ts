@@ -240,8 +240,6 @@ export const en = {
     title: 'MY RECORDINGS',
     emptyTitle: 'No recordings yet',
     emptyMessage: 'Start a recording and the plays you save show up here.',
-    metrics: 'Anonymous usage metrics',
-    metricsNote: 'Nothing about you or your videos. Helps improve Reprize.',
     detail: '%{clips} · %{time}',
     deleteRecording: 'Delete recording',
     deleteRecordingNamed: 'Delete recording %{name}',
