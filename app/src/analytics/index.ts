@@ -11,7 +11,15 @@ let target: AnalyticsAdapter = { capture: () => {} };
 let started = false;
 
 export const analytics = createAnalytics({
-  adapter: { capture: (name, props) => target.capture(name, props) },
+  adapter: {
+    capture: (name, props) => target.capture(name, props),
+    screen: (name) => {
+      if (target.screen) target.screen(name);
+    },
+    setEnabled: (on) => {
+      if (target.setEnabled) target.setEnabled(on);
+    },
+  },
   kv,
   newId: randomUUID,
 });
@@ -37,14 +45,27 @@ export function initAnalytics(): void {
     // Built on the first event that is actually sent, never before: the SDK talks to the server as soon as it exists, and
     // someone who opted out must not cause a single request.
     let client: AnalyticsAdapter | null = null;
+    /** The SDK, built on first use; null when it failed to start (the app goes on without metrics). */
+    const sdk = (): AnalyticsAdapter | null => {
+      try {
+        if (client === null) client = createPostHogAdapter({ ...config, installId: analytics.installId() });
+      } catch {
+        return null;
+      }
+      return client;
+    };
     target = {
       capture(name, props) {
-        try {
-          if (client === null) client = createPostHogAdapter({ ...config, installId: analytics.installId() });
-        } catch {
-          return; // the SDK failed to start: the app goes on without metrics
-        }
-        client.capture(name, props);
+        const c = sdk();
+        if (c !== null) c.capture(name, props);
+      },
+      screen(name) {
+        const c = sdk();
+        if (c !== null && c.screen) c.screen(name);
+      },
+      // Only an SDK that already exists is told: opting out must not be what starts it.
+      setEnabled(on) {
+        if (client !== null && client.setEnabled) client.setEnabled(on);
       },
     };
   }

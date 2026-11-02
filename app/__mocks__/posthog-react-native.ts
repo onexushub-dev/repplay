@@ -3,6 +3,9 @@
 export class PostHog {
   static instances: PostHog[] = [];
   readonly capture = jest.fn();
+  readonly screen = jest.fn();
+  readonly optOut = jest.fn();
+  readonly optIn = jest.fn();
 
   constructor(
     readonly apiKey: string,

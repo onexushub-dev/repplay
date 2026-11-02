@@ -24,7 +24,10 @@ All app code talks to a thin `track()` wrapper, never to the PostHog SDK directl
 ## Privacy rules
 
 - Random install ID generated with `expo-crypto`, persisted in MMKV. No account, email, IDFA or IP.
-- PostHog configured with person profiles off (`personProfiles: 'never'`), GeoIP/IP capture off, autocapture off, session replay off, automatic lifecycle and screen events off. Only the events in this spec are ever sent.
+- PostHog configured with person profiles off (`personProfiles: 'never'`), GeoIP/IP capture off, autocapture off, session replay off. Only the events in this spec are ever sent, plus (since 2026-11-02) two kinds of SDK events that PostHog's built-in dashboards need for active users, sessions, first-time users and devices:
+  - **App lifecycle** (`captureAppLifecycleEvents: true`): Application Installed, Updated, Opened, Became Active and Backgrounded, with the app version and build.
+  - **Screen views** (`$screen`): one per route change, named by the route pattern (`clip/[id]`), never by the ids in the URL; capped at 100 per session.
+  - Opting out also calls the SDK's `optOut()`, so its lifecycle events stop too. Country stays unknown (no IP, no GeoIP); `$locale` and `$timezone`, which the SDK adds to every event, tell Brazil from the US.
 - Properties are enumerated values or bucketed numbers (for example duration in ranges). Never video, file names, device names, free text, or error message strings.
 - User-facing opt-out in Settings; when off, `track()` is a no-op and nothing is queued.
 - Verify at implementation time that these option names match the installed `posthog-react-native` version.
@@ -65,7 +68,7 @@ Updated 2026-11-02 for main's freemium/PRO/Pass model, thermal stops and trigger
 
 `purchase_started` is not in the catalogue: the RevenueCat paywall performs the purchase itself and `showPaywall()` only reports the outcome, so "started" cannot be told apart from `paywall_viewed`.
 
-Deliberately excluded (low value or high volume): screen views, zoom and toggle events, guide openings (counted as `guides` in `session_summary`), economy mode, delete and batch actions, feedback and generic error events. Their usage shows up as counts inside `session_summary`.
+Deliberately excluded (low value or high volume): zoom and toggle events, guide openings (counted as `guides` in `session_summary`), economy mode, delete and batch actions, feedback and generic error events. Their usage shows up as counts inside `session_summary`.
 
 ## Volume control
 

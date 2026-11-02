@@ -133,3 +133,29 @@ describe('analytics core', () => {
     analytics.track('screen_viewed');
   });
 });
+
+describe('screen views', () => {
+  test('a screen view goes to the adapter by its route pattern', () => {
+    const { adapter, analytics } = setup();
+    analytics.screen('clip/[id]');
+    expect(adapter.screens).toEqual(['clip/[id]']);
+  });
+
+  test('screen views stop at 100 per session and start over with a new one', () => {
+    const { adapter, analytics } = setup();
+    for (let i = 0; i < 120; i++) analytics.screen('games');
+    expect(adapter.screens).toHaveLength(100);
+    analytics.startSession();
+    analytics.screen('games');
+    expect(adapter.screens).toHaveLength(101);
+  });
+
+  test('opting out stops screen views and tells the SDK, and opting in tells it too', () => {
+    const { adapter, analytics } = setup();
+    analytics.setEnabled(false);
+    analytics.screen('games');
+    expect(adapter.screens).toEqual([]);
+    analytics.setEnabled(true);
+    expect(adapter.enabled).toEqual([false, true]);
+  });
+});
