@@ -10,6 +10,7 @@ import {
   remoteControllerStop,
 } from '../../modules/replay-camera';
 import type { RemotePairFailure } from '../../modules/replay-camera/src/ReplayCamera.types';
+import { track } from '../analytics';
 import { Button } from '../components/Button';
 import { CheckIcon, CloseIcon } from '../components/icons';
 import { PulseRing } from '../components/PulseRing';
@@ -75,8 +76,10 @@ export default function Pair() {
         setHostName(e.peer.name);
         setFailure(null);
         setPaired(true);
+        track('pairing_completed', { method: 'qr', kind: 'remote' });
       } else if (e.phase === 'failed') {
         setFailure(e.reason);
+        track('pairing_failed', { reason: e.reason });
       }
     });
     remoteControllerStart();
@@ -92,9 +95,18 @@ export default function Pair() {
   // No answer for a while becomes "not found" (a new attempt starts the wait over).
   useEffect(() => {
     if (link === null || paired || failure !== null) return;
-    const id = setTimeout(() => setFailure('notFound'), CONNECT_TIMEOUT_MS);
+    const id = setTimeout(() => {
+      setFailure('notFound');
+      track('pairing_failed', { reason: 'notFound' });
+    }, CONNECT_TIMEOUT_MS);
     return () => clearTimeout(id);
   }, [link, paired, failure, attempt]);
+
+  // A link that is not a pairing link is a failed pairing too (a mangled QR code, an old link).
+  const invalidLink = link === null;
+  useEffect(() => {
+    if (invalidLink) track('pairing_failed', { reason: 'invalid_link' });
+  }, [invalidLink]);
 
   // Opened straight from the QR code there is no screen behind this one: go to the start instead of doing nothing.
   const leave = () => {

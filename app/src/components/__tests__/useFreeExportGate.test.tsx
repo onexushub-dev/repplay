@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { useEffect } from 'react';
 
+import { track } from '../../analytics';
 import { useClipThumbnail } from '../useClipThumbnail';
 import { useFreeExportGate } from '../useFreeExportGate';
 
@@ -21,6 +22,7 @@ const mockOpenPaywall = jest.fn(async (..._a: unknown[]) => 'cancelled');
 jest.mock('../../payments/feedback', () => ({ openPaywall: (...a: unknown[]) => mockOpenPaywall(...a) }));
 const mockUnlock = jest.fn(async (..._a: unknown[]) => false);
 jest.mock('../../payments/unlock', () => ({ unlockRecording: (...a: unknown[]) => mockUnlock(...a) }));
+jest.mock('../../analytics', () => ({ track: jest.fn() }));
 
 let gate: ReturnType<typeof useFreeExportGate>;
 function Harness() {
@@ -118,7 +120,7 @@ test('"Só para esta gravação" (the Single Pass) stops the export and unlocks 
   await fireEvent.press(screen.getByRole('button', { name: 'Só para esta gravação' }));
   await act(async () => void jest.advanceTimersByTime(900));
   expect(go).toBe(false);
-  expect(mockUnlock).toHaveBeenCalledWith('s1', expect.any(Function));
+  expect(mockUnlock).toHaveBeenCalledWith('s1', expect.any(Function), 'export_limit');
   expect(mockOpenPaywall).not.toHaveBeenCalled();
 });
 
@@ -177,6 +179,47 @@ test('offer() opens the sheet from the PRO card of a recording, even after its e
   expect(screen.queryByText('Continuar no plano grátis')).toBeNull();
   await fireEvent.press(screen.getByRole('button', { name: 'Só para esta gravação' }));
   await act(async () => void jest.advanceTimersByTime(900));
-  expect(mockUnlock).toHaveBeenCalledWith('s1', expect.any(Function));
+  expect(mockUnlock).toHaveBeenCalledWith('s1', expect.any(Function), 'upgrade_card');
   expect(mockMarked).toEqual([]);
+});
+
+test('opening the free-plan notice reports free_export_limit_hit; a recording that already saw it reports nothing', async () => {
+  (track as jest.Mock).mockClear();
+  await render(<Harness />);
+  await act(async () => void gate.ask('s1', { focus: true, sound: false }, 'save'));
+  expect(track).toHaveBeenCalledTimes(1);
+  expect(track).toHaveBeenCalledWith('free_export_limit_hit');
+
+  (track as jest.Mock).mockClear();
+  mockSessions.s2 = { freeNoticeShown: true };
+  await act(async () => void gate.ask('s2', { focus: true, sound: false }, 'save'));
+  expect(track).not.toHaveBeenCalled();
+});
+
+test('the paywall a sheet leads to says where it was opened: an export or the PRO card', async () => {
+  jest.useFakeTimers();
+  await render(<Harness />);
+  await act(async () => void gate.ask('s1', { focus: true, sound: false }, 'save'));
+  await fireEvent.press(screen.getByRole('button', { name: 'Assinar o PRO' }));
+  await act(async () => void jest.advanceTimersByTime(900));
+  expect(mockOpenPaywall).toHaveBeenCalledWith(expect.any(Function), 'export_limit');
+
+  await act(async () => void gate.offer('s1', { focus: true, sound: true }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Só para esta gravação' }));
+  await act(async () => void jest.advanceTimersByTime(900));
+  expect(mockUnlock).toHaveBeenCalledWith('s1', expect.any(Function), 'upgrade_card');
+});
+
+test('the choice on the sheet is reported with where the sheet came from', async () => {
+  jest.useFakeTimers();
+  await render(<Harness />);
+  (track as jest.Mock).mockClear();
+  await act(async () => void gate.ask('s1', { focus: true, sound: false }, 'share'));
+  await fireEvent.press(screen.getByRole('button', { name: 'Continuar no plano grátis' }));
+  expect(track).toHaveBeenCalledWith('free_export_choice', { choice: 'go', kind: 'share' });
+
+  await act(async () => void jest.advanceTimersByTime(10));
+  await act(async () => void gate.offer('s1', { focus: true, sound: true }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Assinar o PRO' }));
+  expect(track).toHaveBeenCalledWith('free_export_choice', { choice: 'pro', kind: 'unlock' });
 });

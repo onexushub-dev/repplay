@@ -1,8 +1,11 @@
 import { act, renderHook } from '@testing-library/react-native';
 
+import { sessionSummary, track } from '../../analytics';
 import { createRepo, type KV } from '../../data/repo';
 import type { StartDecision } from '../../payments/types';
 import { SETTLE_MS, type SessionDeps, useReplaySession } from '../useReplaySession';
+
+jest.mock('../../analytics', () => ({ track: jest.fn(), sessionSummary: { note: jest.fn() } }));
 
 type Listener = (e: any) => void;
 
@@ -974,4 +977,74 @@ test('a saved clip is handed over for the Modo Foco analysis', async () => {
   await act(async () => finishSave());
   const [clip] = deps.repo.listClips(view.result.current.state.sessionId!);
   expect(deps.onClipSaved).toHaveBeenCalledWith(clip.id);
+});
+
+describe('analytics', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  test('a saved clip reports its trigger and mode, and counts in the session summary', async () => {
+    const { view, finishSave } = await started();
+    await act(async () => view.result.current.trigger('watch'));
+    await act(async () => finishSave());
+    expect(track).toHaveBeenCalledWith('clip_saved', { trigger: 'watch', mode: 'futevolei' });
+    expect(sessionSummary.note).toHaveBeenCalledWith('clip_saved', 'watch');
+  });
+
+  test('a save that fails reports trigger_failed and no clip_saved', async () => {
+    const { view, camera } = await started();
+    camera.saveClip.mockRejectedValueOnce(new Error('disk full'));
+    await act(async () => view.result.current.trigger('screen'));
+    expect(track).toHaveBeenCalledWith('trigger_failed', { trigger: 'screen', reason: 'save_failed' });
+    expect(track).not.toHaveBeenCalledWith('clip_saved', expect.anything());
+    expect(sessionSummary.note).not.toHaveBeenCalled();
+  });
+
+  test('a trigger the bus drops (debounced) reports nothing', async () => {
+    const { view, camera, finishSave, advance } = await started();
+    await act(async () => view.result.current.trigger('screen'));
+    await act(async () => finishSave());
+    (track as jest.Mock).mockClear();
+    advance(500); // inside the 3 s debounce
+    await act(async () => view.result.current.trigger('remote'));
+    expect(camera.saveClip).toHaveBeenCalledTimes(1);
+    expect(track).not.toHaveBeenCalled();
+  });
+
+  test('a started game reports what it records with', async () => {
+    await started();
+    expect(track).toHaveBeenCalledWith(
+      'recording_started',
+      expect.objectContaining({ mode: 'futevolei', plan: 'free', gesture: expect.any(Boolean), voice: expect.any(Boolean) }),
+    );
+    const [, props] = (track as jest.Mock).mock.calls.find(([name]) => name === 'recording_started');
+    expect(typeof props.quality).toBe('string');
+    expect(typeof props.clip_seconds).toBe('number');
+  });
+
+  test('a game the player ends reports its length and clips as ranges', async () => {
+    const { view, finishSave, advance } = await started();
+    await act(async () => view.result.current.trigger('screen'));
+    await act(async () => finishSave());
+    advance(20 * 60_000);
+    await act(async () => void (await view.result.current.stop()));
+    expect(track).toHaveBeenCalledWith('recording_ended', { reason: 'user', duration: '15-30m', clips: '1' });
+  });
+
+  test('a game the heat or the camera ends says so', async () => {
+    const hot = await started();
+    await act(async () => hot.emit('onError', { code: 'ENCODER_FAILED', message: 'thermal' }));
+    expect(track).toHaveBeenCalledWith('recording_ended', { reason: 'thermal', duration: '<5m', clips: '0' });
+
+    const broken = await started();
+    await act(async () => broken.emit('onError', { code: 'ENCODER_FAILED', message: 'boom' }));
+    expect(track).toHaveBeenCalledWith('recording_ended', { reason: 'error', duration: '<5m', clips: '0' });
+  });
+
+  test('the first quality drop of a recording is reported once', async () => {
+    const { emit } = await started();
+    await act(async () => emit('onThermalChange', { level: 'serious', degraded: true }));
+    await act(async () => emit('onThermalChange', { level: 'critical', degraded: true }));
+    const drops = (track as jest.Mock).mock.calls.filter(([name]) => name === 'recording_quality_lowered');
+    expect(drops).toEqual([['recording_quality_lowered', { level: 'serious' }]]);
+  });
 });

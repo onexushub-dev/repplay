@@ -20,6 +20,16 @@
  * The old REPPLAY_RC_* and LANCE_RC_* names still work, so an existing .env.local keeps working.
  *
  * With no key the app runs as free and the paywall reports an error.
+ *
+ * Anonymous usage metrics (PostHog, US cloud: the app is used in Brazil and the US), read into extra.posthog:
+ *
+ *   REPRIZE_POSTHOG_KEY=phc_...            project API key (public, write-only)
+ *   REPRIZE_POSTHOG_HOST=https://...       optional; defaults to https://us.i.posthog.com (EU cloud: https://eu.i.posthog.com)
+ *
+ * The host must be the region the PostHog project was created in, or nothing arrives. In the project, turn
+ * "IP data capture" off (Settings > Project > General): US projects capture it by default.
+ *
+ * With no key the app sends no metrics at all (dev builds, tests, CI).
  */
 module.exports = ({ config }) => {
   const bundleId = process.env.REPRIZE_BUNDLE_ID || process.env.REPPLAY_BUNDLE_ID || process.env.LANCE_BUNDLE_ID;
@@ -43,6 +53,10 @@ module.exports = ({ config }) => {
       ios: process.env.REPRIZE_RC_IOS_KEY || process.env.REPPLAY_RC_IOS_KEY || process.env.LANCE_RC_IOS_KEY,
       android: process.env.REPRIZE_RC_ANDROID_KEY || process.env.REPPLAY_RC_ANDROID_KEY || process.env.LANCE_RC_ANDROID_KEY,
       test: production ? undefined : process.env.REPRIZE_RC_TEST_KEY || process.env.REPPLAY_RC_TEST_KEY || process.env.LANCE_RC_TEST_KEY,
+    },
+    posthog: {
+      key: process.env.REPRIZE_POSTHOG_KEY || process.env.REPPLAY_POSTHOG_KEY,
+      host: process.env.REPRIZE_POSTHOG_HOST || 'https://us.i.posthog.com',
     },
   });
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { sessionSummary } from '../analytics';
 import type { ThermalLevel } from '../../modules/replay-camera/src/ReplayCamera.types';
 
 /** Without a touch for this long while recording, the screen goes dark (thermal spec, item 2). */
@@ -57,7 +58,10 @@ export function useScreenEconomy(
   useEffect(() => {
     if (!active || asleep) return;
     const wait = idleMs !== undefined ? idleMs : warm ? ECONOMY_WARM_IDLE_MS : ECONOMY_IDLE_MS;
-    const timer = setTimeout(() => setAsleep(true), wait);
+    const timer = setTimeout(() => {
+      setAsleep(true);
+      sessionSummary.note('economy');
+    }, wait);
     return () => clearTimeout(timer);
   }, [active, asleep, warm, touches, idleMs]);
 

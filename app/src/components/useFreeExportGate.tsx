@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Platform } from 'react-native';
 
+import { track } from '../analytics';
+import type { PaywallSource } from '../analytics/events';
 import { repo } from '../data/mmkv';
 import { useT } from '../i18n/useT';
 import { openPaywall } from '../payments/feedback';
@@ -37,7 +39,8 @@ export function useFreeExportGate(): {
 } {
   const { t } = useT();
   const [open, setOpen] = useState<Notice | null>(null);
-  const request = useRef<{ sessionId: string; resolve: (go: boolean) => void } | null>(null);
+  // `source` is where the sheet was opened from, for the metrics of the paywall it may lead to.
+  const request = useRef<{ sessionId: string; resolve: (go: boolean) => void; source: PaywallSource } | null>(null);
   const waiting = useRef<{ choice: FreeExportChoice; timer: ReturnType<typeof setTimeout> } | null>(null);
 
   const settle = useCallback(() => {
@@ -50,8 +53,8 @@ export function useFreeExportGate(): {
     if (!r) return;
     if (w.choice === 'go') repo.markFreeNoticeShown(r.sessionId);
     r.resolve(w.choice === 'go');
-    if (w.choice === 'pro') void openPaywall(t);
-    if (w.choice === 'pass') void unlockRecording(r.sessionId, t);
+    if (w.choice === 'pro') void openPaywall(t, r.source);
+    if (w.choice === 'pass') void unlockRecording(r.sessionId, t, r.source);
   }, [t]);
 
   const ask = useCallback(
@@ -63,7 +66,8 @@ export function useFreeExportGate(): {
           resolve(true);
           return;
         }
-        request.current = { sessionId, resolve };
+        track('free_export_limit_hit');
+        request.current = { sessionId, resolve, source: 'export_limit' };
         setOpen({ losses, kind, preview: extras.preview ?? null, many: extras.many === true });
       }),
     [],
@@ -74,18 +78,19 @@ export function useFreeExportGate(): {
    * or close it. It opens every time it is asked for, whatever the recording has shown before.
    */
   const offer = useCallback((sessionId: string, losses: FreeLosses, extras: FreeExportExtras = {}) => {
-    request.current = { sessionId, resolve: () => {} };
+    request.current = { sessionId, resolve: () => {}, source: 'upgrade_card' };
     setOpen({ losses, kind: 'unlock', preview: extras.preview ?? null, many: extras.many === true });
   }, []);
 
   const choose = useCallback(
     (choice: FreeExportChoice) => {
+      if (open !== null) track('free_export_choice', { choice, kind: open.kind });
       setOpen(null);
       const unlocking = choice === 'pro' || choice === 'pass';
       const timer = setTimeout(settle, unlocking && Platform.OS === 'ios' ? DISMISS_FALLBACK_MS : 0);
       waiting.current = { choice, timer };
     },
-    [settle],
+    [open, settle],
   );
 
   useEffect(

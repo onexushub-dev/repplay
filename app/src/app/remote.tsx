@@ -36,6 +36,7 @@ import {
   setRemoteScreenDim,
 } from '../../modules/replay-camera';
 import type { RemoteLink, RemoteLinkReason, RemotePairFailure, RemotePeer } from '../../modules/replay-camera/src/ReplayCamera.types';
+import { track } from '../analytics';
 import { Button } from '../components/Button';
 import { ConnectionBar } from '../components/ConnectionBar';
 import { QrScanner } from '../components/QrScanner';
@@ -168,6 +169,8 @@ export default function Remote() {
   const [speech, setSpeech] = useState(() => getSpeechPermission());
   // The save of a heard command: the current screen's (set on every render, read by the event listener).
   const voiceSave = useRef<(() => void) | null>(null);
+  // How the pairing in progress was started, for the metrics (the camera phone's answer does not say).
+  const pairMethod = useRef<'code' | 'qr'>('code');
 
   const stopConnectTimer = () => {
     if (connectTimer.current !== null) clearTimeout(connectTimer.current);
@@ -237,8 +240,10 @@ export default function Remote() {
         setFailure(null);
         setReceived(null);
         setHost(remoteControllerHost());
+        track('pairing_completed', { method: pairMethod.current, kind: 'remote' });
         return;
       }
+      track('pairing_failed', { reason: e.reason });
       if (e.reason === 'denied') {
         setHost(null);
         setReceived(null);
@@ -266,11 +271,13 @@ export default function Remote() {
       setConnecting(false);
       setFailure('notFound');
       setNotice(failureText('notFound', t));
+      track('pairing_failed', { reason: 'notFound' });
     }, CONNECT_TIMEOUT_MS);
   };
 
   const submit = (digits: string) => {
     setLastCode(digits);
+    pairMethod.current = 'code';
     beginConnecting();
     remoteControllerPairWithCode(digits);
   };
@@ -281,6 +288,7 @@ export default function Remote() {
     const link = parsePairUrl(text);
     if (link === null) return;
     setLastCode(null);
+    pairMethod.current = 'qr';
     beginConnecting();
     remoteControllerPairWithLink(link.hostId, link.secret, link.hostName);
   };
@@ -455,10 +463,18 @@ export default function Remote() {
 
   /** Asks for the microphone, then speech recognition; true when both are granted. */
   const askVoice = async (): Promise<boolean> => {
-    const micOk = mic === 'granted' || (await requestMicrophonePermission());
+    let micOk = mic === 'granted';
+    if (!micOk) {
+      micOk = await requestMicrophonePermission();
+      track('permission_result', { kind: 'microphone', granted: micOk });
+    }
     setMic(micOk ? 'granted' : 'denied');
     if (!micOk) return false;
-    const speechOk = speech === 'granted' || (await requestSpeechPermission());
+    let speechOk = speech === 'granted';
+    if (!speechOk) {
+      speechOk = await requestSpeechPermission();
+      track('permission_result', { kind: 'speech', granted: speechOk });
+    }
     setSpeech(speechOk ? 'granted' : 'denied');
     return speechOk;
   };
