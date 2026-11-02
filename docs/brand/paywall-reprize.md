@@ -54,9 +54,13 @@ Todos os textos passam de 7:1.
 
 Raios do app: plano e cartão 14, botão 16, chip e selo 20, folha 24. Espaçamento de 4, 8, 12, 16, 20, 24. Botão com altura mínima de 52 e largura total.
 
-## Imagem do topo
+## Imagem de fundo
 
-A foto escura de quadra à noite, escurecendo até Ink `#0A0A0A` na emenda com o conteúdo, sem nada sobreposto: sem moldura, selo ou ícone. Os benefícios ficam só na grade. Todo o conteúdo, do título ao rodapé, fica preso à parte de baixo da tela, e a foto preenche o espaço que sobra em cima. Conferido no iPhone 15 (393 × 852 pt), no 16 Pro (402 × 874 pt) e no 16 Pro Max (440 × 956 pt): o rodapé aparece sem rolar nos três.
+A mesma foto de quadra à noite nos dois paywalls, como fundo da tela inteira: começa na borda de cima (atrás da barra de status e do X) e não tem nada sobreposto (sem moldura, selo ou ícone; os benefícios ficam só na grade). O jogador aparece inteiro, centralizado, ocupando cerca de 40% da altura da tela, entre a barra de status e o título.
+
+Todo o conteúdo, do título ao rodapé, fica preso à parte de baixo e é desenhado por cima da foto. Um degradê garante a leitura: transparente até uns 60 px acima do título, `#0A0A0A` a 85% atrás do título e do subtítulo, e `#0A0A0A` sólido da grade para baixo. Não há faixa vazia nem borda reta entre a foto e o título. O X fica sobre a foto, num círculo escuro translúcido.
+
+Conferido no iPhone 15 (393 × 852 pt), no 16 Pro (402 × 874 pt) e no 16 Pro Max (440 × 956 pt): o rodapé aparece sem rolar nos três.
 
 ## Texto
 
