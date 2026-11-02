@@ -21,9 +21,13 @@
  *
  * With no key the app runs as free and the paywall reports an error.
  *
- * Anonymous usage metrics (PostHog, EU cloud), read into extra.posthog:
+ * Anonymous usage metrics (PostHog, US cloud: the app is used in Brazil and the US), read into extra.posthog:
  *
  *   REPRIZE_POSTHOG_KEY=phc_...            project API key (public, write-only)
+ *   REPRIZE_POSTHOG_HOST=https://...       optional; defaults to https://us.i.posthog.com (EU cloud: https://eu.i.posthog.com)
+ *
+ * The host must be the region the PostHog project was created in, or nothing arrives. In the project, turn
+ * "IP data capture" off (Settings > Project > General): US projects capture it by default.
  *
  * With no key the app sends no metrics at all (dev builds, tests, CI).
  */
@@ -52,7 +56,7 @@ module.exports = ({ config }) => {
     },
     posthog: {
       key: process.env.REPRIZE_POSTHOG_KEY || process.env.REPPLAY_POSTHOG_KEY,
-      host: 'https://eu.i.posthog.com',
+      host: process.env.REPRIZE_POSTHOG_HOST || 'https://us.i.posthog.com',
     },
   });
 

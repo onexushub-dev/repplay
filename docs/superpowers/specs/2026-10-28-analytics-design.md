@@ -17,7 +17,7 @@ Out of scope: revenue and subscription reporting (RevenueCat already owns it), c
 
 ## Decision
 
-PostHog Cloud (EU host), used in anonymous mode. Alternatives considered: Aptabase (simpler, weaker funnels/retention) and TelemetryDeck (most private, React Native support unconfirmed). Firebase rejected as too large for metrics only.
+PostHog Cloud (US host, since the app is used in Brazil and the US; EU until 2026-11-02), used in anonymous mode, with IP capture off in the project. Alternatives considered: Aptabase (simpler, weaker funnels/retention) and TelemetryDeck (most private, React Native support unconfirmed). Firebase rejected as too large for metrics only.
 
 All app code talks to a thin `track()` wrapper, never to the PostHog SDK directly, so the vendor can be swapped by replacing one adapter.
 

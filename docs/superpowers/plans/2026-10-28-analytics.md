@@ -15,7 +15,7 @@
 ## Global Constraints
 
 - Work on a new branch `feat/analytics` off `main`. The working tree has unrelated untracked and modified files (`.agents/`, `.claude/`, `docs/brand/*`, `skills-lock.json`, `targets/watch-widget/Localizable.xcstrings`): stage only the files each task names.
-- PostHog host `https://eu.i.posthog.com`. Project key from env `REPRIZE_POSTHOG_KEY`, read in `app/app.config.js` into `extra.posthog` (`{ key, host }`), same style as `extra.revenueCat`. No key means a no-op adapter.
+- PostHog host `https://us.i.posthog.com` (env `REPRIZE_POSTHOG_HOST` overrides it; was EU until 2026-11-02). Project key from env `REPRIZE_POSTHOG_KEY`, read in `app/app.config.js` into `extra.posthog` (`{ key, host }`), same style as `extra.revenueCat`. No key means a no-op adapter.
 - Anonymous only: `personProfiles: 'never'`, IP/GeoIP capture off, autocapture off, session replay off, automatic lifecycle and screen events off. Confirm each option name against the installed `posthog-react-native` types before using it.
 - Install ID: `randomUUID()` from `expo-crypto`, persisted under the kv key `analytics.installId`. Opt-out flag under `analytics.enabled`.
 - Properties are enumerated strings, booleans or bucketed numbers. Never file names, device names, free text or error messages.
@@ -82,7 +82,7 @@
 - Consumes: `createAnalytics`, `createSessionSummary`.
 - Produces: `index.ts` exports `analytics: Analytics`, `track` (bound to it), `sessionSummary` (the instance from Task 2), and `initAnalytics(): void` (reads `Constants.expoConfig?.extra?.posthog`; with a key builds the PostHog adapter with the Global Constraints options and `flushAt`/`flushInterval` left at SDK defaults, without a key uses a no-op adapter; calls `analytics.startSession()` and tracks `app_open` with `cold_start: true`).
 
-- [ ] **Step 1: Write failing test**: with no `extra.posthog`, `initAnalytics()` sends nothing to the mocked SDK and `track` does not throw; with a key, the SDK is constructed once with `personProfiles: 'never'` and the EU host, and autocapture, replay and lifecycle events off.
+- [ ] **Step 1: Write failing test**: with no `extra.posthog`, `initAnalytics()` sends nothing to the mocked SDK and `track` does not throw; with a key, the SDK is constructed once with `personProfiles: 'never'` and the configured host, and autocapture, replay and lifecycle events off.
 - [ ] **Step 2: Run** the file. Expected: FAIL.
 - [ ] **Step 3: Install the dependency and implement the adapter and `index.ts`.** `posthogAdapter.ts` is the only importer of `posthog-react-native`.
 - [ ] **Step 4: Wire `_layout.tsx`**: call `initAnalytics()` once at module load next to `clearExportsFolder()`, and in the existing `AppState` listener call `sessionSummary.flush()` on `'background'` and `analytics.startSession()` plus `track('app_open', { cold_start: false })` on return to `'active'` from background.
