@@ -53,7 +53,7 @@ O jogador vê o que é PRO antes de exportar, em quatro lugares:
     - **GRÁTIS:** a mesma imagem (sem escurecer), selo HD, som cortado e marca d'água; lista "Sem som", "Sem Modo Foco", "HD", "Com marca d'água".
     - **PRO:** borda âmbar, selo Full HD, som e o quadro do Modo Foco quando o clipe usa; lista "Com som", "Com Modo Foco", "Full HD", "Sem marca d'água".
     - O que o clipe usa vem primeiro nas duas listas e, no grátis, em laranja com "X" (cor de aviso; o vermelho é só de "gravando"). "Sem Modo Foco" fica sempre assim, mesmo quando o clipe não usa o Modo Foco, porque o grátis nunca o leva.
-    - Ações: **Assinar o PRO** (botão principal, Âmbar com coroa e a linha "Todas as gravações · mensal ou anual"; planos e teste ficam no paywall) · **Só para esta gravação** (só contorno, discreto), com a linha "Pagamento único · todos os clipes inclusos" (o Passe; abre "Liberar recursos PRO nessa gravação") · **Continuar no plano grátis** (link) · **X** para cancelar.
+    - Ações: **Assinar o PRO** (botão principal, Âmbar com coroa e a linha "Todas as gravações · mensal ou anual"; planos e teste ficam no paywall) · **Só para esta gravação** (só contorno, discreto), com a linha "Pagamento único · todos os clipes inclusos" (o Passe; abre "Só para esta gravação") · **Continuar no plano grátis** (link) · **X** para cancelar.
   - **Exportações seguintes da mesma gravação:** seguem direto, sem nenhum aviso.
   - Exemplo: 5 gravações numa manhã de basquete. O primeiro clipe exportado de cada uma das 5 mostra o painel destacado; do segundo clipe em diante, nenhuma mostra aviso. Uma exportação em lote conta como uma exportação daquela gravação.
 
@@ -61,13 +61,13 @@ Compilar no grátis abre o paywall direto.
 
 ## Como se paga
 
-- **PRO** (assinatura, entitlement `pro`): `pro_monthly` **R$ 14,90/mês** e `pro_annual` **R$ 99,90/ano** (≈ R$ 8,33/mês, 44% abaixo de 12 mensalidades). **Teste grátis de 7 dias só no anual.**
-- **Passe Avulso** (consumível, `single_pass`, **R$ 4,90**), apresentado como **"Liberar recursos PRO nessa gravação"**:
+- **PRO** (assinatura, entitlement `pro`): `pro_monthly` **R$ 14,90/mês** e `pro_annual` **R$ 99,90/ano** (≈ R$ 8,33/mês, 44% abaixo de 12 mensalidades). Nos EUA: **$6.90/mês** e **$49.90/ano** (≈ $4.16/mês, 40% abaixo de 12 mensalidades). **Teste grátis de 7 dias no anual e no mensal; a loja cobra no oitavo dia.**
+- **Passe Avulso** (consumível, `single_pass`, **R$ 4,90**; **$2.49** nos EUA), oferecido como **"Só para esta gravação"**:
   - é usado **só quando o jogador escolhe**, numa gravação grátis já feita; nunca é gasto sozinho ao começar uma gravação;
   - libera nessa gravação a exportação em Full HD, com som, com Modo Foco, sem marca, e compilar os clipes dela;
   - não libera duração acima de 15 s nem 4K, porque a gravação foi feita em 15 s e Full HD;
   - um Passe comprado e ainda não usado fica guardado para a próxima vez que o jogador escolher liberar uma gravação.
-- **Paywall** (RevenueCat): a oferta `default` tem só Anual (pré-selecionado, com preço mensal equivalente e selo de economia calculado pelo painel) e Mensal. O Passe fica numa oferta própria (`pass`), aberta por "Liberar recursos PRO nessa gravação".
+- **Paywall** (RevenueCat): a oferta `default` tem só Anual (pré-selecionado, com preço mensal equivalente e selo de economia calculado pelo painel) e Mensal. O Passe fica numa oferta própria (`pass`), aberta por "Só para esta gravação", com o mesmo visual. Textos e prompts do painel: `docs/brand/paywall-reprize.md`.
 - Preço e moeda vêm sempre da loja; nenhum valor no código.
 
 ## Como o app decide
@@ -89,14 +89,14 @@ Tudo é teste até a publicação. Depois de publicar, os números (conversão p
 - [x] `payments/limits.ts`: `captureConfig` e `qualityAllowed` continuam (grátis em Full HD, 4K só no pago, 15 s); `PAID_TRIGGERS = ['watch']`. Conferir os cadeados "PRO" do 4K e das durações acima de 15 s na preparação.
 - [x] Exportação grátis em HD: 720 incluído em `share/exportSize.ts` (`ShortSide`, `FREE_SIDE`, estimativa de tamanho); o grátis não oferece escolha de tamanho em `app/clip/[id].tsx`.
 - [x] `share/exportOptions.ts`: grátis em 720, com a velocidade escolhida (sai o `speed = 1` do grátis), sem som, sem Modo Foco, com marca; pago em Full HD ou 4K/2K; `freeLosses` inclui a resolução e tira a velocidade.
-- [x] `components/FreeExportSheet.tsx` e `components/useFreeExportGate.tsx`: painel destacado na primeira exportação de cada gravação; as seguintes, sem aviso; o mesmo no salvar e enviar em lote; ação "Liberar recursos PRO nessa gravação".
+- [x] `components/FreeExportSheet.tsx` e `components/useFreeExportGate.tsx`: painel destacado na primeira exportação de cada gravação; as seguintes, sem aviso; o mesmo no salvar e enviar em lote; ação "Só para esta gravação".
 - [x] Guardar por gravação que o painel já apareceu (`Session.freeNoticeShown`, em `data/schema.ts` e `data/repo.ts`).
 - [x] `payments/unlock.ts`: Passe guardado ou compra pela oferta `pass`; o Passe comprado nesse fluxo é usado na gravação.
 - [x] Editor: selo "PRO" em Som e Modo Foco numa gravação grátis; Velocidade sem selo.
 - [x] Marca d'água discreta no grátis (redesenho em `share/ShareOverlay.tsx`).
 - [x] Textos pt-BR e en (`src/i18n/locales/*.ts`, `locales/*.json`): conferir a regra de termos (clipe = vídeo salvo; lance = jogada e copy, como "melhores lances"); "Relógio" → "Apple Watch"; sair os textos de teto mensal e de Passe no início; revisar `summary.freeNote`, `games.proMessage`, `unlock.message`, `clip.focusPro`, `clip.speedFree` (sai), `clip.soundFree`, `freeExport.*`, `setup.watchProOnly`, `setup.proOnly`.
 - [x] Testes: `rules`, `store`, `snapshot`, `unlock`, `setup`, `session`, `useFreeExportGate`, `exportOptions`.
-- [ ] RevenueCat e lojas: oferta `default` com Anual (pré-selecionado) e Mensal; oferta `pass` com o `single_pass`; teste de 7 dias só no `pro_annual`; paywall e descrições conforme `docs/brand/paywall-reprize.md`.
+- [ ] RevenueCat e lojas: oferta `default` com Anual (pré-selecionado) e Mensal; oferta `pass` com o `single_pass`; teste de 7 dias no `pro_annual` e no `pro_monthly`; paywall e descrições conforme `docs/brand/paywall-reprize.md`.
 - [ ] `FIELD_TEST_UNLOCK_ALL` em `false` antes de publicar.
 - [x] Rodar `npx jest`, `npx tsc --noEmit` e `npx expo lint` em `app/`.
 
