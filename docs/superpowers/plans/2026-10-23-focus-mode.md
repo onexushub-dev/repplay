@@ -20,7 +20,7 @@
 - Copy (pt-BR, exact): chip `Modo Foco`; analysing `Modo Foco · preparando`; intro caption `Modo Foco: a câmera acompanha o lance`; accessibility label `Modo Foco`. Never the bare "Modo Foco" outside the app.
 - Modo Foco and manual zoom never apply together. `rotation ≠ 0` ⇒ no Modo Foco (preview and export).
 - The overlay (bands, gradient, mark) path in `ClipExporter` is not changed.
-- Paid later: open to everyone now (spec §9). No entitlement check in this plan.
+- Plans: Modo Foco works in the app on every plan; only paid exports carry it (spec §9). No entitlement check in this plan.
 - Code style: no optional chaining (`?.`) in new TypeScript; explicit checks. Follow existing patterns (`thumbnailPath`, `readEdit`, `ZoomMath`, `FitRect`).
 - Process: TDD for Core and JS. `swift test` (in `app/modules/replay-camera/ios/Core`) and `npx jest` (in `app`) run on Victor's Mac: the executor writes test and code, then asks Victor to run the command and paste the result. **Never run git write commands**: each "Commit checkpoint" only proposes a message. New Swift files under `ios/` need `cd app/ios && pod install` before building. Device steps are run by Victor.
 

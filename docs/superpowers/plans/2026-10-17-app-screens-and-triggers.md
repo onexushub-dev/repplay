@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- **Out of scope:** paywall and free limits (Plan 4), editor/export/Story/gallery (Plan 3), watch apps and pairing (Plan 5). Where a mockup shows those, render the placeholder named in the task, nothing more.
+- **Out of scope:** paywall and plan limits (payments spec), editor/export/Story/gallery (Plan 3), watch apps and pairing (Plan 5). Where a mockup shows those, render the placeholder named in the task, nothing more.
 - **Tokens (from the brand kit, docs/brand/repplay):** ground `#0B0B09`, recording ground `#070806`, surface `#1B1D18`, border `#3A3D34`, text `#F3EDE1`, muted `#A9A79C`, soft `#CFCBBF`, accent `#D6F23F`, on-accent `#0B0B09`, rec `#FF5A36`, warning `#FF8A3D`, warning ground `#3A1D10`. Display font Barlow Condensed 700/800, body Manrope 400/600/700. The UI is always dark.
 - Touch targets ≥ 44 pt; primary buttons 58 pt tall, radius 16.
 - All UI copy in pt-BR, **exactly as written in each task**.
@@ -26,7 +26,7 @@
 
 ## Review Focus
 
-1. **Trigger arrives while a save is in flight** (gesture right after a screen tap) → the bus debounce drops it; the user sees no second "Lance salvo", no error. → Task 3 `drops a trigger inside the debounce window` + Task 5 `ignores trigger while saving`.
+1. **Trigger arrives while a save is in flight** (gesture right after a screen tap) → the bus debounce drops it; the user sees no second "Clipe salvo", no error. → Task 3 `drops a trigger inside the debounce window` + Task 5 `ignores trigger while saving`.
 2. **Native `onError` mid-game** (thermal critical, camera lost) → recording screen leaves "gravando", shows the error copy and offers "Voltar", and the clips saved so far are on the end-of-game screen. → Task 5 `native error ends the session keeping clips`.
 3. **App to background and back** (`onInterrupted` / `onResumed`) → banner "Gravação pausada" while interrupted, cleared on resume; counter and saved clips unchanged. → Task 5 `interruption sets and clears paused`.
 4. **Clip file missing on disk** (deleted by the OS or "Desfazer" racing a render) → end-of-game grid skips it and the stats don't count it; no crash. → Task 2 `listClips drops clips whose file is gone`.
@@ -206,7 +206,7 @@
 
 ---
 
-### Task 8: Gravando + Lance salvo
+### Task 8: Gravando + Clipe salvo
 
 **Files:**
 - Create: `app/src/app/recording.tsx`, `app/src/components/SavedOverlay.tsx`, `app/src/app/__tests__/recording.test.tsx`

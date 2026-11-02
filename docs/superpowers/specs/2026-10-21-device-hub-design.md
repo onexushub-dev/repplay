@@ -7,7 +7,7 @@
 
 ## 1. Goal
 
-One place, the **Dispositivos sheet**, where a player connects, reconnects and disconnects any device that can save a lance,
+One place, the **Dispositivos sheet**, where a player connects, reconnects and disconnects any device that can save a clip,
 with the same layout and the same vocabulary for every kind. Tapping a device tile on the setup screen opens the sheet
 on that device's tab.
 
@@ -80,7 +80,7 @@ The mapping from raw status to `DeviceView` is a pure function per kind (unit-te
 **Relógio (watch)**
 - `unsupported`: status "Sem relógio pareado"; steps "Pareie o Apple Watch com este iPhone no app Watch." State is `setup`, informative only.
 - `notInstalled`: steps "Abra o app Watch no iPhone > LANCE > Instalar." State `setup`.
-- `ready`: "Pronto"; note "Toque no botão do relógio para salvar um lance."
+- `ready`: "Pronto"; note "Toque no botão do relógio para salvar um clipe."
 - No peers list and no disconnect (the watch pairing belongs to iOS). Live updates from `onWatchStatus`.
 
 **Celular (phone)**

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** A player can name a finished game, browse past games ("Meus jogos"), edit a lance (cut, slow motion, sound) and post it as a 9:16 Story with template bands, or save/share it.
+**Goal:** A player can name a finished game, browse past games ("Meus jogos"), edit a clip (cut, slow motion, sound) and post it as a 9:16 Story with template bands, or save/share it.
 
 **Architecture:** Pure TypeScript decides everything that can be decided without media (trim limits, Story layout, template texts, export options) and is unit-tested. One new native function, `exportClip`, renders the final MP4 on each platform (AVFoundation composition on iOS, Media3 Transformer on Android) from a source clip, a time range, a speed, a mute flag and a full-frame PNG overlay that carries the template bands. The overlay is drawn in React Native and captured to PNG, so templates are plain components. A second native function opens Instagram's Story composer with the exported video.
 
@@ -12,8 +12,8 @@
 
 ## Global Constraints
 
-- **Out of scope:** paywall and free-tier limits (Plan 4). Until then `useEntitlement()` returns `{ tier: 'pro' }`: exports are 1080×1920, no watermark, slow motion available. The watermark code path exists and is tested, but is only switched on by Plan 4.
-- **Story frame:** 1080×1920 (Pro) or 720×1280 (free, Plan 4). Video scaled to fit the frame width, vertically centred; bands = the space above and below it.
+- **Out of scope:** paywall and plan limits (payments spec; rules in `docs/modelo-de-negocio-e-pagamentos.md`). In this plan `useEntitlement()` returns `{ tier: 'pro' }`; the watermark code path exists and is tested.
+- **Story frame:** 1080×1920. Video scaled to fit the frame width, vertically centred; bands = the space above and below it.
 - **Trim limits:** window inside `[0, durationMs]`, length between **3 s** and **60 s**. Default stays the last 30 s (Plan 2).
 - **Slow motion:** 0.5× speed of the trimmed range (60 fps source → smooth 30 fps); audio is dropped when slow motion is on.
 - **Exports** go to `<caches>/exports/<clipId>-<timestamp>.mp4` and are deleted when the Story screen unmounts, unless the user saved them to Photos (Photos keeps its own copy).
@@ -218,6 +218,6 @@ exportClip(opts: ExportOptions): Promise<{ path: string; durationMs: number }>
 
 - [ ] **Step 1: Write the failing test:** `Postar um lance opens the newest lance's editor`. Implement. `npx jest` → PASS.
 - [ ] **Step 2:** `pod install`, Release build, install on the iPhone.
-- [ ] **Step 3:** Walk on the iPhone: end a game → name it → Meus jogos shows it with its name and thumbnail → open a lance → change the cut, turn on slow motion → Próximo: Story → switch templates, type an arena → Salvar na galeria (check Photos: 9:16, bands, slow) → Compartilhar (share sheet) → Postar no Story (share-sheet fallback while `metaAppId` is empty).
+- [ ] **Step 3:** Walk on the iPhone: end a game → name it → Meus jogos shows it with its name and thumbnail → open a clip → change the cut, turn on slow motion → Próximo: Story → switch templates, type an arena → Salvar na galeria (check Photos: 9:16, bands, slow) → Compartilhar (share sheet) → Postar no Story (share-sheet fallback while `metaAppId` is empty).
 - [ ] **Step 4:** `ffprobe` an exported file copied from the device: 1080×1920, duration = cut (×2 with slow motion), no audio when slowed or muted.
 - [ ] **Step 5:** Record the result and commit `docs: Plan 3 verified on iPhone`.

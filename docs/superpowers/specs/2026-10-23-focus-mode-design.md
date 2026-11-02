@@ -199,11 +199,11 @@ Editor (`src/app/clip/[id].tsx`), over the video, in the left slot of the row wh
    frame, vertical and landscape; with Modo Foco off the export is the same as today.
 8. A full game with clips saved every few minutes: no slowdown in the recording, note heat and battery.
 
-## 9. Paid feature (decision, Victor, 2026-10-23)
+## 9. Plans
 
-Modo Foco will be a paid feature. Billing and the free/paid split are done later, before the App Store release
-(`2026-10-20-payments-revenuecat-design.md`, the `entitlement` module is where the gate goes). Until then it is open to
-everyone, for testing.
+Modo Foco works in the app (preview and editor) on every plan. Only a paid export carries it: a free export leaves it
+out, and the free-export notice says so. Rules: `docs/modelo-de-negocio-e-pagamentos.md`; the gate is in
+`share/exportOptions.ts`.
 
 ## 10. Later (not in this spec)
 
