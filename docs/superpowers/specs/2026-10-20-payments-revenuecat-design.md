@@ -22,8 +22,8 @@
 
 | Produto | Tipo | Preço (BR) | Observação |
 |---|---|---|---|
-| `pro_annual` | Assinatura anual, entitlement `pro` | R$ 99,90 (≈ R$ 8,33/mês) | Teste grátis de 7 dias; pré-selecionado no paywall |
-| `pro_monthly` | Assinatura mensal, entitlement `pro` | R$ 14,90 | Sem teste grátis |
+| `pro_annual` | Assinatura anual, entitlement `pro` | R$ 99,90 (≈ R$ 8,33/mês) | Teste grátis de 7 dias, cobrança no oitavo dia; pré-selecionado no paywall |
+| `pro_monthly` | Assinatura mensal, entitlement `pro` | R$ 14,90 | Teste grátis de 7 dias, cobrança no oitavo dia |
 | `single_pass` | Consumível | R$ 4,90 | "Liberar recursos PRO nessa gravação" |
 
 - **Oferta `default`:** pacotes Anual e Mensal. Abre pelos cadeados da preparação (duração acima de 15 s, 4K, Apple Watch), por compilar e por "Liberar com o PRO".
@@ -115,14 +115,14 @@
 2. Primeira exportação de uma gravação grátis mostra o painel destacado; as seguintes, o aviso discreto. O vídeo sai em HD, sem som, sem Modo Foco, com marca e com a velocidade escolhida.
 3. "Liberar recursos PRO nessa gravação" com Passe guardado libera a gravação; sem Passe, abre a oferta `pass` e libera depois da compra. O Passe nunca é gasto ao começar uma gravação.
 4. Assinar o PRO (mensal ou anual): todas as gravações exportam como pagas; duração até 60 s, 4K e Apple Watch liberados; se o PRO acabar, a gravação em andamento não muda.
-5. Cadeados da preparação e compilar abrem a oferta `default` (Anual pré-selecionado com 7 dias grátis, Mensal sem teste); comprar destrava sem começar nada.
+5. Cadeados da preparação e compilar abrem a oferta `default` (Anual pré-selecionado; Anual e Mensal com 7 dias grátis); comprar destrava sem começar nada.
 6. "Restaurar compras" em instalação limpa devolve o PRO e não cria crédito.
 7. `npx jest`, `npx tsc --noEmit`, `npx expo lint` e `swift test` (Core) passam.
 
 ## Passos fora do código
 
 1. App Store Connect e Play Console: contratos de apps pagos, dados bancários e fiscais.
-2. Produtos nas duas lojas conforme a tabela acima; teste grátis de 7 dias só no `pro_annual` (Apple: oferta introdutória de 1 semana; Google: oferta de teste no plano base anual, "novos clientes"). Revisar os preços dos outros países.
+2. Produtos nas duas lojas conforme a tabela acima; teste grátis de 7 dias no `pro_annual` e no `pro_monthly` (Apple: oferta introdutória gratuita de 1 semana em cada um; Google: oferta de teste em cada plano base, "novos clientes"). Revisar os preços dos outros países.
 3. RevenueCat: entitlement `pro` com `pro_monthly` e `pro_annual`; oferta `default` (Anual, Mensal) e oferta `pass` (`single_pass`); paywalls publicados em pt-BR e en.
 4. Regras da Apple: conferir as diretrizes 3.1.1 e 3.1.2 e a apresentação do teste grátis (preço depois do teste, renovação automática, como cancelar) antes de enviar para revisão.
 5. Chaves públicas em `app/.env.local`; build de desenvolvimento novo quando módulos nativos mudarem.

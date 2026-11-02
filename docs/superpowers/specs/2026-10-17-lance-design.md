@@ -58,7 +58,7 @@ Fluxo: **Boas-vindas → Posicionar câmera → Gravando → Clipe salvo (repete
 ### 3.5 Plano grátis e paywall
 Regras completas em `docs/modelo-de-negocio-e-pagamentos.md` (fonte da verdade).
 - Grátis: **gravações ilimitadas**, clipes ilimitados. A captura é em Full HD e grava o som; dentro do app tudo funciona (som, Modo Foco, velocidade, zoom, giro, corte). Limites: clipe de 15 s (escolhido antes de começar) e, ao salvar ou enviar, vídeo em HD (720p), sem som, sem Modo Foco e com marca d'água (a velocidade escolhida vai no vídeo). Compilar, 4K e o gatilho Apple Watch são do PRO.
-- PRO (Mensal R$14,90 ou Anual R$99,90, com 7 dias grátis só no anual): durações de 15 a 60 s, gravação em 4K, exportação em Full HD ou 4K com som, Modo Foco e velocidade, sem marca; compilar; Apple Watch.
+- PRO (Mensal R$14,90 ou Anual R$99,90, com 7 dias grátis nos dois planos e cobrança no oitavo dia): durações de 15 a 60 s, gravação em 4K, exportação em Full HD ou 4K com som, Modo Foco e velocidade, sem marca; compilar; Apple Watch.
 - Passe Avulso (R$4,90), apresentado como "Liberar recursos PRO nessa gravação": usado só quando o jogador escolhe, numa gravação grátis já feita; libera nela a exportação PRO (Full HD, som, Modo Foco, sem marca) e compilar. Nunca é gasto ao começar uma gravação. O plano de cada gravação é fixado no início.
 - O paywall abre pelos cadeados da preparação (comprar destrava a opção; nada começa sozinho), por compilar e pelo aviso antes de exportar no grátis: painel destacado na primeira exportação de cada gravação, listando tudo o que o vídeo não terá, e aviso discreto nas seguintes. Nenhum paywall durante a gravação; a gravação nunca para por causa do plano.
 - Pagamento pela App Store / Google Play. Detalhes técnicos em `2026-10-20-payments-revenuecat-design.md`.
@@ -181,7 +181,7 @@ A fonte da verdade é `docs/modelo-de-negocio-e-pagamentos.md`; esta tabela é o
 - **Passe Avulso (R$4,90), "Liberar recursos PRO nessa gravação":** usado só quando o jogador escolhe, numa gravação grátis já feita. Libera nela a exportação PRO (Full HD, som, Modo Foco, sem marca) e compilar; não libera duração acima de 15 s nem 4K. Nunca é gasto ao começar uma gravação. Um Passe usado nunca volta a ser crédito, mesmo apagando a gravação.
 - O plano de cada gravação (`pago`) é fixado no início e não muda depois; com PRO ativo, todas as gravações exportam como pagas.
 - Antes de exportar no grátis, um painel destacado (1ª exportação de cada gravação) ou um aviso discreto (exportações seguintes da mesma gravação) mostra o que o vídeo não terá e oferece o PRO ou "Liberar recursos PRO nessa gravação".
-- Anual: R$99,90 ≈ R$8,33/mês, 44% abaixo de 12 mensalidades, pré-selecionado no paywall, com teste grátis de 7 dias só nele. O Passe não fica no paywall principal. Preços e moeda vêm sempre da loja.
+- Anual: R$99,90 ≈ R$8,33/mês, 44% abaixo de 12 mensalidades, pré-selecionado no paywall. Anual e Mensal têm teste grátis de 7 dias; a loja cobra no oitavo dia. O Passe não fica no paywall principal. Preços e moeda vêm sempre da loja.
 - Conteúdo digital é vendido só pelas compras da loja (Apple/Google). O kit físico é vendido fora do app (link externo, Pix).
 - O acordo Apple–CADE (dez/2025) permite link para pagamento externo no Brasil, mas exige login e backend; fora da v1.
 
