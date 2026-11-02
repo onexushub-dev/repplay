@@ -109,14 +109,14 @@ Update the current paywall. Use the attached image as the layout reference. Keep
 
 2. TEXT UNDER THE BUTTON: always two lines, centered, #B3B3B3, 13 px, so it never looks empty.
    - Line 1, depends on the selected package and must never be blank:
-     - Annual, eligible for the introductory offer: "Grátis por {{ product.offer_period }}, depois {{ product.price_per_period_abbreviated }}."
+     - Annual, eligible for the introductory offer: "Grátis por 7 dias, depois {{ product.price_per_period_abbreviated }}."
      - Annual, not eligible: "{{ product.price_per_period_abbreviated }}, renovação automática."
      - Monthly: "{{ product.price_per_period_abbreviated }}, renovação automática."
    - Line 2, always: "Cancele quando quiser."
 
 3. BUTTON: when the Annual package is selected and the user is eligible for the introductory offer, the label is "Começar 7 dias grátis". In every other case: "Assinar o PRO".
 
-4. SAVINGS BADGE on the Annual row: "ECONOMIZE {{ product.relative_discount }}", computed against the Monthly package of this offering. Never type the number.
+4. SAVINGS BADGE on the Annual row: "ECONOMIZE {{ product.relative_discount }}", computed against the Monthly package (the most expensive per period, so the offering must contain only Annual and Monthly). Never type the number.
 
 5. ICONS in the benefit grid, amber line icons:
    - "Full HD": a rounded rectangle with "HD" inside (not a camera)
