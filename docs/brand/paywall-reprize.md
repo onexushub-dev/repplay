@@ -16,7 +16,7 @@ O app abre a oferta `default` pelos cadeados PRO (preparação, compilar, Apple 
 | Faltavam Full HD, som no clipe e 4K | entram na grade | São o que o PRO mais vende |
 | Selo "ECONOMIZE 19%" | **ECONOMIZE 44%** (calculado pelo painel contra o mensal) | 99,90 contra 12 × 14,90 dá 44%; o selo usava outra base |
 | Passe avulso como terceira linha da assinatura | oferta própria (`pass`) | Não libera 4K, 60 s nem Apple Watch; quem chega pelo cadeado do 4K compraria algo que não resolve |
-| Teste de 7 dias não aparecia | Botão "Começar 7 dias grátis" e as condições embaixo | A Apple exige o valor cobrado depois do teste |
+| Teste de 7 dias não aparecia | "Grátis por 7 dias, depois PREÇO/ano." embaixo do botão | A Apple exige o valor cobrado depois do teste |
 | "Assinar o Pro" | "Assinar o PRO" | Mesmo nome dos cadeados |
 | Foto pequena no topo | Conteúdo preso embaixo, foto ocupa o resto | A foto cresce em telas mais altas |
 
@@ -71,7 +71,7 @@ Em pt-BR. Termos do app: "gravação" é a sessão, "clipe" é o vídeo salvo e 
 | Grade | Gravação em Full HD ou 4K (linha inteira) · Som no clipe · Modo Foco · Sem marca d’água · Clipes de até 60s · Compilar clipes · Apple Watch |
 | Anual (em cima, pré-selecionado) | Anual + selo ECONOMIZE N% · Melhor custo-benefício · preço/ano, com o preço/mês embaixo |
 | Mensal | Mensal · O mais escolhido · preço/mês |
-| Botão | Anual com direito ao teste: Começar 7 dias grátis · nos outros casos: Assinar o PRO |
+| Botão | Assinar o PRO (nos dois planos; o teste aparece só na linha embaixo do botão) |
 | Linha 1 embaixo do botão | Anual com teste: Grátis por 7 dias, depois PREÇO/ano. · Anual sem teste: PREÇO/ano, renovação automática. · Mensal: PREÇO/mês, renovação automática. |
 | Linha 2 | Cancele quando quiser. |
 | Rodapé | Restaurar · Termos · Privacidade |
@@ -124,11 +124,11 @@ LAYOUT, TOP TO BOTTOM
 6. Two full-width plan rows stacked vertically, name and second line on the left, price on the right:
    - Top, Annual, PRESELECTED, 2 px amber border: "Anual" followed by an amber pill badge "ECONOMIZE {{ product.relative_discount }}"; second line "Melhor custo-benefício"; on the right "{{ product.price_per_period_abbreviated }}" in bold and, under it in small #B3B3B3, "{{ product.price_per_month }}/mês".
    - Bottom, Monthly, 1 px #2E2E2E border: "Mensal"; second line "O mais escolhido"; on the right "{{ product.price_per_period_abbreviated }}".
-7. Primary button, amber with #0A0A0A text, one line: "Começar 7 dias grátis" when Annual is selected and the user is eligible for the introductory offer; "Assinar o PRO" in every other case.
-8. Text under the button: always two lines, centered, #B3B3B3, 13 px, never blank.
-   - Line 1: Annual with intro offer: "Grátis por 7 dias, depois {{ product.price_per_period_abbreviated }}." Annual without it, or Monthly: "{{ product.price_per_period_abbreviated }}, renovação automática."
-   - Line 2, always: "Cancele quando quiser."
-9. Footer: "Restaurar · Termos · Privacidade", #B3B3B3, 13 px, above the home indicator, at least 12 px below the text above.
+7. Primary button, amber with #0A0A0A text, one line: always "Assinar o PRO", for both packages. The free trial is told only in the text under the button.
+8. Text under the button: one text component of two lines, centered, #B3B3B3, 13 px, never blank. It reads the selected package.
+   - Default text (always shown): "{{ product.price_per_period_abbreviated }}, renovação automática." / "Cancele quando quiser."
+   - Override with the condition "eligible for introductory offer" (Annual selected and user eligible): "Grátis por 7 dias, depois {{ product.price_per_period_abbreviated }}." / "Cancele quando quiser."
+9. Footer: "Restaurar · Termos · Privacidade", #B3B3B3, 13 px. Respect the bottom safe area and add 16 px of bottom padding so it sits above the home indicator, with 12 px between it and the text above.
 
 RULES
 - Only the Annual and Monthly packages; no Single Pass (it has its own offering). The savings badge is computed against the Monthly package, so the offering must contain only these two.
