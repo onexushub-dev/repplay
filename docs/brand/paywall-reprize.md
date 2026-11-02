@@ -68,7 +68,7 @@ Em pt-BR. Termos do app: "gravação" é a sessão, "clipe" é o vídeo salvo e 
 |---|---|
 | Título | SEUS LANCES (branco) / COM QUALIDADE PRO (Âmbar) |
 | Subtítulo | Todos os recursos para gravar, editar e compartilhar. |
-| Grade (2 × 4) | Full HD · Som no clipe · Modo Foco · Sem marca d’água · Clipes de 60 s · Gravação em 4K · Compilar clipes · Apple Watch |
+| Grade (2 × 4) | Full HD · Som no clipe · Modo Foco · Sem marca d’água · Clipes de até 60s · Gravação em 4K · Compilar clipes · Apple Watch |
 | Anual (em cima, pré-selecionado) | Anual + selo ECONOMIZE N% · Melhor custo-benefício · preço/ano, com o preço/mês embaixo |
 | Mensal | Mensal · O mais escolhido · preço/mês |
 | Botão | Anual com direito ao teste: Começar 7 dias grátis · nos outros casos: Assinar o PRO |
@@ -123,7 +123,7 @@ Update the current paywall. Use the attached image as the layout reference. Keep
    - "Som no clipe": speaker with sound waves
    - "Modo Foco": four corner brackets with a dot in the center
    - "Sem marca d’água": eye with a slash
-   - "Clipes de 60 s": stopwatch
+   - "Clipes de até 60s": stopwatch
    - "Gravação em 4K": video camera
    - "Compilar clipes": two stacked video frames with a play triangle
    - "Apple Watch": a smartwatch (not a pulse line)
