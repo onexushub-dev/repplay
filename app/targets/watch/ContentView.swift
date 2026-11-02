@@ -113,7 +113,7 @@ struct ContentView: View {
       Button { if link.saveAllowed { link.sendSave() } } label: { Color.clear.contentShape(Rectangle()) }
         .buttonStyle(.plain)
         .handGestureShortcut(.primaryAction)
-        .accessibilityLabel(link.saveAllowed ? Text("Save") : Text("Available with Pro"))
+        .accessibilityLabel(link.saveAllowed ? Text("Save") : Text("Available with PRO"))
       VStack {
         HStack(alignment: .top) {
           CameraToggle(isOn: true) { link.setPreview(false) }
@@ -202,7 +202,7 @@ private struct ProOnlyNote: View {
   var body: some View {
     VStack(spacing: 6) {
       Image(systemName: "lock.fill").font(.system(size: 22, weight: .semibold)).foregroundStyle(accent)
-      Text("Available with Pro")
+      Text("Available with PRO")
         .font(.system(.title3, design: .rounded).weight(.heavy))
         .multilineTextAlignment(.center)
         .minimumScaleFactor(0.7)

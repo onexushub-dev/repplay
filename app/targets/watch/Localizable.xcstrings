@@ -43,20 +43,20 @@
         }
       }
     },
-    "Available with Pro": {
+    "Available with PRO": {
       "comment": "In place of Save when the watch trigger is locked (free plan).",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Available with Pro"
+            "value": "Available with PRO"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Disponível no Pro"
+            "value": "Disponível no PRO"
           }
         }
       }
