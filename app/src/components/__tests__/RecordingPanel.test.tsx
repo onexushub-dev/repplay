@@ -18,11 +18,13 @@ jest.mock('../../../modules/replay-camera', () => ({
   getWatchStatus: jest.fn(() => 'unsupported'),
 }));
 jest.mock('../../session/SessionContext', () => ({ useSession: jest.fn() }));
+jest.mock('../../devices/bluetoothRemote', () => ({ useRemoteLink: jest.fn(() => undefined) }));
 
 const { useSession } = jest.requireMock('../../session/SessionContext');
 const { router } = jest.requireMock('expo-router');
 const { repo } = jest.requireMock('../../data/mmkv');
 const { setScreenEconomy } = jest.requireMock('../../../modules/replay-camera');
+const { useRemoteLink } = jest.requireMock('../../devices/bluetoothRemote');
 
 function session(state: object) {
   const value = {
@@ -348,6 +350,60 @@ describe('screen economy', () => {
     await act(async () => jest.advanceTimersByTime(20_000));
     expect(screen.getByRole('button', { name: 'Segure para encerrar a gravação' })).toBeTruthy();
     jest.useRealTimers();
+  });
+});
+
+describe('remote gone', () => {
+  const title = 'Controle sem conexão';
+  const body = 'Aperte um botão do controle. Se não voltar, desligue e ligue o controle.';
+
+  test('2026-11-03: the remote gone for 30 s in a game says so at the top, and goes away when it is back', async () => {
+    session({});
+    repo.getPrefs.mockReturnValue({ screenEconomy: false }); // a dark screen shows it once woken (next test)
+    jest.useFakeTimers();
+    useRemoteLink.mockReturnValue('connected');
+    const view = await render(<Recording />);
+    useRemoteLink.mockReturnValue('missing');
+    await view.rerender(<Recording />);
+    await act(async () => jest.advanceTimersByTime(5000)); // the start notice is gone
+    expect(screen.queryByText(title)).toBeNull(); // a short walk out of range says nothing
+    await act(async () => jest.advanceTimersByTime(25_000));
+    const notice = screen.getByTestId('remote-lost-notice');
+    expect(notice.props.accessibilityRole).toBe('alert');
+    expect(screen.getByText(body)).toBeTruthy();
+    useRemoteLink.mockReturnValue('connected');
+    await view.rerender(<Recording />);
+    expect(screen.queryByTestId('remote-lost-notice')).toBeNull();
+    jest.useRealTimers();
+    useRemoteLink.mockReturnValue(undefined);
+    repo.getPrefs.mockReturnValue({ screenEconomy: true });
+  });
+
+  test('with the screen dark it waits: the tap that wakes the screen shows it', async () => {
+    session({});
+    jest.useFakeTimers();
+    useRemoteLink.mockReturnValue('connected');
+    const view = await render(<Recording />);
+    useRemoteLink.mockReturnValue('missing');
+    await view.rerender(<Recording />);
+    await act(async () => jest.advanceTimersByTime(30_000));
+    expect(screen.getByTestId('screen-economy')).toBeTruthy();
+    expect(screen.queryByTestId('remote-lost-notice')).toBeNull();
+    await fireEvent(screen.getByRole('button', { name: /Toque em qualquer lugar/ }), 'touchStart');
+    expect(screen.getByTestId('remote-lost-notice')).toBeTruthy();
+    jest.useRealTimers();
+    useRemoteLink.mockReturnValue(undefined);
+  });
+
+  test('a remote not used in this game (never connected) never shows it', async () => {
+    session({});
+    jest.useFakeTimers();
+    useRemoteLink.mockReturnValue('missing');
+    await render(<Recording />);
+    await act(async () => jest.advanceTimersByTime(60_000));
+    expect(screen.queryByText(title)).toBeNull();
+    jest.useRealTimers();
+    useRemoteLink.mockReturnValue(undefined);
   });
 });
 

@@ -184,6 +184,8 @@ export const ptBR: Messages = {
     economyOnBody: 'A tela escurece depois de 20 segundos sem toque. Toque para acender.',
     economyOffTitle: 'Economia de bateria desligada',
     economyOffBody: 'A tela fica acesa durante a gravação.',
+    remoteLostTitle: 'Controle sem conexão',
+    remoteLostBody: 'Aperte um botão do controle. Se não voltar, desligue e ligue o controle.',
   },
   summary: {
     clips: { one: '%{count} clipe', other: '%{count} clipes' },

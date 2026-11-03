@@ -7,7 +7,9 @@ import { addReplayListener, getWatchStatus, setScreenEconomy } from '../../modul
 import { VOICE_WORD } from '../i18n';
 import { useT } from '../i18n/useT';
 import { removeFile, repo } from '../data/mmkv';
+import { useRemoteLink } from '../devices/bluetoothRemote';
 import { triggerAllowed } from '../payments/limits';
+import { useRemoteLost } from '../triggers/useRemoteLost';
 import { useSession } from '../session/SessionContext';
 import { useScreenEconomy } from '../session/useScreenEconomy';
 import { diag, diagFlags } from '../diag/diagLog'; // TEMP(diag-remote)
@@ -65,6 +67,10 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
   const { state, trigger, undoLast, stop, reset } = useSession();
   // The Bluetooth remote is paid: it saves only in a game whose plan may use it.
   const remoteOn = triggerAllowed('remote', state.paid ? 'paid' : 'free');
+  // The remote gone for a while in this game (out of range and iOS gave up, or asleep): its presses are lost until it
+  // is back, so the top of the screen says so (2026-11-03).
+  const remoteListening = state.phase === 'recording' && remoteOn;
+  const remoteLost = useRemoteLost(useRemoteLink(remoteListening), remoteListening);
   // The Apple Watch is paid too, and lit only when a paired watch has the app.
   const watch = useSyncExternalStore(subscribeWatch, getWatchStatus);
   const watchOn = Platform.OS === 'ios' && watch === 'ready' && triggerAllowed('watch', state.paid ? 'paid' : 'free');
@@ -261,6 +267,12 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
             <Text style={styles.noticeBody}>
               {t(economyNotice === 'on' ? 'recording.economyOnBody' : 'recording.economyOffBody')}
             </Text>
+          </View>
+        ) : null}
+        {remoteLost && !economy.asleep ? (
+          <View pointerEvents="none" accessibilityRole="alert" testID="remote-lost-notice" style={styles.notice}>
+            <Text style={styles.noticeTitle}>{t('recording.remoteLostTitle')}</Text>
+            <Text style={styles.noticeBody}>{t('recording.remoteLostBody')}</Text>
           </View>
         ) : null}
         {showTip ? (
