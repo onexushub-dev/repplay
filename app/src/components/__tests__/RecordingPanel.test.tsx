@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 
 import { RecordingPanel as Recording } from '../RecordingPanel';
 
@@ -303,23 +303,30 @@ describe('screen economy', () => {
     await fireEvent.press(toggle);
     expect(s.trigger).not.toHaveBeenCalled();
     expect(repo.setPrefs).toHaveBeenCalledWith({ screenEconomy: false });
-    expect(screen.getByText('Economia de bateria desligada')).toBeTruthy();
+    // The same notice, in the same place, as when a recording starts with battery saving on.
+    const notice = screen.getByTestId('economy-notice');
+    expect(within(notice).getByText('Economia de bateria desligada')).toBeTruthy();
+    expect(within(notice).getByText('A tela fica acesa durante a gravação.')).toBeTruthy();
     expect(screen.getByRole('switch', { name: 'Economia de bateria' }).props.accessibilityState.checked).toBe(false);
     await act(async () => jest.advanceTimersByTime(60_000));
     expect(screen.queryByTestId('screen-economy')).toBeNull();
     jest.useRealTimers();
   });
 
-  test('battery saving can be turned on mid-recording: the screen goes dark 20 s later, with no start notice on top', async () => {
+  test('battery saving can be turned on mid-recording: the start notice says so, and the screen goes dark 20 s later', async () => {
     session({});
     repo.getPrefs.mockReturnValue({ screenEconomy: false });
     jest.useFakeTimers();
     await render(<Recording />);
     await fireEvent.press(screen.getByRole('switch', { name: 'Economia de bateria' }));
     expect(repo.setPrefs).toHaveBeenCalledWith({ screenEconomy: true });
-    expect(screen.getByText('Economia de bateria ligada')).toBeTruthy();
+    const notice = screen.getByTestId('economy-notice');
+    expect(within(notice).getByText('Economia de bateria ligada')).toBeTruthy();
+    expect(within(notice).getByText('A tela escurece depois de 20 segundos sem toque. Toque para acender.')).toBeTruthy();
+    expect(screen.getAllByText('Economia de bateria ligada')).toHaveLength(1);
+    await act(async () => jest.advanceTimersByTime(5000));
     expect(screen.queryByTestId('economy-notice')).toBeNull();
-    await act(async () => jest.advanceTimersByTime(20_000));
+    await act(async () => jest.advanceTimersByTime(15_000));
     expect(screen.getByTestId('screen-economy')).toBeTruthy();
     jest.useRealTimers();
     repo.getPrefs.mockReturnValue({ screenEconomy: true });
