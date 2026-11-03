@@ -16,12 +16,9 @@ import { useBluetoothRemote } from '../triggers/useBluetoothRemote';
 import { type ReplaySession, type SessionDeps, useReplaySession } from './useReplaySession';
 import { useWatchTriggerGate } from './useWatchTriggerGate';
 
-/**
- * The Bluetooth remote in a game: its presses, and the press that wakes it from sleep (counted from its comeback),
- * once it was seen connected in this game (a remote switched on mid-game must not save a clip).
- */
+/** The Bluetooth remote in a game: its presses only (its link coming back never saves a clip, see linkMonitor). */
 function useGameRemote(enabled: boolean, onPress: () => void): void {
-  useBluetoothRemote(enabled, onPress, { requireSeenConnected: true });
+  useBluetoothRemote(enabled, onPress);
 }
 
 const appDeps: SessionDeps = {

@@ -4,7 +4,18 @@ import { AppState } from 'react-native';
 import * as camera from '../../modules/replay-camera';
 import { onFileRemoved, repo } from '../data/mmkv';
 import { diag } from '../diag/diagLog';
+import { createBackgroundClock } from './backgroundTime';
 import { createFocusQueue } from './focusQueue';
+
+/** TEMP(diag-remote): when the app was in the background, so the analysis time leaves it out. */
+const backgroundClock = createBackgroundClock();
+
+/** "analisado em 2.4 s", plus the time the app spent in the background meanwhile, when there was any (over 1 s). */
+function analysisTime(elapsedMs: number, endAt: number): string {
+  const away = backgroundClock.backgroundMsBetween(endAt - elapsedMs, endAt);
+  const busy = `analisado em ${((elapsedMs - away) / 1000).toFixed(1)} s`;
+  return away > 1000 ? `${busy} (+${(away / 1000).toFixed(0)} s com o app em segundo plano)` : busy;
+}
 
 /** The app's one Modo Foco queue. */
 export const focusQueue = createFocusQueue({
@@ -16,7 +27,7 @@ export const focusQueue = createFocusQueue({
   measured: (clip, r) =>
     diag(
       `Modo Foco: clipe de ${((clip.bounds ? clip.bounds.endMs - clip.bounds.startMs : clip.durationMs) / 1000).toFixed(0)} s ` +
-        `analisado em ${(r.elapsedMs / 1000).toFixed(1)} s (${r.frames} quadros, ${r.meanPeople.toFixed(1)} pessoas/quadro, ${r.status})`,
+        `${analysisTime(r.elapsedMs, Date.now())} (${r.frames} quadros, ${r.meanPeople.toFixed(1)} pessoas/quadro, ${r.status})`,
     ),
   deleteFile: (path) => {
     try {
@@ -42,8 +53,14 @@ function allClips() {
  */
 export function startFocusQueue(): () => void {
   const sub = AppState.addEventListener('change', (next) => {
-    if (next === 'active') focusQueue.setForeground(true);
-    if (next === 'background') focusQueue.setForeground(false);
+    if (next === 'active') {
+      backgroundClock.foreground(Date.now());
+      focusQueue.setForeground(true);
+    }
+    if (next === 'background') {
+      backgroundClock.background(Date.now());
+      focusQueue.setForeground(false);
+    }
   });
   const timer = setTimeout(() => {
     try {

@@ -3,51 +3,36 @@ import { useEffect, useRef } from 'react';
 import { bluetoothConnected } from '../../modules/replay-camera';
 import { repo } from '../data/mmkv';
 import { diag } from '../diag/diagLog'; // TEMP(diag-remote)
+import { describeLinkEvent } from '../diag/remoteLinkDiag'; // TEMP(diag-remote)
 import { linkOf } from '../devices/bluetoothRemote';
+import { createLinkMonitor, type LinkMonitor } from './linkMonitor';
 import { useVolumeRemote } from './useVolumeRemote';
-import { createWakeDetector } from './wakeDetector';
+
+/** TEMP(diag-remote): while listening, how often the remote's link is looked at, for the diagnostic log only. */
+export const LINK_POLL_MS = 500;
 
 /**
- * While listening, how often the remote's link is looked at (to catch the press that wakes it). One cheap system
- * call; twice a second keeps the waking press quick (2026-11-01: once a second plus a 1.5 s wait felt slow).
+ * The Bluetooth selfie remote: its presses (useVolumeRemote), and nothing else. Its link dropping and coming back
+ * (asleep, or out of range and back) never saves a clip (2026-11-03, see linkMonitor); while listening, the link is
+ * followed for the diagnostic log only, for a BLE remote the app has learnt (devices/bluetoothRemote).
  */
-export const WAKE_POLL_MS = 500;
-
-/**
- * The Bluetooth selfie remote: its presses (useVolumeRemote), plus the press that wakes it from sleep, counted from
- * its link coming back when that press itself is lost (wakeDetector). The link is only known for a BLE remote the app
- * has learnt (devices/bluetoothRemote); otherwise this is useVolumeRemote alone. No message is ever shown for the
- * remote falling asleep: that is normal.
- */
-export function useBluetoothRemote(
-  enabled: boolean,
-  onPress: () => void,
-  options: { requireSeenConnected: boolean },
-): void {
+export function useBluetoothRemote(enabled: boolean, onPress: () => void): void {
   const onPressRef = useRef(onPress);
   useEffect(() => {
     onPressRef.current = onPress;
   }, [onPress]);
-  const detector = useRef<ReturnType<typeof createWakeDetector> | undefined>(undefined);
+  const monitor = useRef<LinkMonitor | undefined>(undefined);
 
   useVolumeRemote(enabled, () => {
-    // The waking press arriving right after its comeback was counted: the same press, dropped.
-    if (detector.current !== undefined && !detector.current.press()) return;
+    if (monitor.current !== undefined) monitor.current.press();
     onPressRef.current();
   });
 
-  const { requireSeenConnected } = options;
+  // TEMP(diag-remote): the link's drops and comebacks, with how long after a press and how long away (range vs sleep).
   useEffect(() => {
     if (!enabled) return;
-    const wake = createWakeDetector({
-      onWake: () => {
-        diag('controle: CLIQUE (acordou: a volta do controle conta como o clique)'); // TEMP(diag-remote)
-        onPressRef.current();
-      },
-      now: () => Date.now(),
-      requireSeenConnected,
-    });
-    detector.current = wake;
+    const links = createLinkMonitor({ now: () => Date.now(), onLink: (e) => diag(describeLinkEvent(e)) });
+    monitor.current = links;
     let active = true;
     let busy = false;
     const look = async () => {
@@ -56,19 +41,19 @@ export function useBluetoothRemote(
       busy = true;
       try {
         const link = linkOf(await bluetoothConnected(false), knownId);
-        if (active) wake.link(link === 'connected' ? true : link === 'missing' ? false : undefined);
+        if (active) links.link(link === 'connected' ? true : link === 'missing' ? false : undefined);
       } catch {
-        if (active) wake.link(undefined);
+        if (active) links.link(undefined);
       } finally {
         busy = false;
       }
     };
     void look();
-    const timer = setInterval(() => void look(), WAKE_POLL_MS);
+    const timer = setInterval(() => void look(), LINK_POLL_MS);
     return () => {
       active = false;
       clearInterval(timer);
-      detector.current = undefined;
+      monitor.current = undefined;
     };
-  }, [enabled, requireSeenConnected]);
+  }, [enabled]);
 }

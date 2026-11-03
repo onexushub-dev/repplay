@@ -88,7 +88,6 @@ function cameraStatus(t: TFunction, host: { name: string } | null): string | und
 /** How long the battery-saving notice stays after a tap on its button. */
 const ECONOMY_TOAST_MS = 3000;
 
-const PRACTICE_REMOTE = { requireSeenConnected: false };
 
 export default function Setup() {
   const session = useSession();
@@ -337,8 +336,8 @@ export default function Setup() {
   }, [focused]);
 
   // A press of the Bluetooth remote here proves it is paired and reaching the app.
-  // The connection test: the press that wakes the remote counts too (requireSeenConnected off: it may be asleep now).
-  useBluetoothRemote(live && phase === 'idle' && remoteAllowed, remoteTest.press, PRACTICE_REMOTE);
+  // The connection test: the remote's presses (a press that only wakes it does not show; the player presses again).
+  useBluetoothRemote(live && phase === 'idle' && remoteAllowed, remoteTest.press);
 
   // Coming back from another app, whether the remote is still on is unknown: until it is pressed again it shows as paired.
   useEffect(() => {

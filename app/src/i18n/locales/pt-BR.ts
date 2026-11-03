@@ -575,7 +575,7 @@ export const ptBR: Messages = {
     statusPaired: 'Aperte um botão para conferir',
     statusMissing: 'Em espera · aperte um botão',
     statusBluetoothOff: 'Bluetooth desligado',
-    noteMissing: 'O controle desliga a conexão depois de uns minutos parado, para poupar bateria. Aperte um botão para acordá-lo: esse clique já conta. Se não voltar, ligue o controle ou pareie de novo.',
+    noteMissing: 'O controle desliga a conexão depois de uns minutos parado, para poupar bateria. Aperte um botão para acordá-lo e aperte de novo para salvar. Se não voltar, ligue o controle ou pareie de novo.',
     noteBluetoothOff: 'Ligue o Bluetooth do iPhone na Central de Controle ou em Ajustes.',
     statusSetup: 'Toque para conectar',
   },
