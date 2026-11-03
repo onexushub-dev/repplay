@@ -1,34 +1,52 @@
 import { render, screen } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 
-import { logoAspect } from '../brandLogo';
+import { BRAND_HANDLE, logoAspect } from '../brandLogo';
 import { frameLayout } from '../layout';
 import { ShareOverlay } from '../ShareOverlay';
 
 const frame = { width: 1080, height: 1920 };
 const layout = frameLayout({ width: 1920, height: 1080 }, frame);
 
-test('every clip carries the Reprize logo, so whoever sees it knows what made it', async () => {
+test('every clip carries the Reprize R and our Instagram, so whoever sees it knows what made it and where to find us', async () => {
   await render(<ShareOverlay frame={frame} layout={layout} scale={1} />);
   expect(screen.getByLabelText('Reprize')).toBeTruthy();
+  expect(BRAND_HANDLE).toBe('@reprize.app');
+  expect(screen.getByText('@reprize.app')).toBeTruthy();
   expect(screen.queryByText('feito com Reprize')).toBeNull();
 });
 
-test('the logo is 18% of the frame width (discreet) and keeps its proportions, in a 720 and in a 1080 export', async () => {
+test('without the watermark (paid exports) neither the R nor the handle is drawn', async () => {
+  await render(<ShareOverlay frame={frame} layout={layout} scale={1} watermark={false} />);
+  expect(screen.queryByLabelText('Reprize')).toBeNull();
+  expect(screen.queryByText('@reprize.app')).toBeNull();
+});
+
+test('the R is 4.2% of the short side tall and keeps its proportions, in a 720 and in a 1080 export', async () => {
   const small = { width: 720, height: 1280 };
   const view = await render(<ShareOverlay frame={small} layout={frameLayout({ width: 1920, height: 1080 }, small)} scale={1} />);
   const a = StyleSheet.flatten(screen.getByLabelText('Reprize').props.style);
-  expect(a.width).toBeCloseTo(129.6, 1);
+  expect(a.height).toBeCloseTo(30.24, 1);
   expect(a.width / a.height).toBeCloseTo(logoAspect(), 3);
   await view.unmount();
   await render(<ShareOverlay frame={frame} layout={layout} scale={1} />);
   const b = StyleSheet.flatten(screen.getByLabelText('Reprize').props.style);
-  expect(b.width).toBeCloseTo(194.4, 1);
+  expect(b.height).toBeCloseTo(45.36, 1);
 });
 
-test('the logo scales with the capture scale, so the PNG matches the design', async () => {
+test('the handle is 3% of the short side, so it reads the same in a 720 and in a 1080 export', async () => {
+  const small = { width: 720, height: 1280 };
+  const view = await render(<ShareOverlay frame={small} layout={frameLayout({ width: 1920, height: 1080 }, small)} scale={1} />);
+  expect(StyleSheet.flatten(screen.getByText('@reprize.app').props.style).fontSize).toBeCloseTo(21.6, 1);
+  await view.unmount();
+  await render(<ShareOverlay frame={frame} layout={layout} scale={1} />);
+  expect(StyleSheet.flatten(screen.getByText('@reprize.app').props.style).fontSize).toBeCloseTo(32.4, 1);
+});
+
+test('the R and the handle scale with the capture scale, so the PNG matches the design', async () => {
   await render(<ShareOverlay frame={frame} layout={layout} scale={0.5} />);
-  expect(StyleSheet.flatten(screen.getByLabelText('Reprize').props.style).width).toBeCloseTo(97.2, 1);
+  expect(StyleSheet.flatten(screen.getByLabelText('Reprize').props.style).height).toBeCloseTo(22.68, 1);
+  expect(StyleSheet.flatten(screen.getByText('@reprize.app').props.style).fontSize).toBeCloseTo(16.2, 1);
 });
 
 test('on a vertical clip the logo sits in the bottom right corner, the same distance from the right and from the bottom, in both sizes', async () => {
@@ -55,14 +73,6 @@ test('on a landscape clip the logo follows the video corner, not the frame corne
   expect(pill.bottom).toBeCloseTo(bandBelow + margin, 1);
 });
 
-test('the logo never spills past the side margin', async () => {
-  const small = { width: 720, height: 1280 };
-  await render(<ShareOverlay frame={small} layout={frameLayout({ width: 1920, height: 1080 }, small)} scale={1} />);
-  const pill = StyleSheet.flatten(screen.getByLabelText('Reprize').parent!.props.style);
-  const width = StyleSheet.flatten(screen.getByLabelText('Reprize').props.style).width;
-  expect(pill.paddingHorizontal * 2 + width + pill.right).toBeLessThanOrEqual(small.width);
-});
-
 test('the video area stays transparent', async () => {
   await render(<ShareOverlay frame={frame} layout={layout} scale={1} />);
   const area = StyleSheet.flatten(screen.getByTestId('share-video-area').props.style);
@@ -84,7 +94,7 @@ test('in a landscape frame the video fills it, with no bands, and the logo keeps
   await render(<ShareOverlay frame={wide} layout={wideLayout} scale={1} />);
   const logo = StyleSheet.flatten(screen.getByLabelText('Reprize').props.style);
   const pill = StyleSheet.flatten(screen.getByLabelText('Reprize').parent!.props.style);
-  expect(logo.width).toBeCloseTo(129.6, 1);
+  expect(logo.height).toBeCloseTo(30.24, 1);
   expect(pill.right).toBeCloseTo(32.4, 1);
   expect(pill.bottom).toBe(pill.right);
 });

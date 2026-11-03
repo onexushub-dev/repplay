@@ -1,5 +1,5 @@
 import { Alert } from 'react-native';
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 
 import Setup from '../setup';
 import { clearRemotePress, setRemoteSheetOpen } from '../../devices/remoteTest';
@@ -331,6 +331,20 @@ test("the voice's ? opens how to use it and practises listening, which stops onc
   expect(cam.setVoiceEnabled).toHaveBeenLastCalledWith(true, expect.anything());
   await fireEvent.press(screen.getByRole('button', { name: 'Fechar' }));
   expect(cam.setVoiceEnabled).toHaveBeenLastCalledWith(false, expect.anything());
+});
+
+test('the Bluetooth remote and the Apple Watch come first, under "Recomendados" with why, then the other triggers', async () => {
+  session({});
+  await render(<Setup />);
+  await openSettings();
+  expect(screen.getByText('GATILHOS RECOMENDADOS')).toBeTruthy();
+  expect(screen.getByText('Para melhores resultados nas gravações.')).toBeTruthy();
+  expect(screen.getByText('OUTROS GATILHOS')).toBeTruthy();
+  expect(screen.queryByText('GATILHOS')).toBeNull();
+  const recommended = screen.getByTestId('recommended-triggers');
+  expect(within(recommended).getByRole('button', { name: /^Controle Bluetooth/ })).toBeTruthy();
+  expect(within(recommended).getByLabelText(/^Apple Watch/)).toBeTruthy();
+  expect(within(recommended).queryByRole('button', { name: /^Voz/ })).toBeNull();
 });
 
 test('opening the Bluetooth remote sheet keeps the camera on under it (it was stopped and reopened)', async () => {

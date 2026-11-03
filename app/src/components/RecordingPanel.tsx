@@ -13,6 +13,8 @@ import { useScreenEconomy } from '../session/useScreenEconomy';
 import { diag, diagFlags } from '../diag/diagLog'; // TEMP(diag-remote)
 import { colors, fonts } from '../theme/tokens';
 import { Button } from './Button';
+import { EconomyButton } from './EconomyButton';
+import { EconomyToast } from './EconomyToast';
 import { HoldButton } from './HoldButton';
 import { MicIcon, RemoteIcon, TapIcon, WatchIcon, WaveIcon } from './icons';
 import { SavedOverlay } from './SavedOverlay';
@@ -26,6 +28,8 @@ function subscribeWatch(onChange: () => void): () => void {
 const OVERLAY_MS = 2000;
 /** How long the battery-saving notice stays up when a recording starts with it on. */
 const ECONOMY_NOTICE_MS = 5000;
+/** How long the word on a battery-saving tap (on / off) stays up, as on the setup screen. */
+const ECONOMY_TOAST_MS = 3000;
 /** How long the heat tip stays up (thermal work, item 5). */
 const HEAT_TIP_MS = 8000;
 
@@ -74,8 +78,10 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
   // Screen economy (thermal work, item 2): dark after a while without a touch; any touch brings it back. The tap that
   // wakes the screen only wakes it (the player checking it still records), so it saves no clip; the triggers keep saving.
   // TEMP(diag-remote): the Diagnóstico screen can turn it off, to compare the remote with and without it.
-  // The player's choice on the setup screen (Economia de bateria); the Diagnóstico screen can also turn it off.
-  const economyOn = state.phase === 'recording' && repo.getPrefs().screenEconomy && !diagFlags().economyOff;
+  // The player's choice on the setup screen (Economia de bateria), which the button in the top row also flips mid-game
+  // (2026-11-02: no need to end the game to change it); the Diagnóstico screen can also turn it off.
+  const [economyPref, setEconomyPref] = useState(() => repo.getPrefs().screenEconomy);
+  const economyOn = state.phase === 'recording' && economyPref && !diagFlags().economyOff;
   const economy = useScreenEconomy(economyOn, state.thermal.level, setEconomy);
   const wakingTap = useRef(false);
   function onAnyTouch() {
@@ -99,6 +105,26 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
   }, [noticeFor]);
   const showEconomyNotice =
     economyOn && !economy.asleep && noticeFor !== undefined && noticeFor === state.sessionId && noticeGone !== noticeFor;
+
+  // The battery-saving button: flips the same preference as the setup screen (the next game starts the same way) and
+  // says what it did for a moment. The start notice is done with for this game: the word on the tap replaces it.
+  const [economyToast, setEconomyToast] = useState(0);
+  useEffect(() => {
+    if (economyToast === 0) return;
+    const hide = setTimeout(() => setEconomyToast(0), ECONOMY_TOAST_MS);
+    return () => clearTimeout(hide);
+  }, [economyToast]);
+  const [bottomHeight, setBottomHeight] = useState(0);
+  function toggleEconomy() {
+    const next = !economyPref;
+    setEconomyPref(next);
+    repo.setPrefs({ screenEconomy: next });
+    if (state.sessionId !== undefined) {
+      setNoticeFor(state.sessionId);
+      setNoticeGone(state.sessionId);
+    }
+    setEconomyToast((n) => n + 1);
+  }
 
   // Heat tip: the first time the phone gets warm in this recording, a few words on what helps; gone by itself. Also when
   // it gets hot without a step down (a Full HD 30 recording is never lowered: the floor since 2026-10-31).
@@ -197,14 +223,19 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
       />
 
       <SafeAreaView pointerEvents="box-none" style={styles.content}>
-        <View pointerEvents="none" style={styles.topRow}>
-          <View style={styles.pill}>
+        {/* Only the battery-saving button takes touches here: a tap on the pills still reaches the save surface. */}
+        <View pointerEvents="box-none" style={styles.topRow}>
+          <View pointerEvents="none" style={styles.pill}>
             <View style={styles.recDot} />
             <Text style={styles.pillLabel}>{t('recording.recording')}</Text>
             <Text style={styles.elapsed}>{clock(now - (state.startedAt ?? now))}</Text>
           </View>
-          <View style={styles.pill}>
-            <Text style={styles.countText}>{clips}</Text>
+          <View pointerEvents="box-none" style={styles.topRight}>
+            {/* Hidden while dark: the tap that wakes the screen must not flip it. */}
+            {economy.asleep ? null : <EconomyButton on={economyPref} onPress={toggleEconomy} size={36} />}
+            <View pointerEvents="none" style={styles.pill}>
+              <Text style={styles.countText}>{clips}</Text>
+            </View>
           </View>
         </View>
 
@@ -239,7 +270,7 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
           </View>
         ) : null}
 
-        <View pointerEvents="box-none" style={styles.bottom}>
+        <View pointerEvents="box-none" style={styles.bottom} onLayout={(e) => setBottomHeight(e.nativeEvent.layout.height)}>
           {economy.asleep ? null : (
             <View pointerEvents="none" style={styles.hintCard}>
               <View style={styles.hintHead}>
@@ -269,6 +300,7 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
         </View>
       </SafeAreaView>
 
+      {economyToast > 0 && !economy.asleep ? <EconomyToast on={economyPref} bottom={bottomHeight + 24} /> : null}
       {showOverlay ? <SavedOverlay number={last.number} source={last.source} cutMs={last.cutMs} onUndo={undoLast} /> : null}
     </View>
   );
@@ -281,7 +313,8 @@ const styles = StyleSheet.create({
   economy: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
   economyText: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21, color: colors.soft, textAlign: 'center' },
   content: { flex: 1, paddingHorizontal: 16, gap: 10 },
-  topRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
+  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
+  topRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',

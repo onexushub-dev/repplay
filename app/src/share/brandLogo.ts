@@ -1,13 +1,17 @@
 import { Image, type ImageSourcePropType } from 'react-native';
 
 /**
- * The mark every exported clip carries. To change the brand image, replace this file (or point `BRAND_LOGO` at
- * another one): the overlay reads its proportions from the image itself.
+ * The mark every exported clip carries: the Reprize R (white, amber play), with `BRAND_HANDLE` beside it. To change the
+ * brand image, replace this file (or point `BRAND_LOGO` at another one): the overlay reads its proportions from the
+ * image itself. (2026-11-02: the R alone replaced the full "reprize" wordmark, `reprize-logo.png`.)
  */
-export const BRAND_LOGO: ImageSourcePropType = require('../../assets/images/brand/reprize-logo.png');
+export const BRAND_LOGO: ImageSourcePropType = require('../../assets/images/brand/reprize-mark.png');
+
+/** Our Instagram, written next to the R so whoever sees a shared clip knows where to find us. */
+export const BRAND_HANDLE = '@reprize.app';
 
 /** Used only when the image size cannot be read (tests, a source without dimensions). */
-const FALLBACK_ASPECT = 6;
+const FALLBACK_ASPECT = 1.5;
 
 /** Width divided by height of the logo image. */
 export function logoAspect(source: ImageSourcePropType = BRAND_LOGO): number {

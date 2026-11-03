@@ -1,9 +1,9 @@
 import { type ComponentRef, forwardRef } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
-import { colors } from '../theme/tokens';
-import { BRAND_LOGO, logoAspect } from './brandLogo';
+import { colors, fonts } from '../theme/tokens';
+import { BRAND_HANDLE, BRAND_LOGO, logoAspect } from './brandLogo';
 import type { Rect as Box } from './layout';
 
 /** Height of the dark gradient at the bottom of the video, so the mark reads on any video, capped at this share of the video height so a landscape clip is not mostly shadow. */
@@ -11,10 +11,14 @@ export const SAFE_BOTTOM = 340;
 const GRADIENT_MAX = SAFE_BOTTOM + 520;
 const GRADIENT_SHARE = 0.6;
 /**
- * The logo is this share of the frame's short side, so it reads the same in a 720 and in a 1080 export, vertical or
- * landscape. Kept small: the free plan's mark is meant to be discreet (about two thirds of the first size, 0.272).
+ * The R is this share of the frame's short side tall, and the handle's text this share, so the mark reads the same in a
+ * 720 and in a 1080 export, vertical or landscape. Kept small: the free plan's mark is meant to be discreet (R ~30 px
+ * and text ~22 px in a 720 frame).
  */
-export const LOGO_SHARE = 0.18;
+export const MARK_SHARE = 0.042;
+export const HANDLE_SHARE = 0.03;
+/** Space between the R and the handle, as a share of the frame's short side. */
+const MARK_GAP = 0.014;
 /** Room around the logo inside the dark pill, as a share of the frame's short side. */
 const PAD_X = 0.021;
 const PAD_Y = 0.011;
@@ -26,14 +30,14 @@ type Props = {
   layout: { video: Box; top: Box; bottom: Box };
   /** Screen points per frame pixel: 1/PixelRatio for the capture, smaller for the on-screen preview. */
   scale: number;
-  /** Draw the "made with" mark. Free exports carry it; paid ones (pass, pro) do not. Bands and layout are unchanged. */
+  /** Draw the mark (the R and @reprize.app). Free exports carry it; paid ones (pass, pro) do not. Bands and layout are unchanged. */
   watermark?: boolean;
 };
 
 /**
  * What every exported clip carries: dark bands where the video leaves room (landscape), a soft gradient
- * and the app logo in the video's bottom-right corner, so whoever sees a shared clip knows which app made it. The same component draws the
- * preview and, captured to PNG, the export overlay.
+ * and the Reprize R with our Instagram in the video's bottom-right corner, so whoever sees a shared clip knows which app
+ * made it and where to find us. The same component draws the preview and, captured to PNG, the export overlay.
  */
 export const ShareOverlay = forwardRef<ComponentRef<typeof View>, Props>(function ShareOverlay(
   { frame, layout, scale, watermark = true },
@@ -85,6 +89,7 @@ export const ShareOverlay = forwardRef<ComponentRef<typeof View>, Props>(functio
               right: s(frame.width - videoRight + unit * MARK_MARGIN),
               paddingHorizontal: s(unit * PAD_X),
               paddingVertical: s(unit * PAD_Y),
+              gap: s(unit * MARK_GAP),
             },
           ]}>
           <Image
@@ -92,8 +97,11 @@ export const ShareOverlay = forwardRef<ComponentRef<typeof View>, Props>(functio
             fadeDuration={0}
             resizeMode="contain"
             source={BRAND_LOGO}
-            style={{ width: s(unit * LOGO_SHARE), height: s(unit * LOGO_SHARE) / logoAspect() }}
+            style={{ height: s(unit * MARK_SHARE), width: s(unit * MARK_SHARE) * logoAspect() }}
           />
+          <Text numberOfLines={1} allowFontScaling={false} style={[styles.handle, { fontSize: s(unit * HANDLE_SHARE) }]}>
+            {BRAND_HANDLE}
+          </Text>
         </View>
       ) : null}
     </View>
@@ -103,5 +111,13 @@ export const ShareOverlay = forwardRef<ComponentRef<typeof View>, Props>(functio
 const styles = StyleSheet.create({
   band: { backgroundColor: colors.ground },
   // Discreet: a lighter pill and a slightly see-through logo.
-  mark: { position: 'absolute', backgroundColor: 'rgba(12,12,12,0.55)', borderRadius: 999, opacity: 0.85 },
+  mark: {
+    position: 'absolute',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(12,12,12,0.55)',
+    borderRadius: 999,
+    opacity: 0.85,
+  },
+  handle: { fontFamily: fonts.bodySemi, color: colors.text, includeFontPadding: false },
 });

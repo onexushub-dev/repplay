@@ -33,7 +33,7 @@ import { sessionSummary, track } from '../analytics';
 import { PositionGuide } from '../components/PositionGuide';
 import { RecordingPanel } from '../components/RecordingPanel';
 import { ProBadge } from '../components/ProBadge';
-import { MicIcon, QrIcon, RemoteIcon, TapIcon, WatchIcon, WaveIcon } from '../components/icons';
+import { MicIcon, QrIcon, RemoteIcon, StarIcon, TapIcon, WatchIcon, WaveIcon } from '../components/icons';
 import { TriggerTile } from '../components/TriggerTile';
 import { ZoomBubble } from '../components/ZoomBubble';
 import { ZoomButton } from '../components/ZoomButton';
@@ -551,9 +551,16 @@ export default function Setup() {
           </View>
         ) : null}
 
-        <Text style={styles.section}>{t('setup.triggers')}</Text>
-        {/* The paid triggers (Bluetooth remote and watch) share one outline and one "Pro" badge on the free plan. */}
-        <View style={styles.proTriggers}>
+        {/* The Bluetooth remote and the Apple Watch save a lance best (no false triggers, any distance): they come
+            first, under their own title that says why (2026-11-02). The watch keeps its "Pro" outline on the free plan. */}
+        <View style={styles.recommendedHead}>
+          <View style={styles.recommendedTitle}>
+            <StarIcon size={12} />
+            <Text style={[styles.section, styles.recommended]}>{t('setup.recommendedTriggers')}</Text>
+          </View>
+          <Text style={styles.recommendedHint}>{t('setup.recommendedHint')}</Text>
+        </View>
+        <View testID="recommended-triggers" style={styles.proTriggers}>
           <View style={styles.gridRow}>
             <TriggerTile
               icon={<RemoteIcon />}
@@ -586,6 +593,7 @@ export default function Setup() {
             </View>
           </View>
         </View>
+        <Text style={styles.section}>{t('setup.otherTriggers')}</Text>
         <View style={styles.grid}>
           <View style={styles.gridRow}>
             <TriggerTile
@@ -744,6 +752,10 @@ const styles = StyleSheet.create({
   },
   // The outline is drawn around the tiles, out in the sheet's side padding, so the tiles keep the width of the free ones.
   proTriggers: { marginTop: 8, marginBottom: 4 }, // room for the badge under the section title
+  recommendedHead: { gap: 2 },
+  recommendedTitle: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  recommended: { color: colors.accent },
+  recommendedHint: { fontFamily: fonts.body, fontSize: 12, color: colors.soft },
   proTile: { flex: 1, flexDirection: 'row' },
   proOutline: { position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderWidth: 1, borderColor: colors.accent, borderRadius: 15 },
   triggerPlain: { gap: 8 },
