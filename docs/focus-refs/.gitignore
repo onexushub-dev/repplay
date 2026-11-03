@@ -8,5 +8,9 @@
 !tools/
 !tools/**
 
+# Ground truth for the Modo Foco lab (tools/lab): small JSON, kept in git so it is never lost again
+!labels/
+!labels/*.json
+
 # Python caches of the tools
 __pycache__/
