@@ -16,6 +16,7 @@ const ALLOWLIST = new Set([
   'app/diag.tsx',
   'diag/diagLog.ts',
   'diag/useSessionDiag.ts',
+  'diag/remoteLinkDiag.ts',
   // Gesture test report (spike screen, for the team only).
   'diag/gestureTest.ts',
 ]);

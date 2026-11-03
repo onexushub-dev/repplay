@@ -577,7 +577,7 @@ export const en = {
     statusPaired: 'Press a button to check',
     statusMissing: 'Asleep · press a button',
     statusBluetoothOff: 'Bluetooth off',
-    noteMissing: 'The remote drops its connection after a few idle minutes to save battery. Press a button to wake it: that press counts. If it does not come back, turn the remote on or pair it again.',
+    noteMissing: 'The remote drops its connection after a few idle minutes to save battery. Press a button to wake it, then press again to save. If it does not come back, turn the remote on or pair it again.',
     noteBluetoothOff: 'Turn on the iPhone Bluetooth in Control Center or Settings.',
     statusSetup: 'Tap to connect',
   },

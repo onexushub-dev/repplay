@@ -61,11 +61,11 @@ describe('the link iOS shows (a BLE remote the app has learnt)', () => {
     expect(view.statusText).toBe('Conectado');
   });
 
-  test('missing: "Em espera" (it sleeps after a few idle minutes), the press that wakes it counts, steps behind "Parear de novo"', () => {
+  test('missing: "Em espera" (it sleeps after a few idle minutes), wake it and press again (a waking press never saves since 2026-11-03), steps behind "Parear de novo"', () => {
     const view = remoteDeviceView({ ...used, link: 'missing' });
     expect(view).toMatchObject({ state: 'offline', statusText: 'Em espera · aperte um botão', stepsBehindRepair: true, showWaiting: true, showNote: true });
     expect(view.note).toMatch(/poupar bateria/);
-    expect(view.note).toMatch(/esse clique já conta/);
+    expect(view.note).toMatch(/aperte de novo para salvar/);
   });
 
   test('Bluetooth off: says so and how to turn it on, nothing to press or pair', () => {
