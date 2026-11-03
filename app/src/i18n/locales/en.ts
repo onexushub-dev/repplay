@@ -186,6 +186,8 @@ export const en = {
     economyOnBody: 'The screen goes dark after 20 seconds without a touch. Tap to light it up.',
     economyOffTitle: 'Battery saving off',
     economyOffBody: 'The screen stays lit while recording.',
+    remoteLostTitle: 'Remote disconnected',
+    remoteLostBody: 'Press a button on the remote. If it does not come back, turn the remote off and on.',
   },
   summary: {
     clips: { one: '%{count} clip', other: '%{count} clips' },
