@@ -305,6 +305,19 @@ export function ClipIcon({ color = colors.text, size = 22 }: IconProps) {
   );
 }
 
+/** A star: a recommended choice (the triggers that give the best clips). */
+export function StarIcon({ color = colors.accent, size = 12 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityElementsHidden>
+      <Path
+        d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"
+        {...stroke(color)}
+        fill={color}
+      />
+    </Svg>
+  );
+}
+
 /** A crown: the mark of the Pro plan. */
 export function CrownIcon({ color = colors.text, size = 22 }: IconProps) {
   return (

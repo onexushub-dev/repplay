@@ -8,6 +8,7 @@ jest.mock('../../data/mmkv', () => ({
     listClips: jest.fn(() => [{ id: 'c1' }]),
     deleteSession: jest.fn(() => []),
     getPrefs: jest.fn(() => ({ screenEconomy: true })),
+    setPrefs: jest.fn((patch: object) => ({ screenEconomy: true, ...patch })),
   },
   removeFile: jest.fn(),
 }));
@@ -289,6 +290,47 @@ describe('screen economy', () => {
     await fireEvent.press(surface);
     expect(s.trigger).toHaveBeenCalledTimes(1);
     expect(s.trigger).toHaveBeenCalledWith('screen');
+    jest.useRealTimers();
+  });
+
+  test('battery saving can be turned off mid-recording: no clip, a word on it, the screen stays lit, the choice is kept', async () => {
+    const s = session({});
+    jest.useFakeTimers();
+    await render(<Recording />);
+    const toggle = screen.getByRole('switch', { name: 'Economia de bateria' });
+    expect(toggle.props.accessibilityState.checked).toBe(true);
+    await fireEvent(toggle, 'touchStart');
+    await fireEvent.press(toggle);
+    expect(s.trigger).not.toHaveBeenCalled();
+    expect(repo.setPrefs).toHaveBeenCalledWith({ screenEconomy: false });
+    expect(screen.getByText('Economia de bateria desligada')).toBeTruthy();
+    expect(screen.getByRole('switch', { name: 'Economia de bateria' }).props.accessibilityState.checked).toBe(false);
+    await act(async () => jest.advanceTimersByTime(60_000));
+    expect(screen.queryByTestId('screen-economy')).toBeNull();
+    jest.useRealTimers();
+  });
+
+  test('battery saving can be turned on mid-recording: the screen goes dark 20 s later, with no start notice on top', async () => {
+    session({});
+    repo.getPrefs.mockReturnValue({ screenEconomy: false });
+    jest.useFakeTimers();
+    await render(<Recording />);
+    await fireEvent.press(screen.getByRole('switch', { name: 'Economia de bateria' }));
+    expect(repo.setPrefs).toHaveBeenCalledWith({ screenEconomy: true });
+    expect(screen.getByText('Economia de bateria ligada')).toBeTruthy();
+    expect(screen.queryByTestId('economy-notice')).toBeNull();
+    await act(async () => jest.advanceTimersByTime(20_000));
+    expect(screen.getByTestId('screen-economy')).toBeTruthy();
+    jest.useRealTimers();
+    repo.getPrefs.mockReturnValue({ screenEconomy: true });
+  });
+
+  test('the battery saving button is hidden while the screen is dark, so the waking tap cannot flip it', async () => {
+    session({});
+    jest.useFakeTimers();
+    await render(<Recording />);
+    await act(async () => jest.advanceTimersByTime(20_000));
+    expect(screen.queryByRole('switch', { name: 'Economia de bateria' })).toBeNull();
     jest.useRealTimers();
   });
 
