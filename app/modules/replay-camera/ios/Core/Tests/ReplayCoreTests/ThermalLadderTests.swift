@@ -90,6 +90,13 @@ final class ThermalLadderTests: XCTestCase {
     XCTAssertFalse(ladder.degraded)
   }
 
+  func test_theGestureSlowsDownOnlyFromSeriousOn() { // 2026-11-02: `fair` is common in long games and halved the wave
+    XCTAssertFalse(ThermalLevel.nominal.slowsGesture)
+    XCTAssertFalse(ThermalLevel.fair.slowsGesture)
+    XCTAssertTrue(ThermalLevel.serious.slowsGesture)
+    XCTAssertTrue(ThermalLevel.critical.slowsGesture)
+  }
+
   func test_stateFromProcessInfoRawValues() {
     XCTAssertEqual(ThermalLevel(rawValue: 0), .nominal)
     XCTAssertEqual(ThermalLevel(rawValue: 3), .critical)

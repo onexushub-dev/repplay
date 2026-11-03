@@ -17,6 +17,9 @@ public final class PersonTracks {
     public var lastPosed: Double
     /// Until when this person counts as having the arms up: they go first, every sample.
     public var raisedUntil: Double
+    /// When the pose step read the arms up, within the last `raisedSeconds`: someone waving piles them up, a block or a
+    /// set leaves one or a few, so among people with the arms up the waver goes first.
+    public var raisedAt: [Double] = []
     /// Pose runs in a row that found no body in the box (a pole, a bag, a shadow; a far player also misses now and then).
     public var misses: Int
   }
@@ -74,12 +77,19 @@ public final class PersonTracks {
     }
   }
 
-  /// Who gets the pose step this sample: people with the arms up first (the biggest first), then whoever waited longest.
+  /// Who gets the pose step this sample: people with the arms up first (most arms-up reads in the last `raisedSeconds`
+  /// first, then the biggest), then whoever waited longest.
   public func pick(_ count: Int, at t: Double) -> [Track] {
+    let window = raisedSeconds
+    func recent(_ track: Track) -> Int { track.raisedAt.filter { t - $0 < window - 1e-9 }.count }
     let sorted = tracks.sorted { a, b in
       let ar = a.raisedUntil > t, br = b.raisedUntil > t
       if ar != br { return ar }
-      if ar { return PersonBoxes.area(a.box) > PersonBoxes.area(b.box) }
+      if ar {
+        let an = recent(a), bn = recent(b)
+        if an != bn { return an > bn }
+        return PersonBoxes.area(a.box) > PersonBoxes.area(b.box)
+      }
       if a.lastPosed != b.lastPosed { return a.lastPosed < b.lastPosed }
       return PersonBoxes.area(a.box) > PersonBoxes.area(b.box)
     }
@@ -103,7 +113,11 @@ public final class PersonTracks {
     guard let i = tracks.firstIndex(where: { $0.id == id }) else { return }
     tracks[i].lastPosed = t
     tracks[i].misses = found ? 0 : tracks[i].misses + 1
-    if raised { tracks[i].raisedUntil = t + raisedSeconds }
+    if raised {
+      tracks[i].raisedUntil = t + raisedSeconds
+      tracks[i].raisedAt.append(t)
+    }
+    tracks[i].raisedAt.removeAll { t - $0 >= raisedSeconds - 1e-9 }
     if tracks[i].misses >= maxMisses { tracks.remove(at: i) }
   }
 

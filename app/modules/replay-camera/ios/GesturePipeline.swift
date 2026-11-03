@@ -7,7 +7,11 @@ import Vision
 /// 1. Find people: the person detector on the whole frame, plus `tiles` regions of the frame scanned round-robin
 ///    (ScanTiles), so players far from the phone are found too. PersonTracks keeps them between samples.
 /// 2. Run body pose on an enlarged crop around a few of them (PersonTracks.pick: arms up first, then turns).
-/// 3. Feed the hold (ArmsUp + HoldTracker) and wave (WaveTracker) gestures.
+/// 3. Feed the wave gesture (WaveTracker), and the hold (ArmsUp + PersonHold) only when `Options.hold` is on.
+///
+/// The hold is off in the app since 2026-11-02: in indoor volleyball the setter's set (both hands above the head, still,
+/// ~1 s) and the blocks right after it are exactly the arms-up pose, and the hold only needs 3 hits over 1.5 s with gaps
+/// up to 1.2 s, so a set followed by a jump at the net fired a clip nobody asked for. The app only teaches the wave.
 final class GesturePipeline {
   struct Options: Equatable {
     /// Tiles scanned per sample, 0 for the whole frame only.
@@ -18,12 +22,14 @@ final class GesturePipeline {
     var upscale: Bool
     /// Close looks per sample around small tracked or just-lost people (ScanTiles.focusRegion; needs `tracks`).
     var focus: Int
+    /// Also fire on the hold (both arms up, still, 1.5 s). Off in the app: sets and blocks look the same (see above).
+    var hold: Bool
 
     /// What the app shipped until v2: whole frame, the 4 biggest people of this frame, no upscaling.
-    static let wholeFrame = Options(tiles: 0, tracks: false, upscale: false, focus: 0)
-    static let standard = Options(tiles: 2, tracks: true, upscale: true, focus: 2)
+    static let wholeFrame = Options(tiles: 0, tracks: false, upscale: false, focus: 0, hold: true)
+    static let standard = Options(tiles: 2, tracks: true, upscale: true, focus: 2, hold: false)
     /// When the phone is hot: one tile and one close look per sample.
-    static let hot = Options(tiles: 1, tracks: true, upscale: true, focus: 1)
+    static let hot = Options(tiles: 1, tracks: true, upscale: true, focus: 1, hold: false)
   }
 
   struct Result {
@@ -147,8 +153,8 @@ final class GesturePipeline {
     // Each person holds on their own (without tracks, people only have positions: they share id -1 as before).
     let people = Dictionary(grouping: sightings, by: { $0.id })
       .map { (id: $0.key, isUp: $0.value.contains { ArmsUp.isUp($0.pose) }) }
-    let held = hold.update(people, at: t)
-    let waved = wave.update(sightings, at: t) // both trackers see every sample, so run both before deciding
+    let held = options.hold ? hold.update(people, at: t) : false
+    let waved = wave.update(sightings, at: t) // every sample, so a wave is followed whether or not the hold is on
     let fired = gate.update(fired: held || waved, anyRaised: isUp || raised, at: t)
     return Result(fired: fired, held: held, waved: waved, isUp: isUp, raised: raised, sightings: sightings,
                   people: options.tracks ? tracks.tracks.count : merged.count, fromTiles: merged.count > fullCount ? merged.count - fullCount : 0,

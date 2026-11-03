@@ -3,7 +3,8 @@ import CoreImage
 import CoreMotion
 import Vision
 
-/// Samples camera frames at ~4 fps and fires `onGesture` when a player holds both arms up or waves both hands above the head.
+/// Samples camera frames at ~4 fps and fires `onGesture` when a player waves both hands above the head (the hold rule is
+/// off: see GesturePipeline).
 /// Frame orientation follows the phone's physical position (accelerometer), not the UI, which is portrait-locked.
 ///
 /// The vision work is in GesturePipeline: far from the phone a player is only ~60-100 px tall, so people are looked for
@@ -16,7 +17,9 @@ final class GestureDetector {
   static let armedSeconds = 2.0
   /// When the phone is hot (720p30 mode), sample less and look at fewer people.
   static let hotSampleInterval = 0.5
-  static let hotArmedSampleInterval = 0.25
+  /// While somebody has the arms up the rate stays at 8/s even when hot: the wave needs ~5 reads in 1.6 s, and at 4/s it
+  /// fired in 60% of the tries instead of 99% (simulation, 2026-11-02). It only lasts while someone has the arms up.
+  static let hotArmedSampleInterval = 0.125
   static let hotMaxPeople = 2
   /// Gravity (g) along x or y needed to tell how the phone is held; flatter than this keeps the last position.
   static let leanThreshold = 0.15

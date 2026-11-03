@@ -122,3 +122,35 @@ final class WaveTrackerIdTests: XCTestCase {
     XCTAssertEqual(fired, [])
   }
 }
+
+/// 2026-11-02, indoor volleyball: a set (both hands above the head, still, ~1.2 s), then a block jump at the net half a
+/// second later, by the same tracked player. The hold rule fired on it (3 hits over 1.5 s, gaps under 1.2 s); since then
+/// the app fires on the wave only, which must stay quiet here: the hands never swing from side to side.
+final class WaveVolleyballTests: XCTestCase {
+  private func player(_ up: Bool, dx: Double = 0.0, jitter: Double = 0.0) -> [Sighting] {
+    let wy = up ? 10.0 : 70.0
+    let ey = up ? 28.0 : 60.0
+    let pose = Pose(leftWrist: pt(56 + dx + jitter, wy), rightWrist: pt(44 + dx - jitter, wy),
+                    leftElbow: pt(62 + dx, ey), rightElbow: pt(38 + dx, ey),
+                    leftShoulder: pt(60 + dx, 50), rightShoulder: pt(40 + dx, 50), nose: pt(50 + dx, 35))
+    return [Sighting(pose: pose, x: 0.5, y: 0.5, id: 7)]
+  }
+
+  func test_aSetThenABlockDoNotWave() {
+    let fired = runWave(WaveTracker(), from: 0.0, to: 8.0, step: 0.125) { t in
+      if t >= 3.7 && t < 4.9 { return self.player(true, jitter: 0.6 * sin(37.0 * t)) } // the set
+      if t >= 5.4 && t < 5.9 { return self.player(true, dx: 3.0 * sin(9.0 * t)) }      // the block jump
+      return self.player(false)
+    }
+    XCTAssertEqual(fired, [])
+  }
+
+  func test_theSamePlayerWavingAfterTheBlockStillFires() {
+    let w = WaveTracker()
+    _ = runWave(w, from: 0.0, to: 6.0, step: 0.125) { t in self.player(t >= 5.4 && t < 5.9) }
+    let fired = runWave(w, from: 7.0, to: 10.0, step: 0.125) { t in
+      [Sighting(pose: wavePose(t), x: 0.5, y: 0.5, id: 7)]
+    }
+    XCTAssertEqual(fired.count, 1)
+  }
+}
