@@ -5,7 +5,7 @@ import { VolumeManager } from 'react-native-volume-manager';
 
 import { addReplayListener, diagAudioState } from '../../modules/replay-camera';
 import type { ReplaySession } from '../session/useReplaySession';
-import { diag, diagFlags, diagRecordingEnded, diagRecordingStarted } from './diagLog';
+import { DIAGNOSTICS_ENABLED, diag, diagFlags, diagRecordingEnded, diagRecordingStarted } from './diagLog';
 
 /** While recording, one line a minute with the audio state: shows when the remote's path changes or goes quiet. */
 const PULSE_MS = 60_000;
@@ -19,7 +19,7 @@ export function useSessionDiag(session: ReplaySession): void {
   const recording = phase === 'recording';
 
   useEffect(() => {
-    if (!recording) return;
+    if (!recording || !DIAGNOSTICS_ENABLED) return;
     const economy = diagFlags().economyOff ? 'economia de tela DESLIGADA' : 'economia de tela ligada';
     diagRecordingStarted(`${economy} — ${diagAudioState()}`);
     let minute = 0;
@@ -48,6 +48,7 @@ export function useSessionDiag(session: ReplaySession): void {
   }, [recording, thermalLine]);
 
   useEffect(() => {
+    if (!DIAGNOSTICS_ENABLED) return;
     const appState = AppState.addEventListener('change', (next) => diag(`app: ${next}`));
     const native = addReplayListener('onDiag', (e) => diag(e.message));
     const interrupted = addReplayListener('onInterrupted', () => diag('câmera: INTERROMPIDA pelo iOS'));

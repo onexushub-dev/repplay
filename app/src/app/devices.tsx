@@ -10,6 +10,7 @@ import { StatusPill } from '../components/StatusPill';
 import { StepList } from '../components/StepList';
 import { useRemoteLink } from '../devices/bluetoothRemote';
 import { repo } from '../data/mmkv';
+import { DIAGNOSTICS_ENABLED } from '../diag/diagLog';
 import { remoteDeviceView } from '../devices/remoteDevice';
 import { useSession } from '../session/SessionContext';
 import { setRemoteSheetOpen } from '../devices/remoteTest';
@@ -118,10 +119,12 @@ export default function Devices() {
 
         <Button label={t('devices.done')} variant={view.state === 'connected' ? 'primary' : 'secondary'} onPress={() => router.back()} />
 
-        {/* TEMP(diag-remote): link to the in-app diagnostic log. */}
-        <Pressable accessibilityRole="button" hitSlop={8} onPress={() => router.push('/diag')} style={styles.diag}>
-          <Text style={styles.diagText}>{t('devices.diagnostics')}</Text>
-        </Pressable>
+        {/* TEMP(diag-remote): link to the in-app diagnostic log, only in builds made with REPRIZE_DIAGNOSTICS=1. */}
+        {DIAGNOSTICS_ENABLED ? (
+          <Pressable accessibilityRole="button" hitSlop={8} onPress={() => router.push('/diag')} style={styles.diag}>
+            <Text style={styles.diagText}>{t('devices.diagnostics')}</Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );

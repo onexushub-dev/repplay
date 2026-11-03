@@ -1,5 +1,5 @@
 // TEMP(diag-remote): Bluetooth remote investigation; this whole file goes with its commit.
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { shareAsync } from 'expo-sharing';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
@@ -7,7 +7,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { bluetoothConnected } from '../../modules/replay-camera';
 import { Button } from '../components/Button';
-import { diag, diagClear, diagFileUri, diagFlags, diagSubscribe, diagText, setDiagFlags } from '../diag/diagLog';
+import {
+  DIAGNOSTICS_ENABLED,
+  diag,
+  diagClear,
+  diagFileUri,
+  diagFlags,
+  diagSubscribe,
+  diagText,
+  setDiagFlags,
+} from '../diag/diagLog';
 import { colors, fonts, radius } from '../theme/tokens';
 
 /**
@@ -15,6 +24,12 @@ import { colors, fonts, radius } from '../theme/tokens';
  * screen economy, and the log's file for the share sheet (AirDrop to the Mac, WhatsApp…).
  */
 export default function Diag() {
+  // Builds without REPRIZE_DIAGNOSTICS=1 have no such screen: a deep link lands on the home screen.
+  if (!DIAGNOSTICS_ENABLED) return <Redirect href="/" />;
+  return <DiagScreen />;
+}
+
+function DiagScreen() {
   const [text, setText] = useState(() => diagText());
   const [economyOff, setEconomyOff] = useState(() => diagFlags().economyOff);
 

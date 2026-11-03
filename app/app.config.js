@@ -30,6 +30,12 @@
  * "IP data capture" off (Settings > Project > General): US projects capture it by default.
  *
  * With no key the app sends no metrics at all (dev builds, tests, CI).
+ *
+ * In-app diagnostics (TEMP(diag-remote): the Diagnóstico screen, its log file and its flags), for local test builds:
+ *
+ *   REPRIZE_DIAGNOSTICS=1                  shows the Diagnóstico link and keeps the log; off when unset
+ *
+ * EAS production builds never carry it, whatever the env says: the App Store build has no debug screen.
  */
 module.exports = ({ config }) => {
   const bundleId = process.env.REPRIZE_BUNDLE_ID || process.env.REPPLAY_BUNDLE_ID || process.env.LANCE_BUNDLE_ID;
@@ -58,6 +64,7 @@ module.exports = ({ config }) => {
       key: process.env.REPRIZE_POSTHOG_KEY || process.env.REPPLAY_POSTHOG_KEY,
       host: process.env.REPRIZE_POSTHOG_HOST || 'https://us.i.posthog.com',
     },
+    diagnostics: !production && process.env.REPRIZE_DIAGNOSTICS === '1',
   });
 
   return Object.assign({}, config, { ios: ios, android: android, extra: extra });
