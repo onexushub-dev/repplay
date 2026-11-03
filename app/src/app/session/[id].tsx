@@ -11,7 +11,7 @@ import { ExportProgress } from '../../components/ExportProgress';
 import { SelectionBar } from '../../components/SelectionBar';
 import { UpgradeCard } from '../../components/UpgradeCard';
 import { ClipIcon, TrashIcon } from '../../components/icons';
-import { clipNumber, dayAndTime, megabytes, modeLabel, recordedLabel, sessionLabel } from '../../components/format';
+import { clipNumber, megabytes, recordedLabel, sessionLabel } from '../../components/format';
 import { removeFile, repo } from '../../data/mmkv';
 import { MAX_GAME_NAME } from '../../data/schema';
 import { accessPlan } from '../../payments/rules';
@@ -167,36 +167,11 @@ export default function SessionSummary() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View style={styles.headerText}>
-            {session ? (
-              <Text style={styles.subtitle}>{`${modeLabel(session.sport, locale)} · ${dayAndTime(session.startedAt, undefined, locale)}`}</Text>
-            ) : null}
-            {session?.name ? (
-              <Text style={styles.title} accessibilityRole="header" numberOfLines={2}>
-                {sessionLabel(session, undefined, locale)}
-              </Text>
-            ) : (
-              // Always one line: the font shrinks to fit narrow screens and long translations.
-              <Text style={styles.title} accessibilityRole="header" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
-                {t('summary.ended')}
-              </Text>
-            )}
-          </View>
-          {session && !selecting ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('games.deleteRecording')}
-              hitSlop={6}
-              onPress={confirmDeleteGame}
-              style={styles.deleteGame}>
-              <TrashIcon color={colors.rec} size={22} />
-            </Pressable>
-          ) : null}
-        </View>
-        {session ? (
-          <View style={styles.nameBox}>
+      {/* No big "Gravação encerrada" title nor caption (2026-11-02): the name field, "Gravação · date, time" until the
+          player names it, opens the screen, so the clips get the room. */}
+      {session ? (
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
             <TextInput
               accessibilityLabel={t('summary.nameLabel')}
               value={name}
@@ -209,10 +184,19 @@ export default function SessionSummary() {
               returnKeyType="done"
               style={styles.nameInput}
             />
-            <Text style={styles.nameCaption}>{t('summary.nameCaption')}</Text>
+            {selecting ? null : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('games.deleteRecording')}
+                hitSlop={6}
+                onPress={confirmDeleteGame}
+                style={styles.deleteGame}>
+                <TrashIcon color={colors.rec} size={22} />
+              </Pressable>
+            )}
           </View>
-        ) : null}
-      </View>
+        </View>
+      ) : null}
 
       {clips.length > 0 ? (
         <View style={styles.pickBar}>
@@ -336,12 +320,12 @@ function Stat({ value, label, accent = false }: { value: string; label: string; 
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.ground, paddingHorizontal: 20, gap: 16 },
-  header: { gap: 4, marginTop: 16 },
-  subtitle: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
-  title: { fontFamily: fonts.displayBold, fontSize: 44, lineHeight: 46, color: colors.text },
-  nameBox: { gap: 4, marginTop: 4 },
+  // Tighter than before (gap 16, header 16 from the top, 28 pt stats): more of the screen for the clips (2026-11-02).
+  root: { flex: 1, backgroundColor: colors.ground, paddingHorizontal: 20, gap: 12 },
+  header: { gap: 4, marginTop: 8 },
   nameInput: {
+    flex: 1,
+    minWidth: 0,
     minHeight: 48,
     borderRadius: 12,
     borderWidth: 1,
@@ -352,12 +336,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
   },
-  nameCaption: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
   stats: { flexDirection: 'row', gap: 8 },
-  stat: { flex: 1, backgroundColor: colors.surface, borderRadius: 14, padding: 12, gap: 2 },
-  statValue: { fontFamily: fonts.displayBold, fontSize: 28, color: colors.text },
-  statLabel: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
-  note: { fontFamily: fonts.body, fontSize: 12, color: colors.muted, marginTop: -8 },
+  stat: { flex: 1, backgroundColor: colors.surface, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12 },
+  statValue: { fontFamily: fonts.displayBold, fontSize: 22, color: colors.text },
+  statLabel: { fontFamily: fonts.body, fontSize: 11, color: colors.muted },
+  note: { fontFamily: fonts.body, fontSize: 12, color: colors.muted, marginTop: -6 },
   // The same pattern as the paid groups on the setup screen: amber outline and one small "Pro" pill on the border.
   grid: { gap: 10, paddingBottom: 12 },
   gridRow: { gap: 10 },
@@ -366,8 +349,7 @@ const styles = StyleSheet.create({
   pickBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 32 },
   pickLink: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.accent },
   pickCount: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text },
-  headerTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headerText: { flex: 1, minWidth: 0, gap: 4 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   deleteGame: {
     width: 44,
     height: 44,

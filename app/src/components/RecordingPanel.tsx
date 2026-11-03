@@ -14,7 +14,6 @@ import { diag, diagFlags } from '../diag/diagLog'; // TEMP(diag-remote)
 import { colors, fonts } from '../theme/tokens';
 import { Button } from './Button';
 import { EconomyButton } from './EconomyButton';
-import { EconomyToast } from './EconomyToast';
 import { HoldButton } from './HoldButton';
 import { MicIcon, RemoteIcon, TapIcon, WatchIcon, WaveIcon } from './icons';
 import { SavedOverlay } from './SavedOverlay';
@@ -26,10 +25,8 @@ function subscribeWatch(onChange: () => void): () => void {
 }
 
 const OVERLAY_MS = 2000;
-/** How long the battery-saving notice stays up when a recording starts with it on. */
+/** How long the battery-saving notice stays up: when a recording starts with it on, and after a tap on its button. */
 const ECONOMY_NOTICE_MS = 5000;
-/** How long the word on a battery-saving tap (on / off) stays up, as on the setup screen. */
-const ECONOMY_TOAST_MS = 3000;
 /** How long the heat tip stays up (thermal work, item 5). */
 const HEAT_TIP_MS = 8000;
 
@@ -107,14 +104,23 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
     economyOn && !economy.asleep && noticeFor !== undefined && noticeFor === state.sessionId && noticeGone !== noticeFor;
 
   // The battery-saving button: flips the same preference as the setup screen (the next game starts the same way) and
-  // says what it did for a moment. The start notice is done with for this game: the word on the tap replaces it.
-  const [economyToast, setEconomyToast] = useState(0);
+  // says what it did in the start notice's place, at the top (2026-11-03: one place for every battery-saving word). A
+  // tap ends the start notice of this game; the notice then follows the button.
+  const [economyTaps, setEconomyTaps] = useState(0);
   useEffect(() => {
-    if (economyToast === 0) return;
-    const hide = setTimeout(() => setEconomyToast(0), ECONOMY_TOAST_MS);
+    if (economyTaps === 0) return;
+    const hide = setTimeout(() => setEconomyTaps(0), ECONOMY_NOTICE_MS);
     return () => clearTimeout(hide);
-  }, [economyToast]);
-  const [bottomHeight, setBottomHeight] = useState(0);
+  }, [economyTaps]);
+  const economyNotice: 'on' | 'off' | undefined = economy.asleep
+    ? undefined
+    : economyTaps > 0
+      ? economyPref
+        ? 'on'
+        : 'off'
+      : showEconomyNotice
+        ? 'on'
+        : undefined;
   function toggleEconomy() {
     const next = !economyPref;
     setEconomyPref(next);
@@ -123,7 +129,7 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
       setNoticeFor(state.sessionId);
       setNoticeGone(state.sessionId);
     }
-    setEconomyToast((n) => n + 1);
+    setEconomyTaps((n) => n + 1);
   }
 
   // Heat tip: the first time the phone gets warm in this recording, a few words on what helps; gone by itself. Also when
@@ -247,10 +253,14 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
             </Text>
           </View>
         ) : null}
-        {showEconomyNotice ? (
+        {economyNotice !== undefined ? (
           <View pointerEvents="none" accessibilityRole="alert" testID="economy-notice" style={styles.notice}>
-            <Text style={styles.noticeTitle}>{t('recording.economyOnTitle')}</Text>
-            <Text style={styles.noticeBody}>{t('recording.economyOnBody')}</Text>
+            <Text style={styles.noticeTitle}>
+              {t(economyNotice === 'on' ? 'recording.economyOnTitle' : 'recording.economyOffTitle')}
+            </Text>
+            <Text style={styles.noticeBody}>
+              {t(economyNotice === 'on' ? 'recording.economyOnBody' : 'recording.economyOffBody')}
+            </Text>
           </View>
         ) : null}
         {showTip ? (
@@ -270,7 +280,7 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
           </View>
         ) : null}
 
-        <View pointerEvents="box-none" style={styles.bottom} onLayout={(e) => setBottomHeight(e.nativeEvent.layout.height)}>
+        <View pointerEvents="box-none" style={styles.bottom}>
           {economy.asleep ? null : (
             <View pointerEvents="none" style={styles.hintCard}>
               <View style={styles.hintHead}>
@@ -300,7 +310,6 @@ export function RecordingPanel({ clipSeconds = 30, gesture = true, voice = false
         </View>
       </SafeAreaView>
 
-      {economyToast > 0 && !economy.asleep ? <EconomyToast on={economyPref} bottom={bottomHeight + 24} /> : null}
       {showOverlay ? <SavedOverlay number={last.number} source={last.source} cutMs={last.cutMs} onUndo={undoLast} /> : null}
     </View>
   );

@@ -102,7 +102,8 @@ test('shows the game stats', async () => {
   expect(screen.getByText('2h14')).toBeTruthy();
   expect(screen.getByText('4')).toBeTruthy();
   expect(screen.getByText('92 MB')).toBeTruthy();
-  expect(screen.getByText(/Futevôlei ·/)).toBeTruthy();
+  // The date line is the name field's own text now (the subtitle went with the big title).
+  expect(screen.getByLabelText('Nome da gravação').props.placeholder).toBe('Futevôlei · 17/10, 18:40');
 });
 
 test('tapping a clipe opens it', async () => {
@@ -155,12 +156,25 @@ test('typing a name and submitting renames the game', async () => {
   expect(repo.renameSession).toHaveBeenCalledWith('s1', 'Final do torneio');
 });
 
-test('a named game shows its name as the title', async () => {
+test('a named game shows its name in the name field, with no big title above it (2026-11-02: room for the clips)', async () => {
   repo.getSession.mockReturnValue({ id: 's1', sport: 'futevolei', startedAt: 0, name: 'Final do torneio', paid: true });
   repo.listClips.mockReturnValue([]);
   repo.sessionStats.mockReturnValue({ clips: 0, bytes: 0, recordedMs: 0 });
   await render(<SessionSummary />);
-  expect(screen.getByRole('header')).toHaveTextContent('Final do torneio');
+  expect(screen.getByLabelText('Nome da gravação').props.value).toBe('Final do torneio');
+  expect(screen.queryByText('GRAVAÇÃO ENCERRADA')).toBeNull();
+  expect(screen.queryByRole('header')).toBeNull();
+});
+
+test('an unnamed game shows no "Gravação encerrada" title: the name field, with its date and time, opens the screen', async () => {
+  repo.getSession.mockReturnValue({ id: 's1', sport: 'futevolei', startedAt: 0, paid: true });
+  repo.listClips.mockReturnValue([]);
+  repo.sessionStats.mockReturnValue({ clips: 0, bytes: 0, recordedMs: 0 });
+  await render(<SessionSummary />);
+  expect(screen.queryByText('GRAVAÇÃO ENCERRADA')).toBeNull();
+  expect(screen.getByLabelText('Nome da gravação').props.placeholder).toMatch(/\d/);
+  expect(screen.getByRole('button', { name: 'Apagar gravação' })).toBeTruthy();
+  expect(screen.queryByText('Opcional. Ajuda a achar a gravação depois.')).toBeNull(); // the field speaks for itself
 });
 
 test('the footer has no "Postar um clipe": sharing happens inside the clip', async () => {
