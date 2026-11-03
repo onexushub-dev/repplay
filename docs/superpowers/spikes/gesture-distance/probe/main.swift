@@ -7,13 +7,20 @@
 //   /tmp/gesture-probe clips/hold-15m-01.mov          # writes clips/hold-15m-01.mov.gesture.json
 //   /tmp/gesture-probe clips/*.mov                    # several clips, one json each
 //
-// Modes: wholeFrame (shipped until now) and standard (tiles + tracks + upscale), both with the app's limit of 4 people.
+// Modes: wholeFrame (shipped until gesture v2), standard (the app: tiles + tracks + upscale, wave only) and standardHold
+// (standard plus the hold rule, off in the app since 2026-11-02), all with the app's limit of 4 people.
 import AVFoundation
 import CoreImage
 import Foundation
 import Vision
 
-let modes: [(String, GesturePipeline.Options)] = [("wholeFrame", .wholeFrame), ("standard", .standard)]
+let standardHold: GesturePipeline.Options = {
+  var o = GesturePipeline.Options.standard
+  o.hold = true
+  return o
+}()
+let modes: [(String, GesturePipeline.Options)] = [("wholeFrame", .wholeFrame), ("standard", .standard),
+                                                  ("standardHold", standardHold)]
 let maxPeople = 4
 
 func r3(_ v: Double) -> Double { (v * 1000).rounded() / 1000 }

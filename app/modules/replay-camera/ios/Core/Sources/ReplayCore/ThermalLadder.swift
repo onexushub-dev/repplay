@@ -14,6 +14,10 @@ public enum ThermalLevel: Int, Comparable {
   }
 
   public static func < (a: ThermalLevel, b: ThermalLevel) -> Bool { a.rawValue < b.rawValue }
+
+  /// The gesture checks run lighter (GesturePipeline.Options.hot) from `serious` on. It used to be `fair`, which a long
+  /// game reaches easily: it halved the samples and the people looked at, and the wave needs both (2026-11-02).
+  public var slowsGesture: Bool { self >= .serious }
 }
 
 /// How a recording steps down when the phone heats up (thermal work, item 3). The player's call (2026-10-31): keep the

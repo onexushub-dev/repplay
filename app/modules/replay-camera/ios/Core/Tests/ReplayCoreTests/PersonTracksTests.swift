@@ -113,6 +113,26 @@ final class PersonTracksTests: XCTestCase {
     XCTAssertEqual(tracks.pick(1, at: 0.5).map(\.id), [far])
   }
 
+  func test_amongPeopleWithTheArmsUpTheOneUpMostOftenGoesFirst() { // 2026-11-02: a near block took the far waver's turn
+    let tracks = PersonTracks()
+    tracks.update([box(0.1, 0.4, 0.08, 0.30), box(0.6, 0.5, 0.01, 0.03)], at: 0) // a near blocker, a far waver
+    let near = tracks.tracks[0].id, far = tracks.tracks[1].id
+    for t in [0.0, 0.125, 0.25, 0.375] { tracks.posed(far, at: t, found: true, raised: true) } // waving
+    tracks.posed(near, at: 0.375, found: true, raised: true) // one jump at the net
+    XCTAssertEqual(tracks.pick(1, at: 0.5).map(\.id), [far])
+  }
+
+  func test_armsUpLongAgoNoLongerCountsForTheOrder() {
+    let tracks = PersonTracks(raisedSeconds: 2.0)
+    tracks.update([box(0.1, 0.4, 0.08, 0.30), box(0.6, 0.5, 0.01, 0.03)], at: 0)
+    let near = tracks.tracks[0].id, far = tracks.tracks[1].id
+    for t in [0.0, 0.125, 0.25] { tracks.posed(far, at: t, found: true, raised: true) }
+    tracks.posed(far, at: 2.0, found: true, raised: true)   // still up, but the earlier reads are past the window
+    tracks.posed(near, at: 2.0, found: true, raised: true)
+    tracks.update([box(0.1, 0.4, 0.08, 0.30), box(0.6, 0.5, 0.01, 0.03)], at: 2.0)
+    XCTAssertEqual(tracks.pick(1, at: 2.4).map(\.id), [near]) // one read each in the last 2 s: the bigger one first
+  }
+
   func test_somethingThePoseStepNeverFindsABodyInIsDropped() {
     let tracks = PersonTracks(maxMisses: 3)
     tracks.update([box(0.5, 0.5)], at: 0)

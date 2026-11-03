@@ -151,3 +151,37 @@ is found, `isX`/`raised` whether the pose reads the arms.
   replayed on the last three tests it keeps every real gesture (4/4, 11/11, 16/16).
 - Track ids change when a person walks or crosses another (the gesturer had 4); a person standing still to gesture keeps
   theirs, so it only restarts a hold already broken by walking.
+
+## Indoor volleyball false trigger (2026-11-02): the hold is off
+
+- A clip fired by itself during an indoor volleyball rally (phone at a corner of the court, ~10 players). In the clip the
+  setter holds both hands above the head for ~1.2 s to set, and half a second later there are block and attack jumps
+  at the net. A set is the arms-up pose exactly (wrists above the head, elbows above the shoulders), and the hold
+  needs only 3 hits over 1.5 s with gaps up to 1.2 s, so a set followed by a jump passes as a hold. The Python port
+  reproduces it (set 3.7-4.9 s, jump 5.4-5.9 s, same player: hold + wave fires at 5.5 s, wave only stays quiet).
+  None of the 12 reference games (beach tennis, basketball) has a setter, which is why `play` showed 0 false fires.
+- The app only teaches the wave ("Acene com os dois braços acima da cabeça"), so the hold is now off in the app:
+  `GesturePipeline.Options.hold` (false in `standard` and `hot`). ArmsUp still picks who to look at first and arms the
+  faster sampling. The probe runs `standardHold` too, and `report.py` shows it as `withHold`, to compare on new clips.
+- Cost: the hold was the more robust rule far away (a still pose is read better than a moving one at 30+ m); the
+  wave alone carried every gesture up to ~10 m in the corridor tests, beyond that it needs a new field test.
+- Android still fires on the hold only (ML Kit, `HoldTracker`): it needs the WaveTracker port before release.
+- Next, if the wave also fires in games: record indoor volleyball `play-*` clips (sets and blocks) and replay them;
+  candidate guard is requiring at least two side-to-side reversals per hand (a set or a block has none or one).
+
+## Landscape, many players, high phone (2026-11-02)
+
+- Orientation alone costs nothing: a player has the same pixels either way, and the detector, tiles and crops do not
+  depend on it. Landscape framings show more of the court: the reference games in landscape tracked 6-8 people
+  (portrait ~4), so with 4 pose slots each person is read every 0.5 s instead of 0.25 s; the indoor volleyball session
+  of 2026-11-02 had 6.5-7.9 people per frame (Modo Foco log).
+- Wave simulation (report.py port, 3 s of waving): read in every sample, 99% fire at 60% legible poses; in every other
+  sample, 54%; at 4 samples/s, 60%. Loosening the wave (4 samples, 60% raised, 2 s window) fired 3 times in the
+  12 min of reference play (0 today): rejected.
+- The 2026-11-02 session stayed `nominal` for all 43 min, so the light mode was not today's cause; still, it used to
+  start at `fair`, common in long games.
+- Changes: the light gesture mode starts at `serious` (`ThermalLevel.slowsGesture`); while somebody has the arms up
+  the rate stays at 8/s even when hot; among people with the arms up, the one with the most arms-up reads in the last
+  2 s gets the pose first (a waver over a near player who jumped once), then the biggest.
+- Still open: whether 4 pose slots are enough with ~7 players, and how much a high phone costs in legible wrists.
+  Run the gesture test (`/spike`) in landscape at the court: `ms` per sample says whether there is room for 5-6 slots.

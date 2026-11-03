@@ -107,7 +107,7 @@ final class ReplayEngine {
       ladder = ThermalLadder(requested: maxQuality, state: state, now: Self.uptime())
       return ladder.quality
     }
-    gesture.degraded = state >= .fair
+    gesture.degraded = state.slowsGesture
     do { try capture.configure(lens: lens, maxQuality: quality) } catch { throw Failure.unavailable(error) }
     capture.queue.sync { startWriter() }
     gesture.start()
@@ -316,8 +316,8 @@ final class ReplayEngine {
 
   private static func uptime() -> TimeInterval { ProcessInfo.processInfo.systemUptime }
 
-  /// Thermal work, item 3: `fair` slows the gesture checks; `serious` for two minutes halves the frame rate (never
-  /// below Full HD); `critical` stops (`ThermalLadder`).
+  /// Thermal work, item 3: `serious` slows the gesture checks (ThermalLevel.slowsGesture) and, held for two minutes,
+  /// halves the frame rate (never below Full HD); `critical` stops (`ThermalLadder`).
   private func thermalChanged() {
     thermalQueue.async { [weak self] in
       guard let self, self.running else { return }
@@ -325,7 +325,7 @@ final class ReplayEngine {
       let action = self.ladder.update(state: state, now: Self.uptime())
       let quality = self.ladder.quality
       let degraded = self.ladder.degraded
-      self.gesture.degraded = state >= .fair || degraded
+      self.gesture.degraded = state.slowsGesture || degraded
       NSLog("[replay] thermal %@: recording %@ (asked %@)", state.name, quality, self.ladder.requested)
 
       switch action {

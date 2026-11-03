@@ -47,6 +47,9 @@ public struct Sighting: Equatable {
 /// The hold gesture: both arms raised above the head. Big body geometry, so it stays readable when the
 /// player is small in the frame; HoldTracker requires it held, which filters blocks and celebrations.
 ///
+/// Since 2026-11-02 the app does not fire on the hold (GesturePipeline.Options.hold): an indoor volleyball set followed
+/// by a block passed as a hold. ArmsUp still tells who to look at first and when to sample faster.
+///
 /// Field test (sand court, phone high at 3-4 m, 0.5x): the old rules (7 joints at 0.3, wrists 0.5 shoulder widths
 /// above the nose) missed it too often, so the elbows and the nose are optional now and the rise is smaller.
 public enum ArmsUp {

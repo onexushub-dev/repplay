@@ -6,8 +6,9 @@ Clip names: <gesture>-<distance>m-<n>.<ext>, e.g. hold-15m-01.mov, wave-20m-02.m
 A gesture clip holds 3 deliberate gestures (see README); a play-* clip holds none, so every fire there is a false one.
 Override the expected count with clips/expected.csv (file,expected).
 
-The replay is a Python port of ReplayCore's ArmsUp, HoldTracker and WaveTracker (keep in sync). The "app" variant must
-match the probe's own "standard" fires; the others show what looser rules would do on the same poses.
+The replay is a Python port of ReplayCore's ArmsUp, HoldTracker and WaveTracker (keep in sync). The "app" variant (wave
+only, the hold is off since 2026-11-02) must match the probe's own "standard" fires; "withHold" is the app before that
+(the probe's "standardHold"), and the others show what other hold rules would do on the same poses.
 """
 import csv, glob, json, math, os, re, sys
 
@@ -151,14 +152,15 @@ class Wave:
 # ---------- variants ----------
 
 VARIANTS = {
-    'app': dict(),
-    'previousHold': dict(gap=0.8, min_hits=4),   # HoldTracker before gesture v2
-    'rise0.2': dict(rise=0.2),
-    'noElbows': dict(elbows=False),
-    'hold1.2s': dict(hold=1.2),
+    'app': dict(),                                             # wave only (GesturePipeline.Options.standard)
+    'withHold': dict(use_hold=True),                           # wave + hold, the app until 2026-11-02
+    'previousHold': dict(use_hold=True, gap=0.8, min_hits=4),  # HoldTracker before gesture v2
+    'rise0.2': dict(use_hold=True, rise=0.2),
+    'noElbows': dict(use_hold=True, elbows=False),
+    'hold1.2s': dict(use_hold=True, hold=1.2),
 }
 
-def replay(samples, rise=0.35, gap=1.2, min_hits=3, elbows=True, hold=1.5):
+def replay(samples, rise=0.35, gap=1.2, min_hits=3, elbows=True, hold=1.5, use_hold=False):
     h, w, g = PersonHold(hold=hold, gap=gap, min_hits=min_hits), Wave(), FireGate()
     fires = []
     for s in samples:
@@ -167,7 +169,7 @@ def replay(samples, rise=0.35, gap=1.2, min_hits=3, elbows=True, hold=1.5):
         for x in sightings:
             pid = x.get('id', -1)
             people[pid] = people.get(pid, False) or arms_up(x, rise=rise, elbows=elbows)
-        held = h.update(list(people.items()), s['t'])
+        held = h.update(list(people.items()), s['t']) if use_hold else False
         waved = w.update(sightings, s['t'])
         any_raised = any(arms_up(x) or (Wave.measure(x) or (False,))[0] for x in sightings)
         if g.update(held or waved, any_raised, s['t']): fires.append(s['t'])
@@ -179,6 +181,10 @@ def debounce(fires, ms=3000):
     for t in fires:
         if not out or (t - out[-1]) * 1000 >= ms: out.append(t)
     return out
+
+def num(v):
+    """A count, or 0 for a column an older probe run does not have ('-')."""
+    return v if isinstance(v, int) else 0
 
 def main():
     folder = sys.argv[1] if len(sys.argv) > 1 else '.'
@@ -197,14 +203,19 @@ def main():
         r = {'file': name, 'gesture': gesture, 'dist': dist, 'expected': exp, 'minutes': d['duration'] / 60}
         r['wholeFrame'] = len(debounce(d['wholeFrame']['fires']))
         r['standard'] = len(debounce(d['standard']['fires']))
+        # Probe runs before 2026-11-02 had the hold in "standard" and no "standardHold".
+        r['standardHold'] = len(debounce(d['standardHold']['fires'])) if 'standardHold' in d else None
         for v, kw in VARIANTS.items(): r[v] = len(debounce(replay(d['standard']['samples'], **kw)))
         px = [s['smallestPx'] for s in d['standard']['samples'] if s['smallestPx'] > 0]
         r['px'] = sorted(px)[len(px) // 2] if px else 0
         r['posed'] = sum(1 for s in d['standard']['samples'] if s['sightings']) / max(1, len(d['standard']['samples']))
         rows.append(r)
-        if r['app'] != r['standard']:
-            print(f"warning: the Python port disagrees with the app on {name}: {r['app']} vs {r['standard']}")
-    cols = ['wholeFrame', 'standard'] + [v for v in VARIANTS if v != 'app']
+        if r['standardHold'] is None:  # an older probe run: its "standard" had the hold
+            r['standardHold'], r['standard'] = r['standard'], '-'
+        for port, probe in (('app', 'standard'), ('withHold', 'standardHold')):
+            if r[probe] != '-' and r[port] != r[probe]:
+                print(f"warning: the Python port disagrees with the probe on {name}: {port} {r[port]} vs {probe} {r[probe]}")
+    cols = ['wholeFrame', 'standard', 'standardHold'] + [v for v in VARIANTS if v != 'app'] + ['app']
     print(f"{'file':28} {'dist':>4} {'exp':>3} {'px':>4} {'pose%':>5} | " + ' '.join(f'{c:>16}' for c in cols))
     for r in rows:
         print(f"{r['file'][:28]:28} {str(r['dist'] or ''):>4} {r['expected']:>3} {r['px']:>4} {r['posed']:5.0%} | "
@@ -214,11 +225,11 @@ def main():
     for g in groups:
         rs = [r for r in rows if (r['gesture'], r['dist']) == g]
         exp = sum(r['expected'] for r in rs)
-        print(f"  {g[0]:6} {str(g[1]) + ' m':>5}: " + '  '.join(f"{c} {sum(min(r[c], r['expected']) for r in rs)}/{exp}" for c in cols))
+        print(f"  {g[0]:6} {str(g[1]) + ' m':>5}: " + '  '.join(f"{c} {sum(min(num(r[c]), r['expected']) for r in rs)}/{exp}" for c in cols))
     play = [r for r in rows if r['gesture'] == 'play']
     if play:
         minutes = sum(r['minutes'] for r in play)
-        print(f"  play   ({minutes:.0f} min): " + '  '.join(f"{c} {sum(r[c] for r in play) * 10 / max(minutes, 1e-9):.1f}" for c in cols))
+        print(f"  play   ({minutes:.0f} min): " + '  '.join(f"{c} {sum(num(r[c]) for r in play) * 10 / max(minutes, 1e-9):.1f}" for c in cols))
 
 if __name__ == '__main__':
     main()
