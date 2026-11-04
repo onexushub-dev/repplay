@@ -1,4 +1,5 @@
 import AVFoundation
+import UIKit
 
 /// Ties capture, segment writing, the ring, gesture and thermal handling together.
 /// One per app; the preview view reads its session.
@@ -266,6 +267,27 @@ final class ReplayEngine {
   func diag(_ message: String) {
     NSLog("[replay] diag %@", message)
     emit?("onDiag", ["message": message])
+  }
+
+  /// TEMP(diag-remote): battery, charging, Low Power Mode and heat in one line (field test: what Modo Foco costs per
+  /// clip and per minute of recording). iOS gives the level in 1% steps.
+  static func powerState() -> String {
+    let device = UIDevice.current
+    if !device.isBatteryMonitoringEnabled {
+      device.isBatteryMonitoringEnabled = true
+    }
+    let level = device.batteryLevel
+    let percent = level < 0 ? "?" : String(Int((level * 100).rounded()))
+    let state: String
+    switch device.batteryState {
+    case .charging: state = "carregando"
+    case .full: state = "cheia, no cabo"
+    case .unplugged: state = "fora do cabo"
+    default: state = "estado desconhecido"
+    }
+    let lowPower = ProcessInfo.processInfo.isLowPowerModeEnabled ? ", pouca energia LIGADO" : ""
+    let thermal = (ThermalLevel(rawValue: ProcessInfo.processInfo.thermalState.rawValue) ?? .nominal).name
+    return "bateria \(percent)% (\(state)\(lowPower)), calor \(thermal)"
   }
 
   /// The audio session as the volume remote depends on it: the remote is read through `outputVolume`.

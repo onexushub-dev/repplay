@@ -105,6 +105,12 @@ export function diagAudioState(): string {
   return typeof get === 'function' ? get.call(ReplayCameraModule) : '';
 }
 
+/** TEMP(diag-remote): battery level, charging and heat in one line; empty where unsupported. */
+export function diagPower(): string {
+  const get = ReplayCameraModule.diagPower;
+  return typeof get === 'function' ? get.call(ReplayCameraModule) : '';
+}
+
 /** Short "saved" chime and/or two blinks of the rear torch, so a player far from the phone knows. */
 export function signalSaved({ sound, flash }: { sound: boolean; flash: boolean }): void {
   ReplayCameraModule.signalSaved(sound, flash);
