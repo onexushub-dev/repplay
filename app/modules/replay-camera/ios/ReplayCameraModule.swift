@@ -176,6 +176,9 @@ public class ReplayCameraModule: Module {
     // TEMP(diag-remote): the audio session the volume remote depends on.
     Function("diagAudioState") { () -> String in ReplayEngine.audioState() }
 
+    // TEMP(diag-remote): battery, charging and heat in one line (Modo Foco cost in the field test).
+    Function("diagPower") { () -> String in ReplayEngine.powerState() }
+
     // Whether this phone records a quality ("2160p30" = 4K) with the camera the app opens; asked before a game starts.
     Function("supportsQuality") { (quality: String) -> Bool in CaptureController.supports(quality: quality) }
 

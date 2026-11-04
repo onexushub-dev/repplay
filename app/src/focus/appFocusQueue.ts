@@ -17,18 +17,37 @@ function analysisTime(elapsedMs: number, endAt: number): string {
   return away > 1000 ? `${busy} (+${(away / 1000).toFixed(0)} s com o app em segundo plano)` : busy;
 }
 
+/** TEMP(diag-remote): battery and heat in one line; never throws (module mocks, older builds). */
+function power(): string {
+  try {
+    return camera.diagPower();
+  } catch {
+    return '';
+  }
+}
+
+/** TEMP(diag-remote): battery and heat when each analysis started (by clip file), for the line written at its end. */
+const powerAtStart = new Map<string, string>();
+
 /** The app's one Modo Foco queue. */
 export const focusQueue = createFocusQueue({
-  analyze: camera.analyzeFocus,
+  analyze: (opts) => {
+    powerAtStart.set(opts.clipPath, power());
+    return camera.analyzeFocus(opts);
+  },
   cancel: camera.cancelFocus,
   supported: camera.isFocusSupported,
   repo,
   // TEMP(diag-remote): the Modo Foco v14 field test reads the analysis time on the Diagnóstico screen.
-  measured: (clip, r) =>
+  measured: (clip, r) => {
+    const before = powerAtStart.get(clip.path);
+    powerAtStart.delete(clip.path);
     diag(
       `Modo Foco: clipe de ${((clip.bounds ? clip.bounds.endMs - clip.bounds.startMs : clip.durationMs) / 1000).toFixed(0)} s ` +
-        `${analysisTime(r.elapsedMs, Date.now())} (${r.frames} quadros, ${r.meanPeople.toFixed(1)} pessoas/quadro, ${r.status})`,
-    ),
+        `${analysisTime(r.elapsedMs, Date.now())} (${r.frames} quadros, ${r.meanPeople.toFixed(1)} pessoas/quadro, ${r.status})` +
+        ` — antes: ${before !== undefined ? before : '?'} — depois: ${power()}`,
+    );
+  },
   deleteFile: (path) => {
     try {
       new File(`file://${path}`).delete();
