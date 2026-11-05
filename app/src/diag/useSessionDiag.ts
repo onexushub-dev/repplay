@@ -3,9 +3,18 @@ import { useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
 import { VolumeManager } from 'react-native-volume-manager';
 
-import { addReplayListener, diagAudioState } from '../../modules/replay-camera';
+import { addReplayListener, diagAudioState, diagPower } from '../../modules/replay-camera';
 import type { ReplaySession } from '../session/useReplaySession';
 import { DIAGNOSTICS_ENABLED, diag, diagFlags, diagRecordingEnded, diagRecordingStarted } from './diagLog';
+
+/** Battery and heat in one line; never throws (a module mock or an older build without it gives ''). */
+function power(): string {
+  try {
+    return diagPower();
+  } catch {
+    return '';
+  }
+}
 
 /** While recording, one line a minute with the audio state: shows when the remote's path changes or goes quiet. */
 const PULSE_MS = 60_000;
@@ -21,16 +30,19 @@ export function useSessionDiag(session: ReplaySession): void {
   useEffect(() => {
     if (!recording || !DIAGNOSTICS_ENABLED) return;
     const economy = diagFlags().economyOff ? 'economia de tela DESLIGADA' : 'economia de tela ligada';
-    diagRecordingStarted(`${economy} — ${diagAudioState()}`);
+    diagRecordingStarted(`${economy} — ${diagAudioState()} — ${power()}`);
     let minute = 0;
     const pulse = setInterval(() => {
       minute += 1;
       VolumeManager.getVolume()
-        .then(({ volume }) => diag(`pulso ${minute} min: volume lido pelo app ${volume.toFixed(2)} — ${diagAudioState()}`))
-        .catch(() => diag(`pulso ${minute} min: volume ILEGÍVEL — ${diagAudioState()}`));
+        .then(({ volume }) =>
+          diag(`pulso ${minute} min: ${power()} — volume lido pelo app ${volume.toFixed(2)} — ${diagAudioState()}`),
+        )
+        .catch(() => diag(`pulso ${minute} min: ${power()} — volume ILEGÍVEL — ${diagAudioState()}`));
     }, PULSE_MS);
     return () => {
       clearInterval(pulse);
+      diag(`fim da gravação: ${power()}`);
       diagRecordingEnded();
     };
   }, [recording]);

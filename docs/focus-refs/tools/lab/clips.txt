@@ -1,0 +1,26 @@
+# Lab clip set (2026-11-03). One per line: name|video (relative to docs/focus-refs)|start ms|duration ms|sport
+# Order = labelling priority. Windows: app clips use the part the clip shows (bounds start), refs the first 30 s.
+bt-0AE39B33|raw-dump/2026-10-26-gravacao3/clips/0AE39B33-6E44-4ECB-9B42-22DC3F26E1A2.mp4|30009|30000|beachTennis
+bt-E5003B6B|raw-dump/2026-10-26-gravacao3/clips/E5003B6B-23F9-441B-883B-0BB6694302B4.mp4|29993|30000|beachTennis
+basket-v-01|clips/basket-v-corner-normal-01.mp4|29984|30000|basquete
+basket-h-side-01|clips/basket-h-side-low-normal-01.mp4|29981|30000|basquete
+basket-h-backlight-02|clips/basket-h-corner-backlight-02.mp4|30014|30000|basquete
+ref-volei-01|refs/ref-volei-01-Wtbzg-X_ibk.mp4|0|30000|volei
+ref-tennis-02|refs/ref-tennis-02-uldAzzROYFA.mp4|0|20500|tenis
+bt-wa-1028|refs/bt-wa-2026-10-28.mp4|0|20100|beachTennis
+# Exports WITH today's Modo Foco already applied (the originals were not available): the picture is already
+# cropped and pans. hybrid.py --set ball_zoom=1.25 on top; 'today' = the video itself.
+volei-app-1102|refs/volei-app-2026-11-02.mp4|0|20700|volei
+basket-app-1031-a|refs/basket-app-2026-10-31-a.mp4|0|7000|basquete
+basket-app-1031-b|refs/basket-app-2026-10-31-b.mp4|0|13400|basquete
+yt-bt-06|refs/h264/yt-g4WYPBh4UNM.mp4|0|30000|beachTennis
+bt-3B5E767B|raw-dump/2026-10-26-gravacao3/clips/3B5E767B-B19F-4755-B4DD-FA56018DE3A6.mp4|29994|30000|beachTennis
+bt-FE553F05|raw-dump/2026-10-26-gravacao3/clips/FE553F05-9263-4A6F-8231-123D2DA9E08D.mp4|30011|30000|beachTennis
+basket-v-02|clips/basket-v-corner-normal-02.mp4|30003|30000|basquete
+basket-v-unavail-01|clips/basket-v-corner-unavailable-01.mp4|31250|28700|basquete
+basket-h-side-05|clips/basket-h-side-low-normal-05.mp4|29014|29900|basquete
+basket-h-side-unavail-02|clips/basket-h-side-low-unavailable-02.mp4|29981|30000|basquete
+basket-h-backlight-04|clips/basket-h-corner-backlight-04.mp4|30014|30000|basquete
+yt-basket-04|refs/h264/yt-FVUuK2ZGQtw-1m.mp4|0|30000|basquete
+ref-futvolei-01|refs/ref-futvolei-01-v736TfDzV4A.mp4|0|19300|futevolei
+ref-society-01|refs/ref-society-01-g5wCqUET-0Y.mp4|0|19000|society
