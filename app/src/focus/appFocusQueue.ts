@@ -3,7 +3,7 @@ import { AppState } from 'react-native';
 
 import * as camera from '../../modules/replay-camera';
 import { onFileRemoved, repo } from '../data/mmkv';
-import { diag } from '../diag/diagLog';
+import { DIAGNOSTICS_ENABLED, diag } from '../diag/diagLog';
 import { createBackgroundClock } from './backgroundTime';
 import { createFocusQueue } from './focusQueue';
 
@@ -31,15 +31,19 @@ const powerAtStart = new Map<string, string>();
 
 /** The app's one Modo Foco queue. */
 export const focusQueue = createFocusQueue({
-  analyze: (opts) => {
-    powerAtStart.set(opts.clipPath, power());
-    return camera.analyzeFocus(opts);
-  },
+  // Diagnostics off (store builds): no battery reads around each analysis.
+  analyze: DIAGNOSTICS_ENABLED
+    ? (opts) => {
+        powerAtStart.set(opts.clipPath, power());
+        return camera.analyzeFocus(opts);
+      }
+    : camera.analyzeFocus,
   cancel: camera.cancelFocus,
   supported: camera.isFocusSupported,
   repo,
   // TEMP(diag-remote): the Modo Foco v14 field test reads the analysis time on the Diagnóstico screen.
   measured: (clip, r) => {
+    if (!DIAGNOSTICS_ENABLED) return;
     const before = powerAtStart.get(clip.path);
     powerAtStart.delete(clip.path);
     diag(
