@@ -67,6 +67,10 @@ T.update(box_max_frac=0.06, fill_min=0.45)
 # the jump allowed after a gap stops growing at jump_cap frames; a gap is bridged only if the ball comes back near.
 T.update(main_min=0.7, jump_cap=8, bridge_near=1)  # cap 4 cut real volleyball serves and spikes
 ROUND5 = dict(main_min=0.0, jump_cap=10 ** 6, bridge_near=0)
+# Test 12 (Victor, 2026-11-04, volleyball: the drop back to the players after a lost ball is abrupt): `ease` = 1 shapes
+# the ramps in and out as smoothstep (slow start, slow end) instead of a straight line; try with a longer ramp_out,
+# e.g. --set ease=1 --set ramp_out=7. Off by default (round 6 unchanged).
+T.update(ease=0)
 
 
 def gauss(values, sigma):
@@ -264,6 +268,11 @@ def vertical_camera(by, segs, players=None, h=None):
     return out
 
 
+def ramp(x):
+    """Blend weight along a ramp (x from 1 at the ball segment to 0 at the players): straight, or smoothstep."""
+    return x * x * (3 - 2 * x) if T["ease"] else x
+
+
 def hybrid_rects(players, tr, size, zoom):
     n = len(players)
     W, H = size
@@ -298,10 +307,10 @@ def hybrid_rects(players, tr, size, zoom):
         for a, b in segs:
             for k in range(1, T["ramp_in"] + 1):
                 if a - k >= 0:
-                    w[a - k] = max(w[a - k], 1 - k / (T["ramp_in"] + 1))
+                    w[a - k] = max(w[a - k], ramp(1 - k / (T["ramp_in"] + 1)))
             for k in range(1, T["ramp_out"] + 1):
                 if b + k < n:
-                    w[b + k] = max(w[b + k], 1 - k / (T["ramp_out"] + 1))
+                    w[b + k] = max(w[b + k], ramp(1 - k / (T["ramp_out"] + 1)))
     w[np.isnan(bx)] = 0
     rw, rh = 1 / bz, 1 / bz
     out = []

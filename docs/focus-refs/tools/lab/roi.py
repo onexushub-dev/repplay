@@ -70,22 +70,54 @@ def guide_path(name, guide, first):
     return hb.gauss(cx, 3.0), hb.gauss(cy, 3.0), used / n
 
 
+def seed_inside(name, x0, y0, W, H, side, margin=0.25, sigma=3.0):
+    """Test 15 fix (2026-11-05): the pass-2 crop at the clicked frame must contain the click (it fell outside on 4 of 22
+    clips: the pass-1 guide was on the players there, e.g. yt1105-volei-b at 1.43 crop widths), else pass 2 starts
+    from nothing. The crop at the click's frame moves so the click sits at least `margin` inside it, and the frames
+    around move with it, fading over a Gaussian of `sigma` frames."""
+    truth = ev.load_truth(name)
+    seed = [p for p in truth["prompts"] if not p.get("neg")][0]
+    xy = seed["xy"] if seed["kind"] == "point" else [seed["xy"][0] + seed["xy"][2] / 2, seed["xy"][1] + seed["xy"][3] / 2]
+    s = int(round(seed["ms"] / 100))
+    if s >= len(x0):
+        return x0, y0
+    px, py = xy[0] * W, xy[1] * H
+    dx = min(max(x0[s], px - (1 - margin) * side), px - margin * side) - x0[s]
+    dy = min(max(y0[s], py - (1 - margin) * side), py - margin * side) - y0[s]
+    k = np.arange(len(x0))
+    w = np.exp(-0.5 * ((k - s) / sigma) ** 2)
+    return x0 + dx * w, y0 + dy * w
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("clips", nargs="+")
     ap.add_argument("--size", type=float, default=0.4, help="ROI side as a share of the frame's long side")
     ap.add_argument("--guide", choices=("b", "p"), default="b", help="b: first-pass ball + players; p: players only")
     ap.add_argument("--first", default="edgetam", help="first-pass track (oneclick tag) for --guide b")
+    ap.add_argument("--step", type=int, default=1,
+                    help="test 14: crops only every STEP-th 10 fps frame, through the click's frame (variant ...b5)")
+    ap.add_argument("--no-seed-fix", action="store_true",
+                    help="the crops as before 2026-11-05 (the click could fall outside the crop at its own frame)")
+    ap.add_argument("--suffix", default="", help="added to the variant name, e.g. -p2 (pass 1 at 2.5 fps)")
     a = ap.parse_args()
-    variant = f"roi{int(round(a.size * 100))}{a.guide}"
+    variant = f"roi{int(round(a.size * 100))}{a.guide}" + ("" if a.step == 1 else str(10 // a.step)) + a.suffix
     for name in a.clips:
         meta = ev.clip_meta(name)
         video = os.path.join(ev.ROOT, meta["video"])
         W, H = upright_size(video)
         side = int(min(round(a.size * max(W, H)), min(W, H))) // 2 * 2
         cx, cy, share = guide_path(name, a.guide, a.first)
-        x0 = np.clip(np.round(cx * W - side / 2), 0, W - side).astype(int)
-        y0 = np.clip(np.round(cy * H - side / 2), 0, H - side).astype(int)
+        off10 = 0
+        if a.step > 1:
+            import low_fps
+            off10 = low_fps.offset10(name, a.step)
+        x0 = np.round(cx * W - side / 2)
+        y0 = np.round(cy * H - side / 2)
+        if not a.no_seed_fix:
+            x0, y0 = seed_inside(name, x0, y0, W, H, side)
+        x0 = np.clip(x0, 0, W - side).astype(int)
+        y0 = np.clip(y0, 0, H - side).astype(int)
         out = os.path.join(ev.FRAMES, f"{name}@{variant}")
         os.makedirs(out, exist_ok=True)
         # the same frames as extract.sh (same -ss and fps filter), at the source's full size
@@ -94,21 +126,25 @@ def main():
                                 "-pix_fmt", "rgb24", "-"], stdout=subprocess.PIPE)
         fb = W * H * 3
         k = 0
+        kept = []
         while k < meta["count"]:
             buf = dec.stdout.read(fb)
             if len(buf) < fb:
                 break
-            fr = np.frombuffer(buf, np.uint8).reshape(H, W, 3)
-            crop = fr[y0[k]:y0[k] + side, x0[k]:x0[k] + side]
-            Image.fromarray(crop).save(os.path.join(out, f"{k:05d}.jpg"), quality=92)
+            if k >= off10 and (k - off10) % a.step == 0:
+                fr = np.frombuffer(buf, np.uint8).reshape(H, W, 3)
+                crop = fr[y0[k]:y0[k] + side, x0[k]:x0[k] + side]
+                Image.fromarray(crop).save(os.path.join(out, f"{len(kept):05d}.jpg"), quality=92)
+                kept.append(k)
             k += 1
         dec.stdout.close()
         dec.wait()
         with open(os.path.join(out, "roi.json"), "w") as f:
             json.dump({"name": name, "variant": variant, "size": [W, H], "side": side, "guide": a.guide,
                        "first": a.first if a.guide == "b" else None, "ballGuidedShare": round(share, 3),
-                       "count": k, "rois": [[int(x0[i]), int(y0[i])] for i in range(k)]}, f)
-        print(f"{name}@{variant}: {k} crops of {side}x{side} from {W}x{H} "
+                       "count": len(kept), "step": a.step, "offset10": off10,
+                       "rois": [[int(x0[i]), int(y0[i])] for i in kept]}, f)
+        print(f"{name}@{variant}: {len(kept)} crops of {side}x{side} from {W}x{H} "
               f"(ball-guided {100 * share:.0f}% of the time)", flush=True)
 
 

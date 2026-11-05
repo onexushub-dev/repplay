@@ -14,3 +14,7 @@
 
 # Python caches of the tools
 __pycache__/
+
+# FocusBench (tools/lab/ios-bench): data copied in by ios_bench.py prepare, and Xcode's per-user files
+tools/lab/ios-bench/FocusBench/Data/
+xcuserdata/
