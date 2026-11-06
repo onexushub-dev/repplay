@@ -2,9 +2,9 @@ import { useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
 import { VolumeManager } from 'react-native-volume-manager';
 
-import { addReplayListener, outputVolume, setCaptureButtons } from '../../modules/replay-camera';
+import { addReplayListener, diagCaptureState, outputVolume, setCaptureButtons } from '../../modules/replay-camera';
 import type { ReplayCameraModuleEvents } from '../../modules/replay-camera';
-import { diag } from '../diag/diagLog'; // TEMP(diag-remote): every diag() call in this file
+import { diag, diagFlags } from '../diag/diagLog'; // TEMP(diag-remote): every diag() call in this file
 
 /** Where the volume is parked: room above and below, so any remote press changes it. */
 const PARK = 0.5;
@@ -25,8 +25,16 @@ export const SETTLE_MS = 400;
 export const WATCH_MS = 3000;
 /** A parking that did not take is tried this many times in all. */
 const PARK_TRIES = 3;
-/** How far the volume is moved first on a retry, so the library's slider sees a new value. */
+/**
+ * How far the volume is moved first on a retry, so the library's slider sees a new value. Down, never up: a remote
+ * presses "volume up", so the nudge can never look like one.
+ */
 const NUDGE = 0.05;
+/**
+ * iOS reports a nudge late, past ECHO_MS (2026-11-05 log: "CLIQUE (volume 0.55)" right after "tentando de novo", when
+ * the nudge still went up): a volume event at the nudged level this soon after it is the nudge, not a press.
+ */
+const NUDGE_ECHO_MS = 2000;
 /**
  * A press moves the volume one step (1/16 on iOS buttons, 0.05 seen from remotes, 1/15 on Android); two at most if
  * the remote repeats. A bigger move is the system's: a new audio route reporting its own volume (the earpiece at 1.00
@@ -81,6 +89,16 @@ function realVolume(): number | undefined {
   }
 }
 
+/** TEMP(diag-remote): one line with what the capture-event path has installed right now (native, async). */
+function logCaptureState(when: string): void {
+  if (typeof diagCaptureState !== 'function') return;
+  diagCaptureState()
+    .then((state) => {
+      if (state !== undefined) diag(`controle: captura ${when}: ${state}`);
+    })
+    .catch(() => {});
+}
+
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /**
@@ -103,6 +121,10 @@ const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, 
  * minutes no volume change arrived at all while the remote was pressed, until the app had been away for a while. So on
  * iOS 17.2+ presses are also taken as capture events (`setCaptureButtons`), which do not go through the volume; a press
  * taken that way leaves the volume alone, so the two paths never count the same press.
+ *
+ * 2026-11-05 field logs: the capture events now arrive (on the camera preview, see CaptureButtons), so on iOS 17.2+ the
+ * volume path is only the fallback (no preview on screen, the camera restarting). Its retry nudge goes down and its
+ * late echo is ignored: it used to count as a press.
  */
 export function useVolumeRemote(enabled: boolean, onPress: () => void): void {
   const onPressRef = useRef(onPress);
@@ -113,9 +135,14 @@ export function useVolumeRemote(enabled: boolean, onPress: () => void): void {
   useEffect(() => {
     if (!enabled) return;
     let active = true;
+    // TEMP(diag-remote): off from the Diagnóstico screen, presses count only as capture events (no volume listener,
+    // no hidden MPVolumeView, no parking), to see whether the volume path keeps them from arriving.
+    const volumePath = !diagFlags().volumePathOff;
     let original: number | undefined;
     let parked = PARK;
     let lastOwnSet = -Infinity;
+    /** The last nudge set while retrying a parking, to know its late echo. */
+    let lastNudge: { volume: number; at: number } | undefined;
     let armedAt = Date.now() + ARM_MS;
     let parking: Promise<void> = Promise.resolve();
     const startVolume = realVolume();
@@ -132,7 +159,11 @@ export function useVolumeRemote(enabled: boolean, onPress: () => void): void {
     const park = async () => {
       const target = parked;
       for (let attempt = 0; attempt < PARK_TRIES && active; attempt += 1) {
-        if (attempt > 0) await setOwn(target > PARK ? target - NUDGE : target + NUDGE);
+        if (attempt > 0) {
+          const nudged = target - NUDGE > 0.1 ? target - NUDGE : target + NUDGE;
+          lastNudge = { volume: nudged, at: Date.now() };
+          await setOwn(nudged);
+        }
         await setOwn(target);
         if (!native) {
           const { volume } = await VolumeManager.getVolume();
@@ -165,11 +196,12 @@ export function useVolumeRemote(enabled: boolean, onPress: () => void): void {
       if (rearmTimer !== undefined) clearTimeout(rearmTimer);
       rearmTimer = setTimeout(() => {
         rearmTimer = undefined;
-        if (active && !away()) queuePark();
+        if (active && !away() && volumePath) queuePark();
       }, ARM_MS);
     };
 
-    const listener = VolumeManager.addVolumeListener(({ volume }) => {
+    const noListener = { remove: () => {} };
+    const listener = !volumePath ? noListener : VolumeManager.addVolumeListener(({ volume }) => {
       if (!active) return;
       const level = volume.toFixed(2);
       const jump = Math.abs(volume - last) > MAX_PRESS_STEP;
@@ -182,12 +214,18 @@ export function useVolumeRemote(enabled: boolean, onPress: () => void): void {
       }
       const echo = Date.now() - lastOwnSet < ECHO_MS || Math.abs(volume - parked) < TOLERANCE;
       if (echo) return;
+      const nudgeEcho =
+        lastNudge !== undefined &&
+        Math.abs(volume - lastNudge.volume) < TOLERANCE &&
+        Date.now() - lastNudge.at < NUDGE_ECHO_MS;
+      if (nudgeEcho) return;
       if (jump) {
         diag(`controle: volume ${level} ignorado (salto do sistema)`);
         rearm();
         return;
       }
       diag(`controle: CLIQUE (volume ${level})`);
+      logCaptureState('no clique pelo volume');
       onPressRef.current();
       queuePark();
     });
@@ -211,7 +249,7 @@ export function useVolumeRemote(enabled: boolean, onPress: () => void): void {
     });
 
     // A volume that drifted from the parked level (a parking that never took) leaves less room, or none, for presses.
-    const watch = native
+    const watch = native && volumePath
       ? setInterval(() => {
           if (!active || away() || Date.now() < armedAt || Date.now() - lastOwnSet < WATCH_MS) return;
           const real = realVolume();
@@ -223,7 +261,24 @@ export function useVolumeRemote(enabled: boolean, onPress: () => void): void {
         }, WATCH_MS)
       : undefined;
 
-    diag(`controle: escutando ${buttons ? '(volume + captura)' : '(volume)'}`);
+    // Stops listening and gives the phone its volume (and the system HUD) back.
+    const stop = () => {
+      diag('controle: parou de escutar');
+      active = false;
+      if (watch !== undefined) clearInterval(watch);
+      if (rearmTimer !== undefined) clearTimeout(rearmTimer);
+      listener.remove();
+      buttonListener.remove();
+      audioListener.remove();
+      captureButtonsOff();
+      appState.remove();
+      VolumeManager.showNativeVolumeUI({ enabled: true }).catch(() => {});
+      if (original !== undefined) setOwn(original).catch(() => {});
+    };
+
+    const paths = !volumePath ? '(só captura, volume DESLIGADO no diagnóstico)' : buttons ? '(volume + captura)' : '(volume)';
+    diag(`controle: escutando ${paths}`);
+    if (!volumePath) return stop;
     VolumeManager.showNativeVolumeUI({ enabled: false }).catch(() => {});
     (startVolume !== undefined ? Promise.resolve({ volume: startVolume }) : VolumeManager.getVolume())
       .then(({ volume }) => {
@@ -238,18 +293,6 @@ export function useVolumeRemote(enabled: boolean, onPress: () => void): void {
       })
       .catch(() => {});
 
-    return () => {
-      diag('controle: parou de escutar');
-      active = false;
-      if (watch !== undefined) clearInterval(watch);
-      if (rearmTimer !== undefined) clearTimeout(rearmTimer);
-      listener.remove();
-      buttonListener.remove();
-      audioListener.remove();
-      captureButtonsOff();
-      appState.remove();
-      VolumeManager.showNativeVolumeUI({ enabled: true }).catch(() => {});
-      if (original !== undefined) setOwn(original).catch(() => {});
-    };
+    return stop;
   }, [enabled]);
 }

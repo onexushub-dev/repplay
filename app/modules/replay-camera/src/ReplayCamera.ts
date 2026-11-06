@@ -105,6 +105,15 @@ export function diagAudioState(): string {
   return typeof get === 'function' ? get.call(ReplayCameraModule) : '';
 }
 
+/**
+ * TEMP(diag-remote): what the capture-event path has installed right now (window, previews, camera running,
+ * MPVolumeView on screen), in one line; undefined where unsupported.
+ */
+export async function diagCaptureState(): Promise<string | undefined> {
+  const get = ReplayCameraModule.diagCaptureState;
+  return typeof get === 'function' ? get.call(ReplayCameraModule) : undefined;
+}
+
 /** TEMP(diag-remote): battery level, charging and heat in one line; empty where unsupported. */
 export function diagPower(): string {
   const get = ReplayCameraModule.diagPower;
