@@ -276,7 +276,7 @@ export function useVolumeRemote(enabled: boolean, onPress: () => void): void {
       if (original !== undefined) setOwn(original).catch(() => {});
     };
 
-    const paths = !volumePath ? '(só captura, volume DESLIGADO no diagnóstico)' : buttons ? '(volume + captura)' : '(volume)';
+    const paths = !volumePath ? '(so captura, volume DESLIGADO no diagnostico)' : buttons ? '(volume + captura)' : '(volume)';
     diag(`controle: escutando ${paths}`);
     if (!volumePath) return stop;
     VolumeManager.showNativeVolumeUI({ enabled: false }).catch(() => {});

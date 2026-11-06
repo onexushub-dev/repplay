@@ -1,4 +1,5 @@
 // TEMP(diag-remote): Bluetooth remote investigation; this whole file goes with its commit.
+import Constants from 'expo-constants';
 import { File, Paths } from 'expo-file-system';
 
 /**
@@ -6,6 +7,12 @@ import { File, Paths } from 'expo-file-system';
  * `Documents/diagnostico.txt` so it survives the app being closed, and shown and shared from the Diagnóstico screen.
  * Every file access is guarded: logging must never break a recording (and there is no file system in tests).
  */
+
+/**
+ * On only in builds made with `REPRIZE_DIAGNOSTICS=1` (see app.config.js). Off, nothing is logged or written and the
+ * flags are the release defaults, so a store build behaves as if this file did not exist.
+ */
+export const DIAGNOSTICS_ENABLED = Constants.expoConfig?.extra?.diagnostics === true;
 
 const LOG_NAME = 'diagnostico.txt';
 const FLAGS_NAME = 'diagnostico-flags.json';
@@ -64,6 +71,7 @@ function stamp(ms: number): string {
 
 /** Adds one line. */
 export function diag(event: string): void {
+  if (!DIAGNOSTICS_ENABLED) return;
   const all = load();
   all.push(`${stamp(Date.now())} ${event}`);
   if (all.length > MAX_LINES) all.splice(0, all.length - MAX_LINES);
@@ -111,6 +119,7 @@ export function diagSubscribe(listener: () => void): () => void {
 export function diagFlags(): DiagFlags {
   if (flags !== undefined) return flags;
   flags = { economyOff: false, volumePathOff: false };
+  if (!DIAGNOSTICS_ENABLED) return flags;
   try {
     const f = new File(Paths.document, FLAGS_NAME);
     if (f.exists) {

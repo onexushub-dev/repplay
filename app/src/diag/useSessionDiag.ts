@@ -5,7 +5,7 @@ import { VolumeManager } from 'react-native-volume-manager';
 
 import { addReplayListener, diagAudioState, diagPower } from '../../modules/replay-camera';
 import type { ReplaySession } from '../session/useReplaySession';
-import { diag, diagFlags, diagRecordingEnded, diagRecordingStarted } from './diagLog';
+import { DIAGNOSTICS_ENABLED, diag, diagFlags, diagRecordingEnded, diagRecordingStarted } from './diagLog';
 
 /** Battery and heat in one line; never throws (a module mock or an older build without it gives ''). */
 function power(): string {
@@ -28,7 +28,7 @@ export function useSessionDiag(session: ReplaySession): void {
   const recording = phase === 'recording';
 
   useEffect(() => {
-    if (!recording) return;
+    if (!recording || !DIAGNOSTICS_ENABLED) return;
     const flags = diagFlags();
     const economy =
       (flags.economyOff ? 'economia de tela DESLIGADA' : 'economia de tela ligada') +
@@ -63,6 +63,7 @@ export function useSessionDiag(session: ReplaySession): void {
   }, [recording, thermalLine]);
 
   useEffect(() => {
+    if (!DIAGNOSTICS_ENABLED) return;
     const appState = AppState.addEventListener('change', (next) => diag(`app: ${next}`));
     const native = addReplayListener('onDiag', (e) => diag(e.message));
     const interrupted = addReplayListener('onInterrupted', () => diag('câmera: INTERROMPIDA pelo iOS'));
