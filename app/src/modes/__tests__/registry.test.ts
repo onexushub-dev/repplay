@@ -1,6 +1,6 @@
 import { modeLabel } from '../../components/format';
 import { DEFAULT_PREFS, type Prefs } from '../../data/schema';
-import { effectiveSettings, MODES, modeById, offeredMode, withModeOverride } from '../registry';
+import { effectiveSettings, MODES, modeById, offeredMode, withModeOverride, withoutSavedZoom } from '../registry';
 
 const prefs = (over: Partial<Prefs> = {}): Prefs => ({ ...DEFAULT_PREFS, ...over });
 
@@ -9,9 +9,9 @@ test('the app offers one free mode, with nothing drawn over the camera', () => {
   expect(DEFAULT_PREFS.sport).toBe('quadra');
 });
 
-test('the free mode defaults to 0.5x (ultra-wide), 60s, gesture on, last 15s', () => {
+test('the free mode defaults to 1x (wide), 60s, gesture on, last 15s', () => {
   expect(effectiveSettings('quadra', prefs())).toEqual({
-    zoom: 0.5,
+    zoom: 1,
     gestureEnabled: true,
     voiceEnabled: false,
     bufferSeconds: 60,
@@ -28,6 +28,20 @@ test('the player\'s changes are kept for the mode, and old global prefs still ap
     zoom: 1,
     voiceEnabled: true,
   });
+});
+
+test('the global lens saved before modes no longer decides the zoom: the default is 1x even on the ultra-wide', () => {
+  expect(effectiveSettings('quadra', prefs({ lens: 'ultraWide' })).zoom).toBe(1);
+});
+
+test('at app start the zoom picked last time is dropped from every mode, and nothing else', () => {
+  const p = prefs({ modeSettings: { quadra: { zoom: 0.5, gestureEnabled: false }, academia: { lens: 'ultraWide' } } });
+  const reset = withoutSavedZoom(p);
+  expect(reset).toEqual({ modeSettings: { quadra: { gestureEnabled: false }, academia: {} } });
+  expect(effectiveSettings('quadra', prefs(reset)).zoom).toBe(1);
+  expect(effectiveSettings('quadra', prefs(reset)).gestureEnabled).toBe(false);
+  expect(withoutSavedZoom(prefs())).toBeUndefined();
+  expect(withoutSavedZoom(prefs({ modeSettings: { quadra: { cutSeconds: 30 } } }))).toBeUndefined();
 });
 
 test('a lens saved in the mode\'s own settings before zoom existed keeps its framing', () => {

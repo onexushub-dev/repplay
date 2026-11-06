@@ -1,5 +1,11 @@
 import type { Lens, ZoomRange } from '../../modules/replay-camera/src/ReplayCamera.types';
 
+/**
+ * The zoom every app start opens at: 1x, the wide lens, even on phones with an ultra-wide (2026-11-05). The player can
+ * still go to 0.5x with the button or a pinch; that choice lasts until the app is closed (registry: withoutSavedZoom).
+ */
+export const DEFAULT_ZOOM = 1;
+
 /** The stops the zoom button goes through. */
 export const ZOOM_STEPS = [0.5, 1, 2, 5] as const;
 
