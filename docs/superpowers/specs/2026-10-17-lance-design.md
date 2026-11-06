@@ -34,7 +34,7 @@ Fluxo: **Boas-vindas → Posicionar câmera → Gravando → Clipe salvo (repete
 
 ### 3.2 Posicionar câmera
 - Preview em tela cheia com o contorno da quadra como guia e o nível do horizonte.
-- Seletor de lente 0.5x / 1x (ultra-wide como padrão quando houver).
+- Seletor de lente 0.5x / 1x. Padrão: 1x ao abrir o app, mesmo com ultra-wide (2026-11-05); a escolha de 0.5x vale até o app ser fechado.
 - Dica: "Atrás da linha de fundo, na altura do ombro".
 - Esporte: Beach tennis, Futevôlei, Vôlei de praia, Outro.
 - Status dos gatilhos: Tela (sempre ativa), Gesto X (ativo/inativo), Controle (conectado/não), Apple Watch (pareado/"Toque para parear").

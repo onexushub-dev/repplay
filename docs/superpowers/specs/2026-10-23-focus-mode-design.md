@@ -110,6 +110,38 @@ on the references; pan jitter −37 to −53%; median zoom 1.46× → 1.31× (it
 The spike's detection files (6 clips, in `docs/superpowers/spikes/focus-mode/`) become test fixtures: the filters must drop the floor balls and stand spectators
 seen in the spike, and the path must stay inside the frame with speed and zoom limits respected.
 
+**Amendment proposal 2026-11-04 (lab test 13, "v16 broadcast") — NOT ADOPTED (Victor, 2026-11-05: did not like the
+result on video; today's framing stays, and the ball framing is offered on top of it where the ball is tracked well).
+Kept for the record.** A faster, closer camera from the players alone, at today's analysis cost (only these rules change; the Vision
+analysis of §4.1 does not). Chosen with `docs/focus-refs/tools/lab/broadcast.py` on the four labelled ball clips;
+details and videos in `docs/focus-refs/tools/lab/README.md`, test 13. New `FocusTuning` values on top of `.action`
+(v15), each already an option of `focus_variant.py`, so the port check (`--check`) and
+`FocusPathTests.test_matchesThePortTheTuningWasChosenWith` carry over:
+
+- Rule 5: σ for x 0.6 s → **0.35 s**; pan limit 35% → **70%** of the frame width per second.
+- Rule 3: weights raised to the power **2** (`speedPow`): the fastest runner pulls the centre harder.
+- Rule 5, before the smoothing: the target x and y are those **0.5 s later** (`leadMs`; the path is computed after the
+  clip).
+- Rule 6: max zoom 1.5 → **1.65** before `zoomIn` (**1.8x** on screen; 2.0x lost more balls above the crop); the
+  width opens by **0.6 frame widths per frame width per second** of camera pan (`widenPerSpeed`: wide on a fast
+  transition, close on a slow play); size σ stays 1.2 s.
+- Rule 7: the crop's bottom sits **6% of its height** under the players' feet (90th percentile of the box bottoms;
+  `anchorFeet`), never higher than centring on the players: the zoom becomes headroom for lobs and shots. The height
+  follows with a **5%** dead band, up at 1 frame height per second, down at **0.2**, then σ **0.8 s** (`vertAsym`, the
+  ball framing's rule, ball spec §4.5 rule 3). Variant to choose on video: the anchor half way (`anchorShare` 0.5,
+  less sky over the players).
+
+Result against today (mean of basket-v-01, bt-0AE39B33, bt-E5003B6B, yt-basket-04): labelled ball inside the crop
+85 → **91%** (Foco na Bola v6: 93%), ball off centre 0.36 → 0.32, mean zoom 1.51x → 1.55x (max 1.65x → 1.8x), pan p95
+0.10 → 0.15 frame widths per second, vertical flips 0.3 → 0.4 per 10 s (Foco na Bola 0.8), moving players cut 0 → 1% of
+the frames; basket-v-01 loses 2 of 24 labelled balls. Optical flow (`VNGenerateOpticalFlowRequest`) added nothing
+measurable on top and is not proposed.
+
+**Lab 2026-11-03 to 2026-11-05 (no change to these rules).** A faster / closer camera from the players alone (tests 13
+and 16), the ball framing with EdgeTAM (`2026-11-04-focus-mode-ball-design.md`, on hold) and other ideas were tested;
+none replaced today's framing on video (Victor, 2026-11-05). Results, what not to repeat and what to try next:
+`docs/focus-refs/tools/lab/README.md`, "Outcome".
+
 ### 4.3 Storage
 
 - `Clip.focus?: { v: 1; status: 'pending' | 'ready' | 'none' | 'failed'; file?: string }` in `schema.ts`.

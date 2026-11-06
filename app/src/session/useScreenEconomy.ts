@@ -5,8 +5,8 @@ import type { ThermalLevel } from '../../modules/replay-camera/src/ReplayCamera.
 
 /** Without a touch for this long while recording, the screen goes dark (thermal spec, item 2). */
 export const ECONOMY_IDLE_MS = 20_000;
-/** The same once the phone is warm (`fair` or hotter). */
-export const ECONOMY_WARM_IDLE_MS = 5_000;
+/** Shorter once the phone is warm (`fair` or hotter): 5 s felt too short in use (2026-11-05), 10 s still saves. */
+export const ECONOMY_WARM_IDLE_MS = 10_000;
 
 export type ScreenEconomy = {
   /** True while the screen is dark: the preview is off and the brightness is down. */

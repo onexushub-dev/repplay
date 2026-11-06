@@ -25,6 +25,14 @@ class ReplayCameraView: ExpoView {
     applyPreviewEnabled()
   }
 
+  /// The live previews: the capture-event interaction (CaptureButtons) sits on each of them.
+  static func liveViews() -> [ReplayCameraView] { views.allObjects }
+
+  override func didMoveToWindow() {
+    super.didMoveToWindow()
+    CaptureButtons.shared.previewMoved(self) // the Bluetooth remote's presses arrive on the preview
+  }
+
   private func applyPreviewEnabled() {
     previewLayer.connection?.isEnabled = Self.previewEnabled
     previewLayer.isHidden = !Self.previewEnabled

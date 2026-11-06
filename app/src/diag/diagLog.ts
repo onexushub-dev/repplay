@@ -27,6 +27,11 @@ const listeners = new Set<() => void>();
 export type DiagFlags = {
   /** Screen economy off (the screen never goes dark while recording), to compare the remote with and without it. */
   economyOff: boolean;
+  /**
+   * The remote's volume path off (no volume listener, no hidden MPVolumeView, no parking): presses count only as
+   * capture events, to see whether the volume path keeps them from arriving (2026-11-05).
+   */
+  volumePathOff: boolean;
 };
 
 function logFile(): File {
@@ -113,13 +118,13 @@ export function diagSubscribe(listener: () => void): () => void {
 
 export function diagFlags(): DiagFlags {
   if (flags !== undefined) return flags;
-  flags = { economyOff: false };
+  flags = { economyOff: false, volumePathOff: false };
   if (!DIAGNOSTICS_ENABLED) return flags;
   try {
     const f = new File(Paths.document, FLAGS_NAME);
     if (f.exists) {
       const saved = JSON.parse(f.textSync()) as Partial<DiagFlags>;
-      flags = { economyOff: saved.economyOff === true };
+      flags = { economyOff: saved.economyOff === true, volumePathOff: saved.volumePathOff === true };
     }
   } catch {
     // defaults
@@ -136,5 +141,8 @@ export function setDiagFlags(next: DiagFlags): void {
   } catch {
     // kept for this run only
   }
-  diag(`diagnóstico: economia de tela ${next.economyOff ? 'DESLIGADA' : 'ligada'}`);
+  diag(
+    `diagnóstico: economia de tela ${next.economyOff ? 'DESLIGADA' : 'ligada'}, ` +
+      `caminho pelo volume ${next.volumePathOff ? 'DESLIGADO (só captura)' : 'ligado'}`,
+  );
 }

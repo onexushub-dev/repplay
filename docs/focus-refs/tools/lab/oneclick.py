@@ -130,18 +130,29 @@ def run_clip(predictor, name, mode, chunk=10, fps=10, fixes=True, variant=None):
     seed = seeds[0]
     frames_dir = os.path.join(S.FRAMES, name if fps == 10 else f"{name}@{fps}")
     roi = None
+    step, offset10 = 1, 0  # test 14: a sparser copy (every `step`-th 10 fps frame from `offset10`, low_fps.py / roi.py --step)
     if variant:  # roi.py crops: same 10 fps frames, a square region at full resolution
         frames_dir = os.path.join(S.FRAMES, f"{name}@{variant}")
         with open(os.path.join(frames_dir, "roi.json")) as fr:
             roi = json.load(fr)
         fps = 10
+        step, offset10 = int(roi.get("step", 1)), int(roi.get("offset10", 0))
     # the 10 fps frames (where the clicks were made) sit ~33 ms after the nominal tick: a denser copy's frame matching
     # 10 fps frame k is round(k * fps / 10) + alignTo10 (measured by image comparison, stored in its frames.json)
     off = 0
     if fps != 10:
         with open(os.path.join(frames_dir, "frames.json")) as fm:
-            off = int(json.load(fm).get("alignTo10", 0))
-    s = int(round(seed["ms"] * fps / 1000)) + off
+            fj = json.load(fm)
+        off = int(fj.get("alignTo10", 0))
+        if fps < 10:
+            step, offset10 = int(fj.get("step", round(10 / fps))), int(fj.get("offset10", 0))
+    seed10 = int(round(seed["ms"] / 100))
+    if step > 1:
+        if (seed10 - offset10) % step:
+            raise SystemExit(f"{name}: the sparse frames do not go through the click's frame (low_fps.py frames)")
+        s = (seed10 - offset10) // step
+    else:
+        s = int(round(seed["ms"] * fps / 1000)) + off
     state = predictor.init_state(video_path=frames_dir, offload_video_to_cpu=True)
     n = state["num_frames"]
 
@@ -159,15 +170,22 @@ def run_clip(predictor, name, mode, chunk=10, fps=10, fixes=True, variant=None):
     if roi:
         one = {k: roi_back(v, roi, k) for k, v in one.items()}
         fixes = False
-    if fps != 10:
+    if step > 1:
+        import low_fps
+        n10 = ev.clip_meta(name)["count"]
+        one = low_fps.upsample({offset10 + j * step: v for j, v in one.items()}, n10, step, offset10)
+        s = seed10
+        fixes = False
+    elif fps != 10:
         n10 = ev.clip_meta(name)["count"]
         one = {k: one.get(int(round(k * 100 * fps / 1000)) + off) for k in range(n10)}
         s = int(round(seed["ms"] / 100))
     fixes = fixes and fps == 10
     # with fixes (forward only)
     t0 = time.time()
-    predictor.reset_state(state)
-    add_prompt(predictor, state, s, seed)
+    if fixes or step == 1:  # a sparse copy has no frame s (10 fps index) and no fixes anyway
+        predictor.reset_state(state)
+        add_prompt(predictor, state, s, seed)
     fixed, clicks, f, last_click = {}, [s * 100], s, s
     while fixes and f < n:
         miss, last = None, f
@@ -217,6 +235,8 @@ def main():
     ap.add_argument("clips", nargs="*")
     a = ap.parse_args()
     tag = a.model if a.fps == 10 else f"{a.model}-{a.fps}fps"  # hybrid.py --model <tag>
+    if a.fps < 10 and not a.variant:
+        a.no_fixes = True
     if a.variant:
         tag = f"{a.model}-{a.variant}"
     names = a.clips or ev.labelled_clips(a.mode)

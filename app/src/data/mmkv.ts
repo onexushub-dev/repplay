@@ -2,6 +2,7 @@ import { randomUUID } from 'expo-crypto';
 import { File, Paths } from 'expo-file-system';
 import { createMMKV } from 'react-native-mmkv';
 
+import { withoutSavedZoom } from '../modes/registry';
 import { focusPath } from './focusFile';
 import { createRepo, type FileProbe, type KV } from './repo';
 import { thumbnailPath } from './thumbnailPath';
@@ -22,6 +23,14 @@ export const files: FileProbe = {
 };
 
 export const repo = createRepo(kv, files, randomUUID);
+
+// Once per launch: the zoom picked last time is forgotten, so the camera opens at 1x (modes/zoom: DEFAULT_ZOOM).
+try {
+  const reset = withoutSavedZoom(repo.getPrefs());
+  if (reset !== undefined) repo.setPrefs(reset);
+} catch {
+  // the zoom picked last time stays; nothing else depends on this
+}
 
 /** A `file://` folder address as a plain path ending in '/'. */
 export function documentsPath(uri: string): string {

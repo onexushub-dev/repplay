@@ -1,5 +1,12 @@
-import { BUFFER_SECONDS, DEFAULT_CLIP_SECONDS, type ModeId, type ModeSettings, type Prefs } from '../data/schema';
-import { zoomFromLens } from './zoom';
+import {
+  BUFFER_SECONDS,
+  DEFAULT_CLIP_SECONDS,
+  type ModeId,
+  type ModeSettings,
+  type Prefs,
+  type StoredModeSettings,
+} from '../data/schema';
+import { DEFAULT_ZOOM, zoomFromLens } from './zoom';
 
 export type ModeGroup = 'quadra' | 'academia';
 
@@ -22,7 +29,7 @@ const DEFAULTS: Omit<Mode, 'id'> = {
   guide: 'court',
   tip: false,
   defaults: {
-    zoom: 0.5,
+    zoom: DEFAULT_ZOOM,
     gestureEnabled: true,
     voiceEnabled: false,
     bufferSeconds: BUFFER_SECONDS,
@@ -73,8 +80,8 @@ function clipSeconds(value: number): number {
 export function effectiveSettings(mode: ModeId, prefs: Prefs): ModeSettings {
   const m = modeById(mode);
   const own = offeredMode(mode);
+  // The global lens saved before modes no longer decides the zoom: every launch opens at DEFAULT_ZOOM.
   const legacy: Partial<ModeSettings> = {
-    zoom: zoomFromLens(prefs.lens),
     gestureEnabled: prefs.gestureEnabled,
     voiceEnabled: prefs.voiceEnabled,
   };
@@ -84,6 +91,27 @@ export function effectiveSettings(mode: ModeId, prefs: Prefs): ModeSettings {
   const savedZoom = rest.zoom !== undefined ? rest.zoom : savedLens !== undefined ? zoomFromLens(savedLens) : undefined;
   const merged = { ...m.defaults, ...legacy, ...rest, ...(savedZoom !== undefined ? { zoom: savedZoom } : {}) };
   return { ...merged, bufferSeconds: BUFFER_SECONDS, cutSeconds: clipSeconds(merged.cutSeconds) };
+}
+
+/**
+ * The zoom lasts one launch: at app start the zoom (and the lens saved before zoom existed) is dropped from every
+ * mode, so the camera opens at DEFAULT_ZOOM. Undefined when there is nothing to drop.
+ */
+export function withoutSavedZoom(prefs: Prefs): Partial<Prefs> | undefined {
+  const all = prefs.modeSettings;
+  if (all === undefined) return undefined;
+  let changed = false;
+  const next: Partial<Record<ModeId, StoredModeSettings>> = {};
+  for (const id of Object.keys(all) as ModeId[]) {
+    const saved = all[id];
+    if (saved === undefined) continue;
+    if (saved.zoom !== undefined || saved.lens !== undefined) changed = true;
+    const kept: StoredModeSettings = { ...saved };
+    delete kept.zoom;
+    delete kept.lens;
+    next[id] = kept;
+  }
+  return changed ? { modeSettings: next } : undefined;
 }
 
 /** The prefs patch that records `patch` as the player's change for `mode` only. */

@@ -170,7 +170,7 @@ test('a saved sport opens the same camera as the free mode: wide framing, 1080p6
   const f = fakeDeps();
   const view = await renderHook(() => useReplaySession(f.deps));
   await act(() => view.result.current.prepare('musculacao', 'paid'));
-  expect(f.camera.startSession).toHaveBeenLastCalledWith({ lens: 'ultraWide', zoom: 0.5, maxQuality: '1080p60', bufferSeconds: 60, audio: true });
+  expect(f.camera.startSession).toHaveBeenLastCalledWith({ lens: 'wide', zoom: 1, maxQuality: '1080p60', bufferSeconds: 60, audio: true });
 });
 
 test('every sport id runs with the same settings, so switching between them does not reopen the camera', async () => {
@@ -192,10 +192,10 @@ test('with two fixed lenses (Android), a zoom that crosses 1x reopens the camera
   const f = fakeDeps();
   const view = await renderHook(() => useReplaySession(f.deps));
   await act(() => view.result.current.prepare('quadra', 'paid'));
-  expect(f.camera.startSession).toHaveBeenLastCalledWith({ lens: 'ultraWide', zoom: 0.5, maxQuality: '1080p60', bufferSeconds: 60, audio: true });
-  f.deps.repo.setPrefs({ modeSettings: { quadra: { zoom: 1 } } });
-  await act(() => view.result.current.prepare('quadra', 'paid'));
   expect(f.camera.startSession).toHaveBeenLastCalledWith({ lens: 'wide', zoom: 1, maxQuality: '1080p60', bufferSeconds: 60, audio: true });
+  f.deps.repo.setPrefs({ modeSettings: { quadra: { zoom: 0.5 } } });
+  await act(() => view.result.current.prepare('quadra', 'paid'));
+  expect(f.camera.startSession).toHaveBeenLastCalledWith({ lens: 'ultraWide', zoom: 0.5, maxQuality: '1080p60', bufferSeconds: 60, audio: true });
   expect(f.camera.startSession).toHaveBeenCalledTimes(2);
 });
 

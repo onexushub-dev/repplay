@@ -66,6 +66,35 @@ STANDARD = {
     "lanceTop": 2,
     "lanceMinWeight": 2.5,
     "lanceLeadMs": 800.0,
+    # Lab test 13 (2026-11-04, a more "broadcast" camera from the players alone; 0/1 = the app's behaviour):
+    # speedPow: each person's movement weight raised to this power (> 1: whoever runs fastest pulls harder).
+    "speedPow": 1.0,
+    # leadMs: the camera aims where the target will be this much later (x and y; the path is computed after the clip).
+    "leadMs": 0.0,
+    # vertAsym=1: the height follows the target with a dead band (no bobbing on small moves), rises at up to
+    # vUpPerSecond frame heights per second and comes down at most vDownPerSecond, then a σ vSigmaMs smoothing
+    # (the lessons of the ball framing, ball spec section 4.5 rule 3).
+    "vertAsym": 0.0,
+    "vDeadband": 0.03,
+    "vUpPerSecond": 1.0,
+    "vDownPerSecond": 0.2,
+    "vSigmaMs": 400.0,
+    # flowPull: share (0..1) of the target x and y taken from the fast-motion region of the optical flow, scaled by
+    # how strong that motion is (flowRef = full pull). Needs compute(..., flow=[(x, y, strength) or None per sample]).
+    "flowPull": 0.0,
+    "flowRef": 1.0,
+    # flowSpread=1: the crop width also covers the fast-motion region (its x ± flowRadius).
+    "flowSpread": 0.0,
+    "flowRadius": 0.08,
+    # anchorFeet=1: the crop's bottom sits footMargin of its height below the players' feet (the 90th percentile of
+    # the box bottoms, smoothed like y), so every bit of zoom goes to headroom above them (lobs, shots) instead of
+    # to the floor; the crop never goes higher than centring on the players.
+    "anchorFeet": 0.0,
+    "footMargin": 0.06,
+    "anchorShare": 1.0,       # 0..1: how far from the centred placement towards the feet anchor
+    # widenPerSpeed: the crop opens by this many frame widths per (frame width per second) of camera pan: a fast
+    # transition is shown wider, a slow play closer (a broadcast camera's zoom).
+    "widenPerSpeed": 0.0,
 }
 
 
@@ -183,7 +212,22 @@ def gaussian(values, sigma):
     return out
 
 
-def compute(samples, W, H, aspect, zoom, t):
+def vertical_follow(env, step, t):
+    """vertAsym: a dead band, then up at vUpPerSecond and down at vDownPerSecond (y grows downwards), then σ vSigmaMs."""
+    n = len(env)
+    y = [env[0]] * n
+    for i in range(1, n):
+        d = env[i] - y[i - 1]  # > 0: the camera would go down
+        if abs(d) <= t["vDeadband"]:
+            y[i] = y[i - 1]
+            continue
+        d = d - t["vDeadband"] if d > 0 else d + t["vDeadband"]
+        lim = (t["vDownPerSecond"] if d > 0 else t["vUpPerSecond"]) * step / 1000
+        y[i] = y[i - 1] + min(max(d, -lim), lim)
+    return gaussian(y, t["vSigmaMs"] / step)
+
+
+def compute(samples, W, H, aspect, zoom, t, flow=None):
     """FocusPath.compute: samples = [(tMs, [(x, y, w, h), ...])]; returns [(x, y, w, h)] or None."""
     n = len(samples)
     if n == 0:
@@ -248,6 +292,7 @@ def compute(samples, W, H, aspect, zoom, t):
 
     # 3–4. Weights and the target per sample.
     cx, cy, spread = [None] * n, [None] * n, [None] * n
+    feet_y = [None] * n
     previous = []
     for i in range(n):
         centres = [(b[0] + b[2] / 2, b[1] + b[3] / 2) for b in people[i]]
@@ -258,11 +303,14 @@ def compute(samples, W, H, aspect, zoom, t):
         if weights_by_box is not None:
             # activity=1: each person's own speed (held boxes of people gone a moment: 1)
             weights = [weights_by_box[i].get(id(b), 1.0) for b in people[i]]
+            if t["speedPow"] != 1:
+                weights = [w ** t["speedPow"] for w in weights]
         else:
           for c in centres:
             moved = min((math.hypot((c[0] - p[0]) * W, (c[1] - p[1]) * H) for p in previous), default=0)
             weights.append(1 + min(moved / (t["moveUnit"] * W), t["moveCap"]))
         total = sum(weights)
+        feet_y[i] = weighted_quantile([b[1] + b[3] for b in people[i]], weights, 0.9)
         cx[i] = sum(c[0] * w for c, w in zip(centres, weights)) / total
         cy[i] = sum(c[1] * w for c, w in zip(centres, weights)) / total
         xs = [c[0] for c in centres]
@@ -295,6 +343,23 @@ def compute(samples, W, H, aspect, zoom, t):
             cx[i] = cx[i] * (1 - t["centerOnSpan"]) + (low + high) / 2 * t["centerOnSpan"]
         previous = centres
 
+    if flow is not None and t["flowPull"] > 0:
+        for i in range(n):
+            f = flow[i] if i < len(flow) else None
+            if f is None or cx[i] is None:
+                continue
+            a = t["flowPull"] * min(f[2] / t["flowRef"], 1.0)
+            if t["flowSpread"] and spread[i] is not None:
+                low = min(cx[i] - spread[i] / 2, f[0] - t["flowRadius"])
+                high = max(cx[i] + spread[i] / 2, f[0] + t["flowRadius"])
+                spread[i] = max(spread[i], (high - low) * a + spread[i] * (1 - a))
+            cx[i] = cx[i] * (1 - a) + f[0] * a
+            cy[i] = cy[i] * (1 - a) + f[1] * a
+
+    if t["leadMs"] > 0:
+        lead = int(round(t["leadMs"] / step))
+        cx, cy, feet_y = ([v[min(i + lead, n - 1)] for i in range(n)] for v in (cx, cy, feet_y))
+
     if t["lance"] and t["lanceLeadMs"] > 0:
         lead = int(round(t["lanceLeadMs"] / step))
         cx, cy, spread = ([v[min(i + lead, n - 1)] for i in range(n)] for v in (cx, cy, spread))
@@ -302,6 +367,8 @@ def compute(samples, W, H, aspect, zoom, t):
     # 5. Smooth with look-ahead, then limit the pan speed.
     x = gaussian(fill(cx), t["sigmaXMs"] / step)
     y = gaussian(fill(cy), t["sigmaYMs"] / step)
+    if t["vertAsym"]:
+        y = vertical_follow(y, step, t)
     limit = t["maxPanPerSecond"] * step / 1000
     for i in range(1, max(n, 1)):
         x[i] = x[i - 1] + min(max(x[i] - x[i - 1], -limit), limit)
@@ -313,10 +380,18 @@ def compute(samples, W, H, aspect, zoom, t):
         if t["widthHoldMs"] > 0:
             k = int(math.floor(t["widthHoldMs"] / step + 0.5))  # Swift .rounded()
             wanted = [max(wanted[max(0, i - k):i + k + 1]) for i in range(n)]
+        if t["widenPerSpeed"] > 0:
+            speed = [abs(x[min(i + 1, n - 1)] - x[max(i - 1, 0)]) / (2 * step / 1000) for i in range(n)]
+            speed = gaussian(speed, 500 / step)
+            wanted = [min(w + t["widenPerSpeed"] * v, 1) for w, v in zip(wanted, speed)]
         widths = gaussian(wanted, t["sigmaSizeMs"] / step)
     else:
         widths = [1.0] * n
     ratio = 16 / 9 if aspect == "landscape" else 9 / 16
+    if t["anchorFeet"]:
+        fy = gaussian(fill(feet_y), t["sigmaYMs"] / step) if any(v is not None for v in feet_y) else None
+        if fy is not None and t["vertAsym"]:
+            fy = vertical_follow(fy, step, t)
     out = []
     for i in range(n):
         w = widths[i] if zoom else min(1, ratio * H / W)
@@ -328,7 +403,12 @@ def compute(samples, W, H, aspect, zoom, t):
             w /= t["zoomIn"]
             h /= t["zoomIn"]
         left = min(max(x[i] - w / 2, 0), 1 - w)
-        top = min(max(y[i] - t["lift"] * h - h / 2, 0), 1 - h)
+        top = y[i] - t["lift"] * h - h / 2
+        if t["anchorFeet"] and fy is not None:
+            feet_top = fy[i] + t["footMargin"] * h - h
+            if feet_top < top:
+                top = top + (feet_top - top) * t["anchorShare"]
+        top = min(max(top, 0), 1 - h)
         out.append((left, top, w, h))
     return out
 

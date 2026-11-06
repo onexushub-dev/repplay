@@ -166,7 +166,7 @@ const zoomButton = (name: string) => screen.getByRole('button', { name });
 test('the zoom button shows only the current zoom, and the two lens buttons are gone', async () => {
   session({});
   await render(<Setup />);
-  expect(zoomButton('Zoom 0.5x')).toBeTruthy();
+  expect(zoomButton('Zoom 1x')).toBeTruthy(); // 1x by default, even with an ultra-wide
   expect(screen.queryByRole('button', { name: '1x' })).toBeNull();
   expect(screen.queryByRole('button', { name: '0.5x' })).toBeNull();
 });
@@ -185,10 +185,10 @@ test('a lens saved before zoom existed shows as its zoom', async () => {
   expect(zoomButton('Zoom 1x')).toBeTruthy();
 });
 
-test('each tap goes to the next zoom: 0.5 → 1 → 2 → 5 → 0.5, zooming the camera and saving it for the mode', async () => {
+test('each tap goes to the next zoom: 1 → 2 → 5 → 0.5 → 1, zooming the camera and saving it for the mode', async () => {
   const s = session({});
   await render(<Setup />);
-  for (const [from, to] of [[0.5, 1], [1, 2], [2, 5], [5, 0.5]] as const) {
+  for (const [from, to] of [[1, 2], [2, 5], [5, 0.5], [0.5, 1]] as const) {
     await fireEvent.press(zoomButton(`Zoom ${from}x`));
     expect(s.setZoom).toHaveBeenLastCalledWith(to, true);
     expect(repo.setPrefs).toHaveBeenLastCalledWith({ modeSettings: { quadra: { zoom: to } } });
@@ -201,8 +201,8 @@ test('each zoom tap counts once in the session summary and sends no event of its
   sessionSummary.note.mockClear();
   session({});
   await render(<Setup />);
-  await fireEvent.press(zoomButton('Zoom 0.5x'));
   await fireEvent.press(zoomButton('Zoom 1x'));
+  await fireEvent.press(zoomButton('Zoom 2x'));
   expect(sessionSummary.note.mock.calls).toEqual([['zoom'], ['zoom']]);
   expect(track).not.toHaveBeenCalled();
 });
@@ -210,9 +210,9 @@ test('each zoom tap counts once in the session summary and sends no event of its
 test('changing the zoom does not ask the session to reopen the camera when it stays on the same lens', async () => {
   const s = session({});
   await render(<Setup />);
-  await fireEvent.press(zoomButton('Zoom 0.5x')); // → 1x: crosses from ultra-wide to wide
   s.prepare.mockClear();
-  await fireEvent.press(zoomButton('Zoom 1x')); // → 2x: same lens
+  await fireEvent.press(zoomButton('Zoom 1x')); // → 2x: same lens (wide)
+  await fireEvent.press(zoomButton('Zoom 2x')); // → 5x: same lens
   expect(s.prepare).not.toHaveBeenCalled();
 });
 
@@ -221,10 +221,10 @@ test('with two fixed lenses (Android) the button only goes 0.5 ↔ 1 and there i
   const s = session({});
   await render(<Setup />);
   expect(screen.queryByTestId('zoom-pinch')).toBeNull();
-  await fireEvent.press(zoomButton('Zoom 0.5x'));
-  expect(s.setZoom).toHaveBeenLastCalledWith(1, true);
   await fireEvent.press(zoomButton('Zoom 1x'));
   expect(s.setZoom).toHaveBeenLastCalledWith(0.5, true);
+  await fireEvent.press(zoomButton('Zoom 0.5x'));
+  expect(s.setZoom).toHaveBeenLastCalledWith(1, true);
 });
 
 describe('pinch on the preview', () => {
@@ -238,15 +238,15 @@ describe('pinch on the preview', () => {
     await render(<Setup />);
     const area = screen.getByTestId('zoom-pinch');
     await fireEvent(area, 'responderGrant', two(100));
-    await fireEvent(area, 'responderMove', two(200)); // twice as far apart: 0.5x → 1x
-    expect(s.setZoom).toHaveBeenLastCalledWith(1, false);
-    expect(zoomButton('Zoom 1x')).toBeTruthy();
-    expect(repo.setPrefs).not.toHaveBeenCalledWith({ modeSettings: { quadra: { zoom: 1 } } }); // not saved mid-gesture
-    await fireEvent(area, 'responderMove', two(400)); // 4x as far apart: 2x
+    await fireEvent(area, 'responderMove', two(200)); // twice as far apart: 1x → 2x
     expect(s.setZoom).toHaveBeenLastCalledWith(2, false);
-    await fireEvent(area, 'responderRelease', one);
-    expect(repo.setPrefs).toHaveBeenLastCalledWith({ modeSettings: { quadra: { zoom: 2 } } });
     expect(zoomButton('Zoom 2x')).toBeTruthy();
+    expect(repo.setPrefs).not.toHaveBeenCalledWith({ modeSettings: { quadra: { zoom: 2 } } }); // not saved mid-gesture
+    await fireEvent(area, 'responderMove', two(400)); // 4x as far apart: 4x
+    expect(s.setZoom).toHaveBeenLastCalledWith(4, false);
+    await fireEvent(area, 'responderRelease', one);
+    expect(repo.setPrefs).toHaveBeenLastCalledWith({ modeSettings: { quadra: { zoom: 4 } } });
+    expect(zoomButton('Zoom 4x')).toBeTruthy();
   });
 
   test('the pinch stays inside the camera range', async () => {
@@ -276,7 +276,7 @@ describe('pinch on the preview', () => {
     expect(screen.queryByTestId('zoom-bubble')).toBeNull();
     const area = screen.getByTestId('zoom-pinch');
     await fireEvent(area, 'responderGrant', two(100));
-    await fireEvent(area, 'responderMove', two(300));
+    await fireEvent(area, 'responderMove', two(150));
     expect(screen.getByTestId('zoom-bubble')).toBeTruthy();
     expect(screen.getByTestId('zoom-bubble')).toHaveTextContent('1.5x');
     await fireEvent(area, 'responderRelease', one);
@@ -294,8 +294,8 @@ describe('pinch on the preview', () => {
     await fireEvent(area, 'responderMove', two(200));
     await fireEvent(area, 'responderRelease', one);
     await fireEvent(area, 'responderGrant', two(100));
-    await fireEvent(area, 'responderMove', two(200)); // 1x → 2x
-    expect(s.setZoom).toHaveBeenLastCalledWith(2, false);
+    await fireEvent(area, 'responderMove', two(200)); // 2x → 4x
+    expect(s.setZoom).toHaveBeenLastCalledWith(4, false);
   });
 });
 

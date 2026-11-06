@@ -29,7 +29,10 @@ export function useSessionDiag(session: ReplaySession): void {
 
   useEffect(() => {
     if (!recording || !DIAGNOSTICS_ENABLED) return;
-    const economy = diagFlags().economyOff ? 'economia de tela DESLIGADA' : 'economia de tela ligada';
+    const flags = diagFlags();
+    const economy =
+      (flags.economyOff ? 'economia de tela DESLIGADA' : 'economia de tela ligada') +
+      (flags.volumePathOff ? ', caminho pelo volume DESLIGADO (só captura)' : '');
     diagRecordingStarted(`${economy} — ${diagAudioState()} — ${power()}`);
     let minute = 0;
     const pulse = setInterval(() => {

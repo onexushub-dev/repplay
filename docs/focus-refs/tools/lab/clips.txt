@@ -24,3 +24,24 @@ basket-h-backlight-04|clips/basket-h-corner-backlight-04.mp4|30014|30000|basquet
 yt-basket-04|refs/h264/yt-FVUuK2ZGQtw-1m.mp4|0|30000|basquete
 ref-futvolei-01|refs/ref-futvolei-01-v736TfDzV4A.mp4|0|19300|futevolei
 ref-society-01|refs/ref-society-01-g5wCqUET-0Y.mp4|0|19000|society
+# 2026-11-05 (Victor): app exports WITHOUT Modo Foco (whole picture, fixed camera), for test 14 (5 fps) vs v6.
+# Ball labelled on the page (Victor). Today's framing from the people file's whole frame + tiles (the app since v14).
+# bt-rz-1105-a: lens 1x (Victor)
+bt-rz-1105-a|refs/2026-11-05/bt-rz-1105-a.mp4|0|19000|beachTennis
+# bt-rz-1105-b: lens 1x (Victor)
+bt-rz-1105-b|refs/2026-11-05/bt-rz-1105-b.mp4|0|19700|beachTennis
+# bt-rz-1105-v: lens 0.5x (Victor)
+bt-rz-1105-v|refs/2026-11-05/bt-rz-1105-v.mp4|0|14000|beachTennis
+# basket-rp-1105-h: lens 0.5x (Victor)
+basket-rp-1105-h|refs/2026-11-05/basket-rp-1105-h.mp4|0|8200|basquete
+# basket-rp-1105-v-a: lens 0.5x (Victor)
+basket-rp-1105-v-a|refs/2026-11-05/basket-rp-1105-v-a.mp4|0|24000|basquete
+basket-rp-1105-v-b|refs/2026-11-05/basket-rp-1105-v-b.mp4|0|14200|basquete
+# 2026-11-05 (Victor): YouTube references for test 15 (validation of the ball-framing rule; not used to choose it)
+yt1105-basket-a|refs/yt-1105/4T6xSDB9Spc-00250050.mp4|0|25000|basquete
+yt1105-voleipraia|refs/yt-1105/G10iUwhYHmY-01380153.mp4|0|15000|voleiPraia
+yt1105-futevolei|refs/yt-1105/TP6FkZtHriI-00080025.mp4|0|17000|futevolei
+yt1105-volei-a|refs/yt-1105/YIFa1hZCxVk-00550115.mp4|0|20000|volei
+yt1105-volei-b|refs/yt-1105/YIFa1hZCxVk-09200938.mp4|0|18000|volei
+yt1105-basket-b|refs/yt-1105/YSEAbrPUHoo-01100140.mp4|0|30000|basquete
+yt1105-bt|refs/yt-1105/tcaoCnz1lrs-02070220.mp4|0|13000|beachTennis
