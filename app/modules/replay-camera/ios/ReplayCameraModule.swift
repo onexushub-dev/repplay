@@ -173,6 +173,11 @@ public class ReplayCameraModule: Module {
       BluetoothProbe.shared.run(ask: ask) { promise.resolve($0) }
     }
 
+    // TEMP(diag-remote): what the capture-event path has installed right now (window, previews, camera, MPVolumeView).
+    AsyncFunction("diagCaptureState") { (promise: Promise) in
+      DispatchQueue.main.async { MainActor.assumeIsolated { promise.resolve(CaptureButtons.shared.diagState()) } }
+    }
+
     // TEMP(diag-remote): the audio session the volume remote depends on.
     Function("diagAudioState") { () -> String in ReplayEngine.audioState() }
 

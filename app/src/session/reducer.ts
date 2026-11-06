@@ -66,7 +66,14 @@ export function reducer(state: SessionState, action: SessionAction): SessionStat
     case 'cameraOff':
       return { ...state, camera: 'off' };
     case 'startRequested':
-      return { ...initialState, camera: state.camera, phase: 'starting' };
+      // The camera often opened before the game (preview): its heat was reported then and no new report comes while
+      // the level holds, so an open camera keeps it (2026-11-05 log: "calor serious" in the header, "nominal" here).
+      return {
+        ...initialState,
+        camera: state.camera,
+        phase: 'starting',
+        thermal: state.camera === 'on' ? state.thermal : initialState.thermal,
+      };
     case 'started':
       return {
         ...state,

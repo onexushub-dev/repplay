@@ -16,7 +16,7 @@ microphone dot with the screen locked, a stricter App Review) is out on purpose.
 ## 2. Battery saving
 
 - The camera's mechanism (`useScreenEconomy`), with its own values: dim after **60 s** without a touch (the camera
-  waits 20 s, 5 s when warm), brightness **15%** (25% in the first test; lowered to save more, check it in the sun) (`ScreenEconomy.remoteBrightness`), never brighter than the player's
+  waits 20 s, 10 s when warm — was 5 s, too short in use, 2026-11-05), brightness **15%** (25% in the first test; lowered to save more, check it in the sun) (`ScreenEconomy.remoteBrightness`), never brighter than the player's
   own setting. The interface stays visible: no black cover, only a "Tela em economia. Toque para acender." pill.
 - Active only on the recording screen. Any other screen (a lost link, a silent camera, the end of the recording)
   lights the screen up by itself.

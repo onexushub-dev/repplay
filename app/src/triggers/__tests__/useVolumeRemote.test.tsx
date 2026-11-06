@@ -2,6 +2,7 @@ import { act, renderHook } from '@testing-library/react-native';
 
 import { AppState } from 'react-native';
 
+import { diagFlags, setDiagFlags } from '../../diag/diagLog';
 import { ARM_MS, SETTLE_MS, WATCH_MS, useVolumeRemote } from '../useVolumeRemote';
 
 // The phone's real volume (iOS): undefined by default, so the tests above run the library-only path (Android).
@@ -251,6 +252,26 @@ describe('iOS: the library slider goes stale (2026-10-28 field log)', () => {
     await act(async () => unmount());
   });
 
+  test('the nudge of a retried parking, reported late, is not a press (2026-11-05 log)', async () => {
+    // iOS reports the volume a moment after it is set, past the echo window.
+    lib.VolumeManager.setVolume.mockImplementation(async (v: number) => {
+      if (Math.abs(v - ios.slider) < 1e-6) return;
+      ios.slider = v;
+      ios.real = v;
+      setTimeout(() => lib.__state.listeners.forEach((l: Listener) => l({ volume: v })), SETTLE_MS + 100);
+    });
+    const onPress = jest.fn();
+    const { unmount } = await renderHook(() => useVolumeRemote(true, onPress));
+    await advance(ARM_MS + 3 * SETTLE_MS + 1000);
+
+    await remote(); // the slider stays at 0.5: parking needs a nudge, whose report arrives late
+    await advance(4 * SETTLE_MS + 1000);
+
+    expect(onPress).toHaveBeenCalledTimes(1);
+    expect(ios.real).toBeCloseTo(0.5, 5);
+    await act(async () => unmount());
+  });
+
   test('a volume that drifted away without a press is put back by the watch, and the next press counts', async () => {
     const onPress = jest.fn();
     const { unmount } = await renderHook(() => useVolumeRemote(true, onPress));
@@ -334,5 +355,25 @@ describe('iOS: the library slider goes stale (2026-10-28 field log)', () => {
     await advance(3 * SETTLE_MS + 500);
     expect(ios.real).toBeCloseTo(0.5, 5);
     await act(async () => unmount());
+  });
+});
+
+describe('TEMP(diag-remote): volume path off from the Diagnóstico screen', () => {
+  beforeEach(() => setDiagFlags({ ...diagFlags(), volumePathOff: true }));
+  afterEach(() => setDiagFlags({ ...diagFlags(), volumePathOff: false }));
+
+  test('presses count only as capture events: no volume listener, no hidden volume view, no parking', async () => {
+    const onPress = jest.fn();
+    const { unmount } = await renderHook(() => useVolumeRemote(true, onPress));
+    await act(async () => {});
+    expect(lib.VolumeManager.addVolumeListener).not.toHaveBeenCalled();
+    expect(lib.VolumeManager.showNativeVolumeUI).not.toHaveBeenCalledWith({ enabled: false });
+    expect(lib.VolumeManager.setVolume).not.toHaveBeenCalled();
+    expect(camera.setCaptureButtons).toHaveBeenCalledWith(true);
+    await act(async () => fire('onCaptureButton', { button: 'secondary' }));
+    expect(onPress).toHaveBeenCalledTimes(1);
+    await act(async () => unmount());
+    expect(camera.setCaptureButtons).toHaveBeenLastCalledWith(false);
+    expect(lib.VolumeManager.setVolume).not.toHaveBeenCalled();
   });
 });

@@ -45,6 +45,8 @@ declare class ReplayCameraModule extends NativeModule<ReplayCameraModuleEvents> 
   diagAudioState?(): string;
   // TEMP(diag-remote) (iOS only: missing on Android and in older builds).
   diagPower?(): string;
+  // TEMP(diag-remote) (iOS only: missing on Android and in older builds).
+  diagCaptureState?(): Promise<string>;
   // The Bluetooth selfie remote as iOS shows it (iOS only: missing on Android and in older builds).
   bluetoothConnected?(ask: boolean): Promise<BluetoothConnected>;
   requestPermissions(): Promise<boolean>;

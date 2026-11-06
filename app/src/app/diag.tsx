@@ -17,6 +17,7 @@ import { colors, fonts, radius } from '../theme/tokens';
 export default function Diag() {
   const [text, setText] = useState(() => diagText());
   const [economyOff, setEconomyOff] = useState(() => diagFlags().economyOff);
+  const [volumePathOff, setVolumePathOff] = useState(() => diagFlags().volumePathOff);
 
   useEffect(() => diagSubscribe(() => setText(diagText())), []);
 
@@ -43,7 +44,14 @@ export default function Diag() {
 
   const toggleEconomy = (off: boolean) => {
     setEconomyOff(off);
-    setDiagFlags({ economyOff: off });
+    setDiagFlags({ ...diagFlags(), economyOff: off });
+  };
+
+  // Presses only as capture events: shows whether the volume path keeps them from arriving. Takes effect at the next
+  // recording (the remote starts listening again).
+  const toggleVolumePath = (off: boolean) => {
+    setVolumePathOff(off);
+    setDiagFlags({ ...diagFlags(), volumePathOff: off });
   };
 
   const share = () => {
@@ -84,6 +92,16 @@ export default function Diag() {
             onValueChange={toggleEconomy}
             trackColor={{ true: colors.accent, false: colors.surface }}
             accessibilityLabel="Desligar a economia de tela nas gravações"
+          />
+        </View>
+
+        <View style={styles.row}>
+          <Text style={styles.rowName}>Desligar o caminho pelo volume (só captura)</Text>
+          <Switch
+            value={volumePathOff}
+            onValueChange={toggleVolumePath}
+            trackColor={{ true: colors.accent, false: colors.surface }}
+            accessibilityLabel="Desligar o caminho pelo volume (só captura)"
           />
         </View>
 
