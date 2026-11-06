@@ -27,7 +27,7 @@ test('the screen goes into economy after 20 s without a touch while recording', 
   expect(setNative).toHaveBeenLastCalledWith(true);
 });
 
-test('with the phone warm it happens after 5 s', async () => {
+test('with the phone warm it happens after 10 s', async () => {
   const { result } = await setup({ active: true, thermal: 'fair' });
   await act(async () => jest.advanceTimersByTime(ECONOMY_WARM_IDLE_MS));
   expect(result.current.asleep).toBe(true);
