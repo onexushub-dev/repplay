@@ -102,6 +102,13 @@ test('starting a game keeps the camera that is already on', () => {
   expect(reducer(on, { type: 'startRequested' }).camera).toBe('on');
 });
 
+test('starting a game keeps the heat an open camera reported, and forgets it with the camera off', () => {
+  const warm = reducer(reducer(initialState, { type: 'cameraOn' }), { type: 'thermal', level: 'serious', degraded: false });
+  expect(reducer(warm, { type: 'startRequested' }).thermal).toEqual({ level: 'serious', degraded: false });
+  const off = reducer(warm, { type: 'cameraOff' });
+  expect(reducer(off, { type: 'startRequested' }).thermal).toEqual({ level: 'nominal', degraded: false });
+});
+
 test('saved keeps neither locked nor lastFree in lastSaved', () => {
   const s = reducer(recording(), { type: 'saved', sessionId: 's1', clipId: 'c1', source: 'screen', at: 1, cutMs: 30_000 });
   expect(s.lastSaved).toEqual({ clipId: 'c1', number: 1, source: 'screen', at: 1, cutMs: 30_000 });
